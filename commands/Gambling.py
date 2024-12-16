@@ -45,14 +45,7 @@ class Gambling(commands.Cog):
         else:
             self.balances[author_id] = current_balance - bet
             
-        return self._create_game_embed(
-            author_name,
-            is_correct,
-            guess,
-            result,
-            bet,
-            winnings
-        )
+        return self._create_game_embed(author_name, is_correct, guess, result, bet, winnings, author_id)
 
     @commands.command(name="도박.동전", description="동전 던지기")
     async def coin(self, ctx, guess: str = None, bet: int = None):
@@ -122,12 +115,12 @@ class Gambling(commands.Cog):
         )
         await ctx.reply(embed=embed)
 
-    def _create_game_embed(self, author_name, is_correct, guess, result, bet=None, winnings=None):
+    def _create_game_embed(self, author_name, is_correct, guess, result, bet=None, winnings=None, author_id=None):
         description = f"- 예측: {guess}\n- 결과: {result}"
         if bet is not None:
             diff = winnings - bet
-            sign = "+" if diff > 0 else ""
-            description = f"- 예측: {guess}\n- 결과: {result}\n- 재산: {winnings}원({sign}{diff})"
+            multiplier = round(winnings / bet, 2) if diff > 0 else 0
+            description = f"- 예측: {guess}\n- 결과: {result}\n## 수익: {bet}원 × {multiplier} = {winnings}원\n- 재산: {self.balances.get(author_id, 0)}원"
             
         return discord.Embed(
             title=f"{author_name} {'맞음 ㄹㅈㄷ' if is_correct else '틀림ㅋ'}",
