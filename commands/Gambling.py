@@ -5,6 +5,8 @@ from datetime import datetime
 class Gambling(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+        self.cooldowns = {}
+        self.balances = {}
 
     def _validate_bet(self, bet):
         if bet is None or bet <= 0:
@@ -33,9 +35,16 @@ class Gambling(commands.Cog):
             )
         return None
 
-    def _play_game(self, author_name, guess, result, bet, multiplier):
+    def _play_game(self, author_id, author_name, guess, result, bet, multiplier):
         is_correct = guess == result
         winnings = bet * multiplier if is_correct else 0
+        
+        current_balance = self.balances.get(author_id, 0)
+        if is_correct:
+            self.balances[author_id] = current_balance + winnings
+        else:
+            self.balances[author_id] = current_balance - bet
+            
         return self._create_game_embed(
             author_name,
             is_correct,
@@ -51,10 +60,16 @@ class Gambling(commands.Cog):
             embed = error_embed
         elif error_embed := self._validate_bet(bet):
             embed = error_embed
+        elif bet > self.balances.get(ctx.author.id, 0):
+            embed = discord.Embed(
+                title="오류",
+                description="돈이 부족해...",
+                color=discord.Color.red()
+            )
         else:
             result = random.choice(["앞", "뒤"])
-            embed = self._play_game(ctx.author.name, guess, result, bet, 2)
-        await ctx.reply(embed=embed)
+            embed = self._play_game(ctx.author.id, ctx.author.name, guess, result, bet, random.uniform(1.5, 3.0))
+        await ctx.reply(embed=embed, content=f'{ctx.author.name}의 잔액: {self.balances.get(ctx.author.id, 0)}원')
 
     @commands.command(name="도박.주사위", description="주사위")
     async def dice(self, ctx, guess: str = None, bet: int = None):
@@ -62,14 +77,16 @@ class Gambling(commands.Cog):
             embed = error_embed
         elif error_embed := self._validate_bet(bet):
             embed = error_embed
+        elif bet > self.balances.get(ctx.author.id, 0):
+            embed = discord.Embed(
+                title="오류",
+                description="돈이 부족해...",
+                color=discord.Color.red()
+            )
         else:
             result = random.choice([str(i) for i in range(1, 7)])
-            embed = self._play_game(ctx.author.name, guess, result, bet, 6)
-        await ctx.reply(embed=embed)
-
-    def __init__(self, bot):
-        self.bot = bot
-        self.cooldowns = {}
+            embed = self._play_game(ctx.author.id, ctx.author.name, guess, result, bet, random.uniform(5, 10))
+        await ctx.reply(embed=embed, content=f'{ctx.author.name}의 잔액: {self.balances.get(ctx.author.id, 0)}원')
 
     @commands.command(name="도박.노동", description="도박.노동")
     async def get_money(self, ctx):
@@ -85,6 +102,7 @@ class Gambling(commands.Cog):
             )
         else:
             amount = random.randint(50, 1000)
+            self.balances[ctx.author.id] = self.balances.get(ctx.author.id, 0) + amount
             embed = discord.Embed(
                 title=f"{ctx.author.name}",
                 description=f"정당한 노동을 통해 {amount}원을 벌었다.",
@@ -92,6 +110,16 @@ class Gambling(commands.Cog):
             )
             self.cooldowns[ctx.author.id] = current_time
             
+        await ctx.reply(embed=embed, content=f'{ctx.author.name}의 잔액: {self.balances.get(ctx.author.id, 0)}원')
+
+    @commands.command(name="도박.지갑", description="잔액 확인")
+    async def check_balance(self, ctx):
+        balance = self.balances.get(ctx.author.id, 0)
+        embed = discord.Embed(
+            title=f"{ctx.author.name}의 지갑",
+            description=f"현재 잔액: {balance}원",
+            color=discord.Color.blue()
+        )
         await ctx.reply(embed=embed)
 
     def _create_game_embed(self, author_name, is_correct, guess, result, bet=None, winnings=None):
