@@ -26,7 +26,7 @@ class RequestMeal:
             
             if 'mealServiceDietInfo' in data:
                 meals = data['mealServiceDietInfo'][1]['row']
-                for meal in meals:
+                for meal in meals:  
                     meal['DDISH_NM'] = meal['DDISH_NM'].replace('*', '')
                 return meals
             return None
@@ -59,7 +59,7 @@ class Meal(commands.Cog):
             )
             
         await ctx.message.delete()
-        await ctx.send(f"{ctx.author.mention}", embed=embed)
+        await ctx.reply(f"{ctx.author.mention}", embed=embed)
         
     @commands.command(name='급식.점심', description='점심 조회')
     async def lunch(self, ctx):
@@ -82,7 +82,7 @@ class Meal(commands.Cog):
             )
         
         await ctx.message.delete()
-        await ctx.send(f"{ctx.author.mention}", embed=embed)
+        await ctx.reply(f"{ctx.author.mention}", embed=embed)
         
     @commands.command(name='급식.저녁', description='저녁 조회')
     async def dinner(self, ctx):
@@ -105,4 +105,4 @@ class Meal(commands.Cog):
             )
             
         await ctx.message.delete()
-        await ctx.send(f"{ctx.author.mention}", embed=embed)
+        await ctx.reply(f"{ctx.author.mention}", embed=embed)
