@@ -7,6 +7,7 @@ class Gambling(commands.Cog):
         self.bot = bot
         self.cooldowns = {}
         self.balances = {}
+        self.jackpot = 0
 
     def _validate_bet(self, bet):
         if bet is None or bet <= 0:
@@ -44,6 +45,7 @@ class Gambling(commands.Cog):
             self.balances[author_id] = current_balance + winnings
         else:
             self.balances[author_id] = current_balance - bet
+            self.jackpot += bet
             
         return self._create_game_embed(author_name, is_correct, guess, result, bet, winnings, author_id)
 
@@ -79,6 +81,39 @@ class Gambling(commands.Cog):
         else:
             result = random.choice([str(i) for i in range(1, 7)])
             embed = self._play_game(ctx.author.id, ctx.author.name, guess, result, bet, random.uniform(5, 10))
+        await ctx.reply(embed=embed)
+
+    @commands.command(name="도박.잭팟", description="잭팟")
+    async def jackpot(self, ctx, bet: int = None):
+        if error_embed := self._validate_bet(bet):
+            embed = error_embed
+        elif bet > self.balances.get(ctx.author.id, 0):
+            embed = discord.Embed(
+                title="오류",
+                description="돈이 부족해...",
+                color=discord.Color.red()
+            )
+        else:
+            current_balance = self.balances.get(ctx.author.id, 0)
+            self.balances[ctx.author.id] = current_balance - bet
+            self.jackpot += bet
+            
+            if random.random() <= 0.05:  
+                winnings = self.jackpot
+                self.balances[ctx.author.id] = current_balance - bet + winnings
+                self.jackpot = 0
+                embed = discord.Embed(
+                    title=f"{ctx.author.name} 당첨",
+                    description=f"축하합니다!\n## 수익: {bet}원 × {round(winnings/bet, 2)} = {winnings}원\n- 재산: {self.balances[ctx.author.id]}원",
+                    color=discord.Color.gold()
+                )
+            else:
+                embed = discord.Embed(
+                    title=f"{ctx.author.name} 잭팟 실패ㅋ",
+                    description=f"\n- 현재 잭팟: {self.jackpot}원 \n## 수익: -{bet}원\n- 재산: {self.balances[ctx.author.id]}원",
+                    color=discord.Color.red()
+                )
+            
         await ctx.reply(embed=embed)
 
     @commands.command(name="도박.노동", description="도박.노동")
