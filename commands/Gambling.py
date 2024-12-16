@@ -69,7 +69,7 @@ class Gambling(commands.Cog):
         else:
             result = random.choice(["앞", "뒤"])
             embed = self._play_game(ctx.author.id, ctx.author.name, guess, result, bet, random.uniform(1.5, 3.0))
-        await ctx.reply(embed=embed, content=f'{ctx.author.name}의 잔액: {self.balances.get(ctx.author.id, 0)}원')
+        await ctx.reply(embed=embed)
 
     @commands.command(name="도박.주사위", description="주사위")
     async def dice(self, ctx, guess: str = None, bet: int = None):
@@ -86,7 +86,7 @@ class Gambling(commands.Cog):
         else:
             result = random.choice([str(i) for i in range(1, 7)])
             embed = self._play_game(ctx.author.id, ctx.author.name, guess, result, bet, random.uniform(5, 10))
-        await ctx.reply(embed=embed, content=f'{ctx.author.name}의 잔액: {self.balances.get(ctx.author.id, 0)}원')
+        await ctx.reply(embed=embed)
 
     @commands.command(name="도박.노동", description="도박.노동")
     async def get_money(self, ctx):
@@ -105,12 +105,12 @@ class Gambling(commands.Cog):
             self.balances[ctx.author.id] = self.balances.get(ctx.author.id, 0) + amount
             embed = discord.Embed(
                 title=f"{ctx.author.name}",
-                description=f"정당한 노동을 통해 {amount}원을 벌었다.",
+                description=f"정당한 노동을 통해 {amount}원을 벌었다. \n- 재산: {self.balances.get(ctx.author.id, 0)}원(+{amount})",
                 color=discord.Color.green()
             )
             self.cooldowns[ctx.author.id] = current_time
             
-        await ctx.reply(embed=embed, content=f'{ctx.author.name}의 잔액: {self.balances.get(ctx.author.id, 0)}원')
+        await ctx.reply(embed=embed)
 
     @commands.command(name="도박.지갑", description="잔액 확인")
     async def check_balance(self, ctx):
@@ -125,7 +125,9 @@ class Gambling(commands.Cog):
     def _create_game_embed(self, author_name, is_correct, guess, result, bet=None, winnings=None):
         description = f"- 예측: {guess}\n- 결과: {result}"
         if bet is not None:
-            description = f"- 예측: {guess}\n- 결과: {result}\n## 돈: {bet} → {winnings}"
+            diff = winnings - bet
+            sign = "+" if diff > 0 else ""
+            description = f"- 예측: {guess}\n- 결과: {result}\n- 재산: {winnings}원({sign}{diff})"
             
         return discord.Embed(
             title=f"{author_name} {'맞음 ㄹㅈㄷ' if is_correct else '틀림ㅋ'}",
