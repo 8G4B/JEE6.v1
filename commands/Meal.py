@@ -3,7 +3,8 @@ from discord.ext import commands
 import meal_api_key
 import requests
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
+
 
 class RequestMeal:
     params = {
@@ -37,6 +38,49 @@ class RequestMeal:
 class Meal(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+    
+    @commands.command(name='급식', description='급식 조회')
+    async def meal(self, ctx):
+        now = datetime.now()
+        today = now.strftime("%Y%m%d")
+        current_hour = now.hour
+        current_minute = now.minute
+        
+        meal_info = RequestMeal.get_meal_info(today)
+        
+        if meal_info:
+            if current_hour < 7 or (current_hour == 7 and current_minute < 30):
+                menu = next((meal["DDISH_NM"] for meal in meal_info if meal["MMEAL_SC_CODE"] == "1"), "급식 정보가 없습니다.")
+                title = "아침"
+            elif current_hour < 12 or (current_hour == 12 and current_minute < 30):
+                menu = next((meal["DDISH_NM"] for meal in meal_info if meal["MMEAL_SC_CODE"] == "2"), "급식 정보가 없습니다.")
+                title = "점심"
+            elif current_hour < 18 or (current_hour == 18 and current_minute < 30):
+                menu = next((meal["DDISH_NM"] for meal in meal_info if meal["MMEAL_SC_CODE"] == "3"), "급식 정보가 없습니다.")
+                title = "저녁"
+            else:
+                tomorrow = (now + timedelta(days=1)).strftime("%Y%m%d")
+                tomorrow_meal_info = RequestMeal.get_meal_info(tomorrow)
+                if tomorrow_meal_info:
+                    menu = next((meal["DDISH_NM"] for meal in tomorrow_meal_info if meal["MMEAL_SC_CODE"] == "1"), "급식 정보가 없습니다.")
+                    title = "내일 아침"
+                else:
+                    menu = "급식 정보가 없습니다."
+                    title = "내일 아침"
+            
+            embed = discord.Embed(
+                title=title,
+                description=menu.replace("<br/>", "\n"),
+                color=discord.Color.purple()
+            )
+        else:
+            embed = discord.Embed(
+                title="오류",
+                description="급식 정보를 가져올 수 없습니다.",
+                color=discord.Color.red()
+            )
+            
+        await ctx.reply(embed=embed)
         
     @commands.command(name='급식.아침', description='아침 조회')
     async def breakfast(self, ctx):
