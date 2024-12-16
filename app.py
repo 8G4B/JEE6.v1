@@ -8,7 +8,7 @@ intents.message_content = True
 intents.members = False
 bot = commands.Bot(command_prefix="!", intents=intents)
 
-class Gambling(commands.Cog):
+class Greeting(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
@@ -26,6 +26,10 @@ class Gambling(commands.Cog):
             color=discord.Color.red() if title != "안녕!" else discord.Color.blue()
         )
         await ctx.send(embed=embed)
+
+class Gambling(commands.Cog):
+    def __init__(self, bot):
+        self.bot = bot
 
     @commands.command(name="도박.동전", description="동전 던지기")
     async def coin(self, ctx, guess: str = None, bet: int = None):
@@ -87,6 +91,7 @@ class Gambling(commands.Cog):
         )
 
 async def setup(bot):
+    await bot.add_cog(Greeting(bot))
     await bot.add_cog(Gambling(bot))
 
 bot.run(TOKEN)
