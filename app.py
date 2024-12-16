@@ -5,6 +5,7 @@ import asyncio
 from commands.Greeting import Greeting
 from commands.Gambling import Gambling
 from commands.Time import Time
+from commands.Meal import Meal
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -16,6 +17,7 @@ async def setup(bot):
     await bot.add_cog(Greeting(bot))
     await bot.add_cog(Gambling(bot))
     await bot.add_cog(Time(bot))
+    await bot.add_cog(Meal(bot))
 
 async def main():
     async with bot:
