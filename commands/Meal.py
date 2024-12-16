@@ -59,7 +59,7 @@ class Meal(commands.Cog):
             )
             
         await ctx.message.delete()
-        await ctx.reply(f"{ctx.author.mention}", embed=embed)
+        await ctx.reply(f"{ctx.author.ion}", embed=embed)
         
     @commands.command(name='급식.점심', description='점심 조회')
     async def lunch(self, ctx):
