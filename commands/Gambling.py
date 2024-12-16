@@ -55,7 +55,7 @@ class Gambling(commands.Cog):
             result = random.choice(["앞", "뒤"])
             embed = self._play_game(ctx.author.name, guess, result, bet, 2)
         await ctx.message.delete()
-        await ctx.send(embed=embed)
+        await ctx.send(f"{ctx.author.mention}", embed=embed)
 
     @commands.command(name="도박.주사위", description="주사위")
     async def dice(self, ctx, guess: str = None, bet: int = None):
@@ -67,7 +67,7 @@ class Gambling(commands.Cog):
             result = random.choice([str(i) for i in range(1, 7)])
             embed = self._play_game(ctx.author.name, guess, result, bet, 6)
         await ctx.message.delete()
-        await ctx.send(embed=embed)
+        await ctx.send(f"{ctx.author.mention}", embed=embed)
 
     def _create_game_embed(self, author_name, is_correct, guess, result, bet=None, winnings=None):
         description = f"- 예측: {guess}\n- 결과: {result}"

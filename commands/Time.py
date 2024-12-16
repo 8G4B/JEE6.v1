@@ -14,5 +14,5 @@ class Time(commands.Cog):
             color=discord.Color.blue()
         )
         await ctx.message.delete()
-        await ctx.send(embed=embed)
+        await ctx.send(f"{ctx.author.mention}", embed=embed)
         

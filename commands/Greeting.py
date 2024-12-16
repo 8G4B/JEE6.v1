@@ -20,5 +20,5 @@ class Greeting(commands.Cog):
             color=discord.Color.red() if title != "안녕!" else discord.Color.blue()
         )
         await ctx.message.delete()
-        await ctx.send(embed=embed)
+        await ctx.send(f"{ctx.author.mention}", embed=embed)
     
