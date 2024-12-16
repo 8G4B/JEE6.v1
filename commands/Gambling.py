@@ -1,7 +1,7 @@
 import discord
 from discord.ext import commands
 import random
-
+from datetime import datetime
 class Gambling(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -54,8 +54,7 @@ class Gambling(commands.Cog):
         else:
             result = random.choice(["앞", "뒤"])
             embed = self._play_game(ctx.author.name, guess, result, bet, 2)
-        await ctx.message.delete()
-        await ctx.reply(f"{ctx.author.mention}", embed=embed)
+        await ctx.reply(embed=embed)
 
     @commands.command(name="도박.주사위", description="주사위")
     async def dice(self, ctx, guess: str = None, bet: int = None):
@@ -66,8 +65,34 @@ class Gambling(commands.Cog):
         else:
             result = random.choice([str(i) for i in range(1, 7)])
             embed = self._play_game(ctx.author.name, guess, result, bet, 6)
-        await ctx.message.delete()
-        await ctx.reply(f"{ctx.author.mention}", embed=embed)
+        await ctx.reply(embed=embed)
+
+    def __init__(self, bot):
+        self.bot = bot
+        self.cooldowns = {}
+
+    @commands.command(name="도박.노동", description="도박.노동")
+    async def get_money(self, ctx):
+        current_time = datetime.now()
+        last_used = self.cooldowns.get(ctx.author.id)
+        
+        if last_used and (current_time - last_used).total_seconds() < 60:
+            remaining = 60 - int((current_time - last_used).total_seconds())
+            embed = discord.Embed(
+                title="힘들어서 쉬는 중 ㅋ",
+                description=f"{remaining}초 후에 다시 시도해주세요.",
+                color=discord.Color.red()
+            )
+        else:
+            amount = random.randint(50, 1000)
+            embed = discord.Embed(
+                title=f"{ctx.author.name}",
+                description=f"정당한 노동을 통해 {amount}원을 벌었다.",
+                color=discord.Color.green()
+            )
+            self.cooldowns[ctx.author.id] = current_time
+            
+        await ctx.reply(embed=embed)
 
     def _create_game_embed(self, author_name, is_correct, guess, result, bet=None, winnings=None):
         description = f"- 예측: {guess}\n- 결과: {result}"

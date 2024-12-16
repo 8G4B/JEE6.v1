@@ -29,8 +29,7 @@ async def setup():
 
 @bot.event
 async def on_ready():
-    print(f'Logged in as {bot.user.name}')
-    print('------')
+    print(f'{bot.user.name} connected')
 
 async def main():
     await setup()
