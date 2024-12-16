@@ -37,7 +37,7 @@ class Gambling(commands.Cog):
 
     def _play_game(self, author_id, author_name, guess, result, bet, multiplier):
         is_correct = guess == result
-        winnings = bet * multiplier if is_correct else 0
+        winnings = int(bet * multiplier) if is_correct else 0
         
         current_balance = self.balances.get(author_id, 0)
         if is_correct:
