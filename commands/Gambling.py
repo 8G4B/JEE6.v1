@@ -119,7 +119,7 @@ class Gambling(commands.Cog):
         description = f"- 예측: {guess}\n- 결과: {result}"
         if bet is not None:
             diff = winnings - bet
-            multiplier = round(winnings / bet, 2) if diff > 0 else 0
+            multiplier = round(winnings / bet, 2) if diff > 0 else 0  
             description = f"- 예측: {guess}\n- 결과: {result}\n## 수익: {bet}원 × {multiplier} = {winnings}원\n- 재산: {self.balances.get(author_id, 0)}원"
             
         return discord.Embed(

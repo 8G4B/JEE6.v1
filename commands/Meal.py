@@ -76,13 +76,13 @@ class Meal(commands.Cog):
         else:
             embed = discord.Embed(
                 title="오류",
-                description="급식 정보를 가져올 수 없습니다.",
+                description="나이스 API 이슈",
                 color=discord.Color.red()
             )
             
         await ctx.reply(embed=embed)
         
-    @commands.command(name='급식.아침', description='아침 조회')
+    @commands.command(name='급식.아침', aliases=['급식.조식'], description='아침 조회')
     async def breakfast(self, ctx):
         today = datetime.now().strftime("%Y%m%d")
         meal_info = RequestMeal.get_meal_info(today)
@@ -104,7 +104,7 @@ class Meal(commands.Cog):
             
         await ctx.reply(embed=embed)
         
-    @commands.command(name='급식.점심', description='점심 조회')
+    @commands.command(name='급식.점심', aliases=['급식.중식'], description='점심 조회')
     async def lunch(self, ctx):
         today = datetime.now().strftime("%Y%m%d")
         meal_info = RequestMeal.get_meal_info(today)
@@ -126,7 +126,7 @@ class Meal(commands.Cog):
         
         await ctx.reply(embed=embed)
         
-    @commands.command(name='급식.저녁', description='저녁 조회')
+    @commands.command(name='급식.저녁', aliases=['급식.석식'], description='저녁 조회')
     async def dinner(self, ctx):
         today = datetime.now().strftime("%Y%m%d")
         meal_info = RequestMeal.get_meal_info(today)

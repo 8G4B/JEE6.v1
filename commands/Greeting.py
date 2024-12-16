@@ -6,7 +6,7 @@ class Greeting(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @commands.command(name="안녕", description="안녕")
+    @commands.command(name="안녕", aliases=['아녕', '안녕하세요', '아녕하세요', '안ㄴ녕'], description="안녕")
     async def greet(self, ctx):
         if ctx.author.name in ["aiden300.", "aiden300_"]:
             title = "야 이주언 싸려"
@@ -21,7 +21,7 @@ class Greeting(commands.Cog):
         )
         await ctx.reply(embed=embed)
         
-    @commands.command(name="이주언", description="이주언")
+    @commands.command(name="이주언", aliases=['주언'], description="이주언")
     async def greet(self, ctx):
         title = "병신"
         embed = discord.Embed(
