@@ -55,11 +55,10 @@ class Meal(commands.Cog):
             embed = discord.Embed(
                 title="아침",
                 description="급식 정보를 가져올 수 없습니다.",
-                color=discord.Color.purple()
+                color=discord.Color.red()
             )
             
-        await ctx.message.delete()
-        await ctx.reply(f"{ctx.author.ion}", embed=embed)
+        await ctx.reply(embed=embed)
         
     @commands.command(name='급식.점심', description='점심 조회')
     async def lunch(self, ctx):
@@ -78,11 +77,10 @@ class Meal(commands.Cog):
             embed = discord.Embed(
                 title="점심",
                 description="급식 정보를 가져올 수 없습니다.",
-                color=discord.Color.purple()
+                color=discord.Color.red()
             )
         
-        await ctx.message.delete()
-        await ctx.reply(f"{ctx.author.mention}", embed=embed)
+        await ctx.reply(embed=embed)
         
     @commands.command(name='급식.저녁', description='저녁 조회')
     async def dinner(self, ctx):
@@ -101,8 +99,7 @@ class Meal(commands.Cog):
             embed = discord.Embed(
                 title="저녁",
                 description="급식 정보를 가져올 수 없습니다.",
-                color=discord.Color.purple()
+                color=discord.Color.red()
             )
             
-        await ctx.message.delete()
-        await ctx.reply(f"{ctx.author.mention}", embed=embed)
+        await ctx.reply(embed=embed)

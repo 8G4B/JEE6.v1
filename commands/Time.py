@@ -13,6 +13,5 @@ class Time(commands.Cog):
             title=f"{now.strftime('%Y년 %m월 %d일')}\n{now.strftime('%H시 %M분 %S초')}",
             color=discord.Color.blue()
         )
-        await ctx.message.delete()
         await ctx.reply(embed=embed)
         
