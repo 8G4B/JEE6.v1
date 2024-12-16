@@ -19,6 +19,14 @@ class Greeting(commands.Cog):
             title=title,
             color=discord.Color.red() if title != "안녕!" else discord.Color.blue()
         )
-        await ctx.message.delete()
-        await ctx.reply(f"{ctx.author.mention}", embed=embed)
+        await ctx.reply(embed=embed)
+        
+    @commands.command(name="이주언", description="이주언")
+    async def greet(self, ctx):
+        title = "병신"
+        embed = discord.Embed(
+            title=title,
+            color=discord.Color.blue()
+        )
+        await ctx.reply(embed=embed)
     
