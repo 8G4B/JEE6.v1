@@ -71,7 +71,7 @@ class Meal(commands.Cog):
             embed = discord.Embed(
                 title=title,
                 description=menu.replace("<br/>", "\n"),
-                color=discord.Color.purple()
+                color=discord.Color.orange()
             )
         else:
             embed = discord.Embed(
@@ -93,7 +93,7 @@ class Meal(commands.Cog):
             embed = discord.Embed(
                 title="아침",
                 description=breakfast_menu.replace("<br/>", "\n"),
-                color=discord.Color.purple()
+                color=discord.Color.orange()
             )
         else:
             embed = discord.Embed(
@@ -115,7 +115,7 @@ class Meal(commands.Cog):
             embed = discord.Embed(
                 title="점심",
                 description=lunch_menu.replace("<br/>", "\n"),
-                color=discord.Color.purple()
+                color=discord.Color.orange()
             )
         else:
             embed = discord.Embed(
@@ -137,7 +137,7 @@ class Meal(commands.Cog):
             embed = discord.Embed(
                 title="저녁",
                 description=dinner_menu.replace("<br/>", "\n"),
-                color=discord.Color.purple()
+                color=discord.Color.orange()
             )
         else:
             embed = discord.Embed(

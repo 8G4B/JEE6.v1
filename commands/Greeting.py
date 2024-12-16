@@ -17,7 +17,7 @@ class Greeting(commands.Cog):
             
         embed = discord.Embed(
             title=title,
-            color=discord.Color.red() if title != "안녕!" else discord.Color.blue()
+            color=discord.Color.red() if title != "안녕!" else discord.Color.purple()
         )
         await ctx.reply(embed=embed)
         
@@ -26,7 +26,7 @@ class Greeting(commands.Cog):
         title = "병신"
         embed = discord.Embed(
             title=title,
-            color=discord.Color.blue()
+            color=discord.Color.purple()
         )
         await ctx.reply(embed=embed)
     
