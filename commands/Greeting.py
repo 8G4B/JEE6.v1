@@ -19,5 +19,6 @@ class Greeting(commands.Cog):
             title=title,
             color=discord.Color.red() if title != "안녕!" else discord.Color.blue()
         )
+        await ctx.message.delete()
         await ctx.send(embed=embed)
     

@@ -54,6 +54,7 @@ class Gambling(commands.Cog):
         else:
             result = random.choice(["앞", "뒤"])
             embed = self._play_game(ctx.author.name, guess, result, bet, 2)
+        await ctx.message.delete()
         await ctx.send(embed=embed)
 
     @commands.command(name="도박.주사위", description="주사위")
@@ -65,6 +66,7 @@ class Gambling(commands.Cog):
         else:
             result = random.choice([str(i) for i in range(1, 7)])
             embed = self._play_game(ctx.author.name, guess, result, bet, 6)
+        await ctx.message.delete()
         await ctx.send(embed=embed)
 
     def _create_game_embed(self, author_name, is_correct, guess, result, bet=None, winnings=None):
