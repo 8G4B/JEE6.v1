@@ -60,7 +60,7 @@ class Gambling(commands.Cog):
         await ctx.send(embed=embed)
 
     @commands.command(name="도박.주사위", description="주사위")
-    async def dice(self, ctx, guess: str = None):
+    async def dice(self, ctx, guess: str = None, bet: int = None):
         valid_guesses = [str(i) for i in range(1, 7)]
         if guess not in valid_guesses:
             embed = discord.Embed(
@@ -68,14 +68,23 @@ class Gambling(commands.Cog):
                 description="**1부터 6까지 숫자**만 입력해라...",
                 color=discord.Color.red()
             )
+        elif bet is None or bet <= 0:
+            embed = discord.Embed(
+                title="오류",
+                description="돈 제대로 입력해라...",
+                color=discord.Color.red()
+            )
         else:
             result = random.choice(valid_guesses)
             is_correct = guess == result
+            winnings = bet * 6 if is_correct else 0
             embed = self._create_game_embed(
                 ctx.author.name,
                 is_correct,
                 guess,
-                result
+                result,
+                bet,
+                winnings
             )
         await ctx.send(embed=embed)
 
