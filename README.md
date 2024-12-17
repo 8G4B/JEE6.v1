@@ -84,5 +84,64 @@
    `app.py` 파일을 실행해주세요.
 
 ## 도커로 실행
+Windows의 경우와 Ubuntu의 경우로 나뉘어요.
 
----
+### Windows
+1. 도커 설치
+
+   [Docker Desktop](https://www.docker.com/products/docker-desktop)을 설치해주세요.
+2. 환경변수 설정
+
+   `.env` 파일을 만들어서 환경변수를 설정해주세요. 이 파일은 보안상의 이유로 `.gitignore`에 포함되어 있어서 github에 올라가지 않아요.
+
+   ```shell
+   echo "DISCORD_TOKEN=[여기에 토큰 입력]" >> .env
+   echo "MEAL_API_KEY=[여기에 키 입력]" >> .env
+   echo "GPT_API_KEY=[여기에 키 입력]" >> .env
+   ```
+3. 도커 이미지 빌드
+
+   다음 명령어 ``PowerShell``에서 실행해주세요.
+
+   ```shell
+   docker build -t jee6 .
+   ```
+4. 도커 컨테이너 실행
+
+   다음 명령어를 실행해주세요.
+
+   ```shell
+   docker run --env-file .env jee6
+   ```
+### Ubuntu
+1. 도커 설치
+
+   다음 명령어를 실행해주세요.
+
+   ```bash
+   sudo apt-get update
+   sudo apt-get install docker.io
+   ```
+2. 환경변수 설정
+
+   `.env` 파일을 만들어서 환경변수를 설정해주세요. 이 파일은 보안상의 이유로 `.gitignore`에 포함되어 있어서 github에 올라가지 않아요.
+
+   ```bash
+    echo "DISCORD_TOKEN=[여기에 토큰 입력]" >> .env
+    echo "MEAL_API_KEY=[여기에 키 입력]" >> .env
+    echo "GPT_API_KEY=[여기에 키 입력]" >> .env
+   ```
+3. 도커 이미지 빌드
+
+   다음 명령어를 실행해주세요.
+
+   ```bash
+   sudo docker build -t jee6 .
+   ```
+4. 도커 컨테이너 실행
+
+   다음 명령어를 실행해주세요.
+
+   ```bash
+   sudo docker run --env-file .env jee6
+   ```
