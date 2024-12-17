@@ -1,5 +1,7 @@
 # JEE6
 
+[JEE6 서버에 초대하기](https://discord.com/oauth2/authorize?client_id=1318114372438196328&permissions=8&integration_type=0&scope=bot)
+
 [개발자 깃허브](https://github.com/976520)
 
 [개발자한테 쌕쌕 사주기](http://aq.gy/f/9LOJx)
