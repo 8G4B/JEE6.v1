@@ -12,6 +12,7 @@ COPY commands/ ./commands/
 COPY alarm/ ./alarm/
 # 모든 .py 파일을 /app 디렉토리로 복사합니다
 COPY *.py .
+COPY gambling_data.json .
 # requirements.txt에 명시된 패키지를 설치합니다
 RUN pip install --no-cache-dir -r requirements.txt
 # 8000 포트를 외부에 노출합니다
