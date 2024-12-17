@@ -206,13 +206,28 @@ class Gambling(commands.Cog):
         await ctx.reply(embed=embed)
 
     def _create_game_embed(self, author_name, is_correct, guess, result, bet=None, winnings=None, author_id=None):
-        description = f"- 예측: {guess}\n- 결과: {result}"
+        title = f"{author_name} {'맞음 ㄹㅈㄷ' if is_correct else '틀림ㅋ'}"
+        color = discord.Color.green() if is_correct else discord.Color.red()
+        
+        description_parts = [
+            f"- 예측: {guess}",
+            f"- 결과: {result}"
+        ]
+        
         if bet is not None:
             multiplier = round(winnings / bet, 2) if winnings > 0 else -1
-            description = f"- 예측: {guess}\n- 결과: {result}\n## 수익: {bet}원 × {multiplier} = {winnings}원\n- 재산: {self.balances.get(author_id, 0)}원({'+' if winnings > 0 else ''}{winnings})"
+            balance = self.balances.get(author_id, 0)
+            sign = '+' if winnings > 0 else ''
+            
+            description_parts.extend([
+                f"## 수익: {bet}원 × {multiplier} = {winnings}원",
+                f"- 재산: {balance}원({sign}{winnings})"
+            ])
+            
+        description = "\n".join(description_parts)
             
         return discord.Embed(
-            title=f"{author_name} {'맞음 ㄹㅈㄷ' if is_correct else '틀림ㅋ'}",
+            title=title,
             description=description,
-            color=discord.Color.green() if is_correct else discord.Color.red()
+            color=color
         )
