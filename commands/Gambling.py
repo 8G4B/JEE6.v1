@@ -2,12 +2,38 @@ import discord
 from discord.ext import commands
 import random
 from datetime import datetime
+import json
+import os
+
 class Gambling(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.cooldowns = {}
         self.balances = {}
         self.jackpot = 0
+        self.data_file = 'gambling_data.json'
+        self._load_data()  
+
+    def _load_data(self):
+        try:
+            if os.path.exists(self.data_file):
+                with open(self.data_file, 'r') as f:
+                    data = json.load(f)
+                    self.balances = {int(k): v for k, v in data.get('balances', {}).items()}
+                    self.jackpot = data.get('jackpot', 0)
+        except Exception as e:
+            print(f"데이터 로드 중 오류 발생: {e}")
+
+    def _save_data(self):
+        try:
+            data = {
+                'balances': self.balances,
+                'jackpot': self.jackpot
+            }
+            with open(self.data_file, 'w') as f:
+                json.dump(data, f)
+        except Exception as e:
+            print(f"데이터 저장 중 오류 발생: {e}")
 
     def _validate_bet(self, bet):
         if bet is None or bet < 100:
@@ -47,6 +73,7 @@ class Gambling(commands.Cog):
             self.balances[author_id] = current_balance + winnings
             self.jackpot += abs(winnings)
             
+        self._save_data() 
         return self._create_game_embed(author_name, is_correct, guess, result, bet, winnings, author_id)
 
     @commands.command(name="도박.동전", description="동전 던지기")
@@ -118,6 +145,8 @@ class Gambling(commands.Cog):
                     color=discord.Color.red()
                 )
             
+            self._save_data()  
+            
         await ctx.reply(embed=embed)
 
     @commands.command(name="도박.노동", aliases=['도박.일', '도박.돈'], description="도박.노동")
@@ -141,6 +170,7 @@ class Gambling(commands.Cog):
                 color=discord.Color.green()
             )
             self.cooldowns[ctx.author.id] = current_time
+            self._save_data()  
             
         await ctx.reply(embed=embed)
 
