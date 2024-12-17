@@ -209,7 +209,7 @@ class Gambling(commands.Cog):
         description = f"- 예측: {guess}\n- 결과: {result}"
         if bet is not None:
             multiplier = round(winnings / bet, 2) if winnings > 0 else -1
-            description = f"- 예측: {guess}\n- 결과: {result}\n## 수익: {bet}원 × {multiplier} = {winnings}원\n- 재산: {self.balances.get(author_id, 0)}원"
+            description = f"- 예측: {guess}\n- 결과: {result}\n## 수익: {bet}원 × {multiplier} = {winnings}원\n- 재산: {self.balances.get(author_id, 0)}원(+{winnings})"
             
         return discord.Embed(
             title=f"{author_name} {'맞음 ㄹㅈㄷ' if is_correct else '틀림ㅋ'}",
