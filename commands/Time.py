@@ -11,7 +11,7 @@ class Time(commands.Cog):
         now = datetime.now()
         embed = discord.Embed(
             title=f"{now.strftime('%Y년 %m월 %d일')}\n{now.strftime('%H시 %M분 %S초')}",
-            color=discord.Color.yellow()
+            color=discord.Color.pink()
         )
         await ctx.reply(embed=embed)
         
