@@ -1,5 +1,7 @@
 # JEE6
 
+<img src="https://github.com/user-attachments/assets/d6b5f0cd-9363-40ad-a356-c1449664750b" width="50%"/> <br/>
+
 [JEE6 서버에 초대하기](https://discord.com/oauth2/authorize?client_id=1318114372438196328&permissions=8&integration_type=0&scope=bot)
 
 [개발자 깃허브](https://github.com/976520)
