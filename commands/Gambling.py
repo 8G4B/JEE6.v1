@@ -76,9 +76,26 @@ class Gambling(commands.Cog):
         self._save_data() 
         return self._create_game_embed(author_name, is_correct, guess, result, bet, winnings, author_id)
 
+    def _check_game_cooldown(self, user_id, game_type):
+        current_time = datetime.now()
+        cooldown_key = f"{game_type}_{user_id}"
+        last_used = self.cooldowns.get(cooldown_key)
+        
+        if last_used and (current_time - last_used).total_seconds() < 10:
+            remaining = 10 - int((current_time - last_used).total_seconds())
+            return discord.Embed(
+                title="쿨타임",
+                description=f"{remaining}초 후에 다시 시도해주세요.",
+                color=discord.Color.red()
+            )
+        self.cooldowns[cooldown_key] = current_time
+        return None
+
     @commands.command(name="도박.동전", description="동전 던지기")
     async def coin(self, ctx, guess: str = None, bet: int = None):
-        if error_embed := self._validate_coin_guess(guess):
+        if cooldown_embed := self._check_game_cooldown(ctx.author.id, "coin"):
+            embed = cooldown_embed
+        elif error_embed := self._validate_coin_guess(guess):
             embed = error_embed
         elif error_embed := self._validate_bet(bet):
             embed = error_embed
@@ -95,7 +112,9 @@ class Gambling(commands.Cog):
 
     @commands.command(name="도박.주사위", description="주사위")
     async def dice(self, ctx, guess: str = None, bet: int = None):
-        if error_embed := self._validate_dice_guess(guess):
+        if cooldown_embed := self._check_game_cooldown(ctx.author.id, "dice"):
+            embed = cooldown_embed
+        elif error_embed := self._validate_dice_guess(guess):
             embed = error_embed
         elif error_embed := self._validate_bet(bet):
             embed = error_embed
@@ -112,7 +131,9 @@ class Gambling(commands.Cog):
 
     @commands.command(name="도박.잭팟", description="잭팟")
     async def jackpot(self, ctx, bet: int = None):
-        if bet is None or bet < 1000:
+        if cooldown_embed := self._check_game_cooldown(ctx.author.id, "jackpot"):
+            embed = cooldown_embed
+        elif bet is None or bet < 1000:
             embed = discord.Embed(
                 title="오류",
                 description="1000원 이상 베팅하세요",
