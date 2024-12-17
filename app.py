@@ -10,6 +10,7 @@ from commands.Time import Time
 from commands.Meal import Meal
 from commands.Information import Information
 from commands.Question import Question
+from alarm.Anmauija import Anmauija
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -31,6 +32,7 @@ async def setup():
     await bot.add_cog(Meal(bot))
     await bot.add_cog(Information(bot))
     await bot.add_cog(Question(bot))
+    await bot.add_cog(Anmauija(bot))
 
 @bot.event
 async def on_ready():
