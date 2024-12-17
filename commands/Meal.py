@@ -147,3 +147,69 @@ class Meal(commands.Cog):
             )
             
         await ctx.reply(embed=embed)
+        
+    @commands.command(name='급식.내일아침', aliases=['급식.내일조식'], description='내일 아침 조회')
+    async def tomorrow_breakfast(self, ctx):
+        tomorrow = (datetime.now() + timedelta(days=1)).strftime("%Y%m%d")
+        meal_info = RequestMeal.get_meal_info(tomorrow)
+        
+        if meal_info:
+            breakfast_menu = next((meal["DDISH_NM"] for meal in meal_info if meal["MMEAL_SC_CODE"] == "1"), "급식 정보가 없습니다.")
+            
+            embed = discord.Embed(
+                title="🍳 내일 아침",
+                description=breakfast_menu.replace("<br/>", "\n"),
+                color=discord.Color.orange()
+            )
+        else:
+            embed = discord.Embed(
+                title="🍳 내일 아침",
+                description="급식 정보를 가져올 수 없습니다.",
+                color=discord.Color.red()
+            )
+            
+        await ctx.reply(embed=embed)
+    
+    @commands.command(name='급식.내일점심', aliases=['급식.내일중식'], description='내일 점심 조회')
+    async def tomorrow_lunch(self, ctx):
+        tomorrow = (datetime.now() + timedelta(days=1)).strftime("%Y%m%d")
+        meal_info = RequestMeal.get_meal_info(tomorrow)
+        
+        if meal_info:
+            lunch_menu = next((meal["DDISH_NM"] for meal in meal_info if meal["MMEAL_SC_CODE"] == "2"), "급식 정보가 없습니다.")
+            
+            embed = discord.Embed(
+                title="🍚 내일 점심",
+                description=lunch_menu.replace("<br/>", "\n"),
+                color=discord.Color.orange()
+            )
+        else:
+            embed = discord.Embed(
+                title="🍚 내일 점심",
+                description="급식 정보를 가져올 수 없습니다.",
+                color=discord.Color.red()
+            )
+            
+        await ctx.reply(embed=embed)
+
+    @commands.command(name='급식.내일저녁', aliases=['급식.내일석식'], description='내일 저녁 조회')
+    async def tomorrow_dinner(self, ctx):
+        tomorrow = (datetime.now() + timedelta(days=1)).strftime("%Y%m%d")
+        meal_info = RequestMeal.get_meal_info(tomorrow)
+        
+        if meal_info:
+            dinner_menu = next((meal["DDISH_NM"] for meal in meal_info if meal["MMEAL_SC_CODE"] == "3"), "급식 정보가 없습니다.")
+            
+            embed = discord.Embed(
+                title="🍖 내일 저녁",
+                description=dinner_menu.replace("<br/>", "\n"),
+                color=discord.Color.orange()
+            )
+        else:
+            embed = discord.Embed(
+                title="🍖 내일 저녁",
+                description="급식 정보를 가져올 수 없습니다.",
+                color=discord.Color.red()
+            )
+            
+        await ctx.reply(embed=embed)
