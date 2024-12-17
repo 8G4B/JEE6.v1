@@ -8,7 +8,7 @@ from datetime import datetime, timedelta
 ATPT_OFCDC_SC_CODE = 'F10'
 SD_SCHUL_CODE = '7380292'
 
-NO_MEAL = "NO_MEAL"
+NO_MEAL = "급식이 없습니다."
 
 class RequestMeal:
     params = {
