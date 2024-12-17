@@ -17,7 +17,7 @@ intents = discord.Intents.default()
 intents.message_content = True
 intents.members = False
 
-bot = commands.Bot(command_prefix="!", intents=intents)    
+bot = commands.Bot(command_prefix="/", intents=intents)    
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger('discord')
