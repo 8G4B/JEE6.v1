@@ -28,7 +28,7 @@ class Greeting(commands.Cog):
             title=title,
             color=discord.Color.purple()
         )
-        await ctx.reply(f"<@aiden300_> {embed}")
+        await ctx.reply(embed=embed)
         
     @commands.command(name="앙", aliases=['한남'], description="앙")
     async def greet(self, ctx):
@@ -37,4 +37,5 @@ class Greeting(commands.Cog):
             title=title,
             color=discord.Color.pink()
         )
-        await ctx.reply(f"<@tmddlf> {embed}")
+        await ctx.reply(embed=embed)
+    
