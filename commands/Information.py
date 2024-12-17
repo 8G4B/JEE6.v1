@@ -9,7 +9,7 @@ class Information(commands.Cog):
     async def information(self, ctx):
         embed = discord.Embed(
             title="JEE6",
-            description = "- 명령어: https://github.com/8G4B/JEE6.v1/blob/master/README.md\n- 소스코드: https://github.com/8G4B/JEE6.v1\n - 만든놈: https://github.com/976520",
+            description = "- [명령어](https://github.com/8G4B/JEE6.v1/blob/master/README.md)\n- [소스코드](https://github.com/8G4B/JEE6.v1)\n - [만든놈](https://github.com/976520)",
             color=discord.Color.yellow()
         )
         await ctx.reply(embed=embed)
