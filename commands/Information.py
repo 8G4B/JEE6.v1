@@ -5,7 +5,7 @@ class Information(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @commands.command(name="정보", aliases=['정보'], description="정보")
+    @commands.command(name="정보", aliases=['도움'], description="정보")
     async def information(self, ctx):
         embed = discord.Embed(
             title="JEE6",
