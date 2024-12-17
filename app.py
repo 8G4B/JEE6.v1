@@ -2,13 +2,14 @@ import discord
 from discord.ext import commands
 from discord_token import TOKEN
 import asyncio
+import logging
+
 from commands.Greeting import Greeting
 from commands.Gambling import Gambling
 from commands.Time import Time
 from commands.Meal import Meal
 from commands.Information import Information
 from commands.Question import Question
-import logging
 
 intents = discord.Intents.default()
 intents.message_content = True
