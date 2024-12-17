@@ -10,10 +10,10 @@ class Gambling(commands.Cog):
         self.jackpot = 0
 
     def _validate_bet(self, bet):
-        if bet is None or bet <= 0:
+        if bet is None or bet < 100:
             return discord.Embed(
                 title="오류",
-                description="돈 제대로 입력해라...",
+                description="100원 이상 베팅해라...",
                 color=discord.Color.red()
             )
         return None
@@ -93,6 +93,7 @@ class Gambling(commands.Cog):
                 description="돈이 부족해...",
                 color=discord.Color.red()
             )
+        
         else:
             current_balance = self.balances.get(ctx.author.id, 0)
             self.balances[ctx.author.id] = current_balance - bet
