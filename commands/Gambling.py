@@ -81,8 +81,8 @@ class Gambling(commands.Cog):
         cooldown_key = f"{game_type}_{user_id}"
         last_used = self.cooldowns.get(cooldown_key)
         
-        if last_used and (current_time - last_used).total_seconds() < 10:
-            remaining = 10 - int((current_time - last_used).total_seconds())
+        if last_used and (current_time - last_used).total_seconds() < 5:
+            remaining = 5 - int((current_time - last_used).total_seconds())
             return discord.Embed(
                 title="쿨타임",
                 description=f"{remaining}초 후에 다시 시도해주세요.",
