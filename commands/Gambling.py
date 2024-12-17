@@ -38,14 +38,14 @@ class Gambling(commands.Cog):
 
     def _play_game(self, author_id, author_name, guess, result, bet, multiplier):
         is_correct = guess == result
-        winnings = int(bet * multiplier) if is_correct else 0
+        winnings = int(bet * multiplier) if is_correct else -bet
         
         current_balance = self.balances.get(author_id, 0)
         if is_correct:
             self.balances[author_id] = current_balance + winnings
         else:
-            self.balances[author_id] = current_balance - bet
-            self.jackpot += bet
+            self.balances[author_id] = current_balance + winnings
+            self.jackpot += abs(winnings)
             
         return self._create_game_embed(author_name, is_correct, guess, result, bet, winnings, author_id)
 
@@ -116,7 +116,7 @@ class Gambling(commands.Cog):
             
         await ctx.reply(embed=embed)
 
-    @commands.command(name="도박.노동", description="도박.노동")
+    @commands.command(name="도박.노동", aliases=['도박.일', '도박.돈'], description="도박.노동")
     async def get_money(self, ctx):
         current_time = datetime.now()
         last_used = self.cooldowns.get(ctx.author.id)
@@ -140,7 +140,7 @@ class Gambling(commands.Cog):
             
         await ctx.reply(embed=embed)
 
-    @commands.command(name="도박.지갑", description="잔액 확인")
+    @commands.command(name="도박.지갑", aliases=['도박.잔액', '도박.직바'], description="잔액 확인")
     async def check_balance(self, ctx):
         balance = self.balances.get(ctx.author.id, 0)
         embed = discord.Embed(
@@ -153,8 +153,7 @@ class Gambling(commands.Cog):
     def _create_game_embed(self, author_name, is_correct, guess, result, bet=None, winnings=None, author_id=None):
         description = f"- 예측: {guess}\n- 결과: {result}"
         if bet is not None:
-            diff = winnings - bet
-            multiplier = round(winnings / bet, 2) if diff > 0 else 0  
+            multiplier = round(winnings / bet, 2) if winnings > 0 else -1
             description = f"- 예측: {guess}\n- 결과: {result}\n## 수익: {bet}원 × {multiplier} = {winnings}원\n- 재산: {self.balances.get(author_id, 0)}원"
             
         return discord.Embed(
