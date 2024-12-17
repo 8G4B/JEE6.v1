@@ -10,7 +10,7 @@ class Time(commands.Cog):
     async def time(self, ctx):
         now = datetime.now()
         embed = discord.Embed(
-            title=f"{now.strftime('%Y년 %m월 %d일')}\n{now.strftime('%H시 %M분 %S초')}",
+            title=f"🗓️ {now.strftime('%Y년 %m월 %d일')}\n⌚️ {now.strftime('%H시 %M분 %S초')}",
             color=discord.Color.pink()
         )
         await ctx.reply(embed=embed)

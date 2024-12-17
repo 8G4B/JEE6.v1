@@ -17,15 +17,15 @@ class Greeting(commands.Cog):
             
         embed = discord.Embed(
             title=title,
-            color=discord.Color.red() if title != "👋 안녕!" else discord.Color.purple()
+            color=discord.Color.red() if title != "👋 안녕!" else discord.Color.pink()
         )
         await ctx.reply(embed=embed)
         
     @commands.command(name="이주언", aliases=['주언'], description="이주언")
     async def greet_juwon(self, ctx):
         embed = discord.Embed(
-            title="병신",
-            color=discord.Color.purple()
+            title="🖕 병신",
+            color=discord.Color.pink()
         )
         await ctx.reply(embed=embed)
         

@@ -12,7 +12,7 @@ class Question(commands.Cog):
     async def question(self, ctx, *, question=None):
         if question is None:
             embed = discord.Embed(
-                title="오류",
+                title="❗ 오류",
                 description="!질문 [질문할 내용] <-- 이렇게 써",
                 color=discord.Color.red()
             )
@@ -39,8 +39,8 @@ class Question(commands.Cog):
             
         except Exception as e:
             embed = discord.Embed(
-                title="오류 발생",
-                description="GPT API 이슈",
+                title="❗ 오류",
+                description="GPT API",
                 color=discord.Color.red()
             )
             

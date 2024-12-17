@@ -22,7 +22,7 @@ class Gambling(commands.Cog):
                     self.balances = {int(k): v for k, v in data.get('balances', {}).items()}
                     self.jackpot = data.get('jackpot', 0)
         except Exception as e:
-            print(f"데이터 로드 중 오류 발생: {e}")
+            print(f"_load_data: {e}")
 
     def _save_data(self):
         try:
@@ -33,12 +33,12 @@ class Gambling(commands.Cog):
             with open(self.data_file, 'w') as f:
                 json.dump(data, f)
         except Exception as e:
-            print(f"데이터 저장 중 오류 발생: {e}")
+            print(f"_save_data: {e}")
 
     def _validate_bet(self, bet):
         if bet is None or bet < 100:
             return discord.Embed(
-                title="오류",
+                title="❗ 오류",
                 description="100원 이상 베팅하세요",
                 color=discord.Color.red()
             )
@@ -47,7 +47,7 @@ class Gambling(commands.Cog):
     def _validate_coin_guess(self, guess):
         if guess not in ["앞", "뒤"]:
             return discord.Embed(
-                title="오류", 
+                title="❗ 오류", 
                 description="**'앞'**이랑 **'뒤'**만 입력해라...",
                 color=discord.Color.red()
             )
@@ -56,7 +56,7 @@ class Gambling(commands.Cog):
     def _validate_dice_guess(self, guess):
         if guess not in [str(i) for i in range(1, 7)]:
             return discord.Embed(
-                title="오류",
+                title="❗ 오류",
                 description="**1부터 6까지 숫자**만 입력해라...",
                 color=discord.Color.red()
             )
@@ -84,7 +84,7 @@ class Gambling(commands.Cog):
         if last_used and (current_time - last_used).total_seconds() < 5:
             remaining = 5 - int((current_time - last_used).total_seconds())
             return discord.Embed(
-                title="쿨타임",
+                title="⏳️ 쿨타임",
                 description=f"{remaining}초 후에 다시 시도해주세요.",
                 color=discord.Color.red()
             )
@@ -101,7 +101,7 @@ class Gambling(commands.Cog):
             embed = error_embed
         elif bet > self.balances.get(ctx.author.id, 0):
             embed = discord.Embed(
-                title="오류",
+                title="❗ 오류",
                 description="돈이 부족해...",
                 color=discord.Color.red()
             )
@@ -120,7 +120,7 @@ class Gambling(commands.Cog):
             embed = error_embed
         elif bet > self.balances.get(ctx.author.id, 0):
             embed = discord.Embed(
-                title="오류",
+                title="❗ 오류",
                 description="돈이 부족해...",
                 color=discord.Color.red()
             )
@@ -135,13 +135,13 @@ class Gambling(commands.Cog):
             embed = cooldown_embed
         elif bet is None or bet < 1000:
             embed = discord.Embed(
-                title="오류",
+                title="❗ 오류",
                 description="1000원 이상 베팅하세요",
                 color=discord.Color.red()
             )
         elif bet > self.balances.get(ctx.author.id, 0):
             embed = discord.Embed(
-                title="오류",
+                title="❗ 오류",
                 description="돈이 부족해...",
                 color=discord.Color.red()
             )
@@ -186,7 +186,7 @@ class Gambling(commands.Cog):
             amount = random.randint(50, 1000)
             self.balances[ctx.author.id] = self.balances.get(ctx.author.id, 0) + amount
             embed = discord.Embed(
-                title=f"{ctx.author.name}",
+                title=f"☭ {ctx.author.name} 노동",
                 description=f"정당한 노동을 통해 {amount}원을 벌었다. \n- 재산: {self.balances.get(ctx.author.id, 0)}원(+{amount})",
                 color=discord.Color.green()
             )
@@ -199,7 +199,7 @@ class Gambling(commands.Cog):
     async def check_balance(self, ctx):
         balance = self.balances.get(ctx.author.id, 0)
         embed = discord.Embed(
-            title=f"{ctx.author.name}의 지갑",
+            title=f"💰 {ctx.author.name}의 지갑",
             description=f"현재 잔액: {balance}원",
             color=discord.Color.blue()
         )
