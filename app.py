@@ -6,6 +6,7 @@ from commands.Greeting import Greeting
 from commands.Gambling import Gambling
 from commands.Time import Time
 from commands.Meal import Meal
+from commands.Information import Information
 import logging
 
 intents = discord.Intents.default()
@@ -26,6 +27,7 @@ async def setup():
     await bot.add_cog(Gambling(bot))
     await bot.add_cog(Time(bot))
     await bot.add_cog(Meal(bot))
+    await bot.add_cog(Information(bot))
 
 @bot.event
 async def on_ready():
