@@ -41,3 +41,36 @@
    - `!정보` 를 통해 JEE6의 정보를 확인할 수 있어요.
 
    - `!질문 [내용]` 을 통해 질문을 할 수 있어요.
+
+## 실행
+
+1. 패키지 설치
+
+   `requirements.txt` 파일을 통해 패키지를 설치해주세요.
+
+   ```shell
+   pip install -r requirements.txt
+   ```
+
+   설치되는 패키지는 다음과 같아요.
+
+   - python-dotenv
+   - discord.py
+   - requests
+   - openai
+
+2. 환경변수 설정
+
+   `.env` 파일을 만들어서 환경변수를 설정해주세요. 이 파일은 보안상의 이유로 `.gitignore`에 포함되어 있어서 github에 올라가지 않아요.
+
+   ```shell
+   echo "DISCORD_TOKEN=[여기에 토큰 입력]" >> .env
+   echo "MEAL_API_KEY=[여기에 키 입력]" >> .env
+   echo "GPT_API_KEY=[여기에 키 입력]" >> .env
+   ```
+
+3. 실행
+
+   `app.py` 파일을 실행해주세요.
+
+---
