@@ -29,4 +29,13 @@ class Greeting(commands.Cog):
             color=discord.Color.purple()
         )
         await ctx.reply(embed=embed)
+        
+    @commands.command(name="앙", aliases=['한남'], description="앙")
+    async def greet(self, ctx):
+        title = "승일"
+        embed = discord.Embed(
+            title=title,
+            color=discord.Color.pink()
+        )
+        await ctx.reply(embed=embed)
     
