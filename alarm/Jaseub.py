@@ -15,7 +15,7 @@ class Jaseub(commands.Cog):
         for guild in self.bot.guilds:
             for channel in guild.text_channels:
                 try:
-                    await channel.send("@everyone 자습 신청 1분 전\n [DOTORI 바로가기](https://www.dotori-gsm.com/home)")
+                    await channel.send("@haensol 자습 신청 1분 전\n [DOTORI 바로가기](https://www.dotori-gsm.com/home)")
                     break 
                 except discord.Forbidden:
                     continue  
