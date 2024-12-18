@@ -164,7 +164,7 @@ class Gambling(commands.Cog):
         if bet is None or bet < 1000:
             embed = discord.Embed(
                 title="❗ 오류",
-                description="1000원 이상 베팅하세요",
+                description="1,000원 이상 베팅하세요",
                 color=discord.Color.red()
             )
             await ctx.reply(embed=embed)
@@ -186,7 +186,7 @@ class Gambling(commands.Cog):
             if bet < min_bet:
                 embed = discord.Embed(
                     title="❗ 오류",
-                    description=f"현재 재산의 1% 이상 베팅하세요. (최소 {min_bet}원)",
+                    description=f"현재 재산의 1% 이상 베팅하세요. (최소 {min_bet:,}원)",
                     color=discord.Color.red()
                 )
                 await ctx.reply(embed=embed)
@@ -202,13 +202,13 @@ class Gambling(commands.Cog):
                 self.cooldowns[f"jackpot_win_{ctx.author.id}"] = datetime.now()
                 embed = discord.Embed(
                     title=f"🎉 {ctx.author.name} 당첨",
-                    description=f"축하합니다!\n## 수익: {winnings}원\n- 재산: {self.balances[ctx.author.id]}원(+{winnings})",
+                    description=f"축하합니다!\n## 수익: {winnings:,}원\n- 재산: {self.balances[ctx.author.id]:,}원(+{winnings:,})",
                     color=discord.Color.gold()
                 )
             else:
                 embed = discord.Embed(
                     title=f"🎰 {ctx.author.name} 잭팟 실패ㅋ",
-                    description=f"\n- 현재 잭팟: {self.jackpot}원 \n## 수익: -{bet}원\n- 재산: {self.balances[ctx.author.id]}원",
+                    description=f"\n- 현재 잭팟: {self.jackpot:,}원 \n## 수익: -{bet:,}원\n- 재산: {self.balances[ctx.author.id]:,}원",
                     color=discord.Color.red()
                 )
             
@@ -233,7 +233,7 @@ class Gambling(commands.Cog):
                 self.balances[ctx.author.id] = self.balances.get(ctx.author.id, 0) + amount
                 embed = discord.Embed(
                     title=f"☭ {ctx.author.name} 노동",
-                    description=f"정당한 노동을 통해 {amount}원을 벌었다. \n- 재산: {self.balances.get(ctx.author.id, 0)}원(+{amount})",
+                    description=f"정당한 노동을 통해 {amount:,}원을 벌었다. \n- 재산: {self.balances.get(ctx.author.id, 0):,}원(+{amount:,})",
                     color=discord.Color.green()
                 )
                 self.cooldowns[ctx.author.id] = current_time
@@ -247,7 +247,7 @@ class Gambling(commands.Cog):
             balance = self.balances.get(ctx.author.id, 0)
             embed = discord.Embed(
                 title=f"💰 {ctx.author.name}의 지갑",
-                description=f"현재 잔액: {balance}원",
+                description=f"현재 잔액: {balance:,}원",
                 color=discord.Color.blue()
             )
             await ctx.reply(embed=embed)
@@ -261,7 +261,7 @@ class Gambling(commands.Cog):
             description_lines = []
             for i, (user_id, balance) in enumerate(top_3):
                 user = await self.bot.fetch_user(user_id)
-                description_lines.append(f"{i+1}. {user.name}: {balance}원")
+                description_lines.append(f"{i+1}. {user.name}: {balance:,}원")
             
             description = "\n".join(description_lines)
             
@@ -280,7 +280,7 @@ class Gambling(commands.Cog):
             description_lines = []
             for i, (user_id, balance) in enumerate(sorted_balances):
                 user = await self.bot.fetch_user(user_id)
-                description_lines.append(f"{i+1}. {user.name}: {balance}원")
+                description_lines.append(f"{i+1}. {user.name}: {balance:,}원")
                 
             description = "\n".join(description_lines)
 
@@ -305,7 +305,7 @@ class Gambling(commands.Cog):
         if amount <= 1000:
             embed = discord.Embed(
                 title="❗ 오류",
-                description="1000원 이하는 송금할 수 없습니다.",
+                description="1,000원 이하는 송금할 수 없습니다.",
                 color=discord.Color.red()
             )
             await ctx.reply(embed=embed)
@@ -328,7 +328,7 @@ class Gambling(commands.Cog):
             
             embed = discord.Embed(
                 title="💸 송금 완료",
-                description=f"{ctx.author.name} → {recipient.name}\n## {amount}원 송금\n- 잔액: {self.balances[ctx.author.id]}원",
+                description=f"{ctx.author.name} → {recipient.name}\n## {amount:,}원 송금\n- 잔액: {self.balances[ctx.author.id]:,}원",
                 color=discord.Color.green()
             )
             
@@ -350,8 +350,8 @@ class Gambling(commands.Cog):
             sign = '+' if winnings > 0 else ''
             
             description_parts.extend([
-                f"## 수익: {bet}원 × {multiplier} = {winnings}원",
-                f"- 재산: {balance}원({sign}{winnings})"
+                f"## 수익: {bet:,}원 × {multiplier} = {winnings:,}원",
+                f"- 재산: {balance:,}원({sign}{winnings:,})"
             ])
             
         description = "\n".join(description_parts)
