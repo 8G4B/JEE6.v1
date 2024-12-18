@@ -102,13 +102,18 @@ class Gambling(commands.Cog):
         cooldown_key = f"{game_type}_{user_id}"
         last_used = self.cooldowns.get(cooldown_key)
         
-        if last_used and (current_time - last_used).total_seconds() < 5:
-            remaining = 5 - int((current_time - last_used).total_seconds())
-            return discord.Embed(
-                title="⏳️ 쿨타임",
-                description=f"{remaining}초 후에 다시 시도해주세요.",
-                color=discord.Color.red()
-            )
+        if last_used:
+            cooldown_time = 1800 if game_type == "jackpot_win" else 5
+            if (current_time - last_used).total_seconds() < cooldown_time:
+                remaining = cooldown_time - int((current_time - last_used).total_seconds())
+                minutes = remaining // 60
+                seconds = remaining % 60
+                time_str = f"{minutes}분 {seconds}초" if minutes > 0 else f"{seconds}초"
+                return discord.Embed(
+                    title="⏳️ 쿨타임",
+                    description=f"{time_str} 후에 다시 시도해주세요.",
+                    color=discord.Color.red()
+                )
         self.cooldowns[cooldown_key] = current_time
         return None
 
@@ -167,10 +172,21 @@ class Gambling(commands.Cog):
             
         with self._get_lock(ctx.author.id):
             current_balance = self.balances.get(ctx.author.id, 0)
+            min_bet = current_balance // 100  # 재산의 1프로
+            
             if bet > current_balance:
                 embed = discord.Embed(
                     title="❗ 오류",
                     description="돈이 부족해...",
+                    color=discord.Color.red()
+                )
+                await ctx.reply(embed=embed)
+                return
+                
+            if bet < min_bet:
+                embed = discord.Embed(
+                    title="❗ 오류",
+                    description=f"현재 재산의 1% 이상 베팅하세요. (최소 {min_bet}원)",
                     color=discord.Color.red()
                 )
                 await ctx.reply(embed=embed)
@@ -183,6 +199,7 @@ class Gambling(commands.Cog):
                 winnings = self.jackpot // 10
                 self.balances[ctx.author.id] = current_balance - bet + winnings
                 self.jackpot -= winnings
+                self.cooldowns[f"jackpot_win_{ctx.author.id}"] = datetime.now()
                 embed = discord.Embed(
                     title=f"🎉 {ctx.author.name} 당첨",
                     description=f"축하합니다!\n## 수익: {winnings}원\n- 재산: {self.balances[ctx.author.id]}원(+{winnings})",
