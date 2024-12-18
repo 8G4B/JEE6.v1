@@ -13,5 +13,4 @@ class Time(commands.Cog):
             title=f"🗓️ {now.strftime('%Y년 %m월 %d일')}\n⌚️ {now.strftime('%H시 %M분 %S초')}",
             color=discord.Color.pink()
         )
-        await ctx.reply(embed=embed)
-        
+        await ctx.reply(embed=embed)        
