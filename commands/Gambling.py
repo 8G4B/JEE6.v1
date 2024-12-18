@@ -7,6 +7,7 @@ import os
 import secrets
 import random
 import threading
+import asyncio
 
 class Gambling(commands.Cog):
     def __init__(self, bot):
@@ -17,7 +18,22 @@ class Gambling(commands.Cog):
         self.data_file = 'gambling_data.json'
         self.locks = {}
         self.global_lock = threading.RLock()
-        self._load_data()  
+        self._load_data()
+        self.bot.loop.create_task(self._reset_jackpot_daily())
+
+    async def _reset_jackpot_daily(self):
+        while True:
+            now = datetime.now()
+            next_reset = now.replace(hour=20, minute=0, second=0, microsecond=0)
+            if now >= next_reset:
+                next_reset = next_reset.replace(day=now.day + 1)
+            
+            wait_seconds = (next_reset - now).total_seconds()
+            await asyncio.sleep(wait_seconds)
+            
+            with self.global_lock:
+                self.jackpot = 0
+                self._save_data()
 
     def _get_lock(self, user_id):
         if user_id not in self.locks:
