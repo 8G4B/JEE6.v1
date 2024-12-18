@@ -128,7 +128,7 @@ class Gambling(commands.Cog):
             )
         else:
             result = secrets.choice([str(i) for i in range(1, 7)])
-            embed = self._play_game(ctx.author.id, ctx.author.name, guess, result, bet, secrets.uniform(5.5, 6.5))
+            embed = self._play_game(ctx.author.id, ctx.author.name, guess, result, bet, random.uniform(5.5, 6.5))
         await ctx.reply(embed=embed)
 
     @commands.command(name="도박.잭팟", description="잭팟")
@@ -185,7 +185,7 @@ class Gambling(commands.Cog):
                 color=discord.Color.red()
             )
         else:
-            amount = secrets.randint(100, 2000)
+            amount = random.randint(100, 2000)
             self.balances[ctx.author.id] = self.balances.get(ctx.author.id, 0) + amount
             embed = discord.Embed(
                 title=f"☭ {ctx.author.name} 노동",
