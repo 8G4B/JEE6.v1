@@ -104,6 +104,12 @@ class Gambling(commands.Cog):
                 description="100원 이상 베팅하세요",
                 color=discord.Color.red()
             )
+        if bet >= 100000000000000:  # 100조원
+            return discord.Embed(
+                title="❗ 오류",
+                description="100조원 이상 베팅할 수 없습니다",
+                color=discord.Color.red()
+            )
         return None
 
     def _validate_coin_guess(self, guess):
@@ -228,6 +234,15 @@ class Gambling(commands.Cog):
             embed = discord.Embed(
                 title="❗ 오류",
                 description="1,000원 이상 베팅하세요",
+                color=discord.Color.red()
+            )
+            await ctx.reply(embed=embed)
+            return
+            
+        if bet >= 100000000000000:  
+            embed = discord.Embed(
+                title="❗ 오류",
+                description="100조원 이상 베팅할 수 없습니다",
                 color=discord.Color.red()
             )
             await ctx.reply(embed=embed)
@@ -371,6 +386,15 @@ class Gambling(commands.Cog):
             embed = discord.Embed(
                 title="❗ 오류",
                 description="1,000원 이하는 송금할 수 없습니다.",
+                color=discord.Color.red()
+            )
+            await ctx.reply(embed=embed)
+            return
+            
+        if amount >= 100000000000000:  
+            embed = discord.Embed(
+                title="❗ 오류",
+                description="100조원 이상 송금할 수 없습니다",
                 color=discord.Color.red()
             )
             await ctx.reply(embed=embed)
