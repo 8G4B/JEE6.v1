@@ -1,5 +1,5 @@
 import discord
-from discord.ext import commands
+from discord.ext import commands, tasks
 
 from datetime import datetime
 import json
@@ -20,7 +20,7 @@ class Gambling(commands.Cog):
         self.global_lock = threading.RLock()
         self._load_data()
         
-        asyncio.create_task(self._reset_jackpot_daily())
+        self.reset_jackpot.start()
 
     def _calculate_tax(self, income):
         if income <= 0:
@@ -57,19 +57,11 @@ class Gambling(commands.Cog):
                 return int(amount * rate)
         return 0
 
-    async def _reset_jackpot_daily(self):
-        while True:
-            now = datetime.now()
-            next_reset = now.replace(hour=22, minute=35, second=0, microsecond=0)
-            if now >= next_reset:
-                next_reset = next_reset.replace(day=now.day + 1)
-            
-            wait_seconds = (next_reset - now).total_seconds()
-            await asyncio.sleep(wait_seconds)
-            
-            with self.global_lock:
-                self.jackpot = 1000000 
-                self._save_data()
+    @tasks.loop(time=datetime.time(hour=23, minute=18))
+    async def reset_jackpot(self):
+        with self.global_lock:
+            self.jackpot = 1000000
+            self._save_data()
 
     def _get_lock(self, user_id):
         if user_id not in self.locks:
