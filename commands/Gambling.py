@@ -198,7 +198,7 @@ class Gambling(commands.Cog):
             if secrets.randbelow(100) <= 1:
                 winnings = self.jackpot // 10
                 self.balances[ctx.author.id] = current_balance - bet + winnings
-                self.jackpot -= winnings
+                self.jackpot = self.jackpot - winnings  
                 self.cooldowns[f"jackpot_win_{ctx.author.id}"] = datetime.now()
                 embed = discord.Embed(
                     title=f"🎉 {ctx.author.name} 당첨",
