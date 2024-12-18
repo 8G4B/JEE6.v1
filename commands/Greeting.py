@@ -1,6 +1,6 @@
 import discord
 from discord.ext import commands
-import random
+import secrets
     
 class Greeting(commands.Cog):
     def __init__(self, bot):
@@ -10,7 +10,7 @@ class Greeting(commands.Cog):
     async def greet(self, ctx):
         if ctx.author.name in ["aiden300.", "aiden300_"]:
             title = "🖕 야 이주언 싸려"
-        elif random.random() <= 0.01:
+        elif secrets.randbelow(100) <= 1:
             title = "🖕 야 싸려"
         else:
             title = "👋 안녕!"
