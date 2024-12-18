@@ -9,6 +9,46 @@ import random
 import threading
 
 class Gambling(commands.Cog):
+    MIN_BET = 100
+    MIN_JACKPOT_BET = 1000
+    MAX_BET = 100_000_000_000_000 
+    INITIAL_JACKPOT = 1_000_000
+    
+    JACKPOT_WIN_COOLDOWN = 1800  
+    GAME_COOLDOWN = 5
+    WORK_COOLDOWN = 60
+    
+    INCOME_TAX_BRACKETS = [ # 종합소득세
+        (1000000000000000, 0.45),  
+        (500000000000000, 0.42),   
+        (300000000000000, 0.40),   
+        (150000000000000, 0.38),   
+        (88000000000000, 0.35),    
+        (50000000000000, 0.24),    
+        (14000000000000, 0.15),    
+        (5000000000000, 0.06),
+        (0, 0)                  
+    ]
+    
+    TRANSFER_TAX_BRACKETS = [ # 증여세
+        (30000000000000, 0.15),  
+        (10000000000000, 0.125), 
+        (5000000000000, 0.10),   
+        (1000000000000, 0.075), 
+        (0, 0.05)                
+    ]
+    
+    COIN_MULTIPLIER_RANGE = (0.6, 1.7)
+    DICE_MULTIPLIER_RANGE = (4.6, 5.7)
+    
+    WORK_REWARD_RANGE = (100, 2000)
+    
+    JACKPOT_RESET_TIMES = [
+        (7, 30),
+        (12, 30),
+        (18, 30)
+    ]
+    
     def __init__(self, bot):
         self.bot = bot
         self.cooldowns = {}
@@ -25,33 +65,13 @@ class Gambling(commands.Cog):
         if income <= 0:
             return 0
             
-        tax_brackets = [ ## 종합소득세
-            (1000000000000000, 0.45),  
-            (500000000000000, 0.42),   
-            (300000000000000, 0.40),   
-            (150000000000000, 0.38),   
-            (88000000000000, 0.35),    
-            (50000000000000, 0.24),    
-            (14000000000000, 0.15),    
-            (5000000000000, 0.06),
-            (0, 0)                  
-        ]
-        
-        for threshold, rate in tax_brackets:
+        for threshold, rate in self.INCOME_TAX_BRACKETS:
             if income > threshold:
                 return int(income * rate)
         return 0
 
     def _calculate_transfer_tax(self, amount):
-        tax_brackets = [ ## 증여세
-            (30000000000000, 0.15),  
-            (10000000000000, 0.125), 
-            (5000000000000, 0.10),   
-            (1000000000000, 0.075), 
-            (0, 0.05)                
-        ]
-        
-        for threshold, rate in tax_brackets:
+        for threshold, rate in self.TRANSFER_TAX_BRACKETS:
             if amount > threshold:
                 return int(amount * rate)
         return 0
@@ -59,18 +79,15 @@ class Gambling(commands.Cog):
     @tasks.loop(seconds=1)
     async def reset_jackpot(self):
         now = datetime.now()
-        if (
-            (now.hour == 7 and now.minute == 30) or
-            (now.hour == 12 and now.minute == 30) or 
-            (now.hour == 18 and now.minute == 30)
-        ):
-            self.jackpot = 1000000
-            self._save_data()
-            return discord.Embed(
-                title="🎰 잭팟 리셋",
-                description="잭팟이 100만원으로 리셋되었습니다.",
-                color=discord.Color.green()
-            )
+        for hour, minute in self.JACKPOT_RESET_TIMES:
+            if now.hour == hour and now.minute == minute:
+                self.jackpot = self.INITIAL_JACKPOT
+                self._save_data()
+                return discord.Embed(
+                    title="🎰 잭팟 리셋",
+                    description="잭팟이 100만원으로 리셋되었습니다.",
+                    color=discord.Color.green()
+                )
 
     def _get_lock(self, user_id):
         if user_id not in self.locks:
@@ -102,13 +119,13 @@ class Gambling(commands.Cog):
         if isinstance(bet, str) and bet == "올인" and user_id is not None:
             bet = self.balances.get(user_id, 0)
             
-        if bet is None or bet < 100:
+        if (bet is None) or (bet < self.MIN_BET):
             return discord.Embed(
                 title="❗ 오류",
                 description="100원 이상 베팅하세요",
                 color=discord.Color.red()
             )
-        if bet >= 100000000000000:  # 100조원
+        if bet >= self.MAX_BET:
             return discord.Embed(
                 title="❗ 오류",
                 description="100조원 이상 베팅할 수 없습니다",
@@ -144,8 +161,12 @@ class Gambling(commands.Cog):
             )
         
         try:
-            is_correct = guess == result
-            winnings = int(bet * multiplier) if is_correct else -bet
+            is_correct = (guess == result)
+            if is_correct:
+                winnings = int(bet * multiplier)
+            else:
+                winnings = -bet
+            
             
             if is_correct:
                 tax_rate = self._calculate_tax(winnings) / winnings if winnings > 0 else 0
@@ -170,7 +191,7 @@ class Gambling(commands.Cog):
         last_used = self.cooldowns.get(cooldown_key)
         
         if last_used:
-            cooldown_time = 1800 if game_type == "jackpot_win" else 5
+            cooldown_time = self.JACKPOT_WIN_COOLDOWN if game_type == "jackpot_win" else self.GAME_COOLDOWN
             if (current_time - last_used).total_seconds() < cooldown_time:
                 remaining = cooldown_time - int((current_time - last_used).total_seconds())
                 minutes = remaining // 60
@@ -211,7 +232,7 @@ class Gambling(commands.Cog):
                 )
             else:
                 result = secrets.choice(["앞", "뒤"])
-                embed = self._play_game(ctx.author.id, ctx.author.name, guess, result, bet, random.uniform(0.6, 1.7), "coin")
+                embed = self._play_game(ctx.author.id, ctx.author.name, guess, result, bet, random.uniform(*self.COIN_MULTIPLIER_RANGE), "coin")
         await ctx.reply(embed=embed)
 
     @commands.command(name="도박.주사위", description="주사위")
@@ -239,7 +260,7 @@ class Gambling(commands.Cog):
                 )
             else:
                 result = secrets.choice([str(i) for i in range(1, 7)])
-                embed = self._play_game(ctx.author.id, ctx.author.name, guess, result, bet, random.uniform(4.6, 5.7), "dice")
+                embed = self._play_game(ctx.author.id, ctx.author.name, guess, result, bet, random.uniform(*self.DICE_MULTIPLIER_RANGE), "dice")
         await ctx.reply(embed=embed)
 
     @commands.command(name="도박.잭팟", description="잭팟")
@@ -260,7 +281,7 @@ class Gambling(commands.Cog):
             except ValueError:
                 bet = None
             
-        if bet is None or bet < 1000:
+        if bet is None or bet < self.MIN_JACKPOT_BET:
             embed = discord.Embed(
                 title="❗ 오류",
                 description="1,000원 이상 베팅하세요",
@@ -269,7 +290,7 @@ class Gambling(commands.Cog):
             await ctx.reply(embed=embed)
             return
             
-        if bet >= 100000000000000:  
+        if bet >= self.MAX_BET:  
             embed = discord.Embed(
                 title="❗ 오류",
                 description="100조원 이상 베팅할 수 없습니다",
@@ -331,15 +352,15 @@ class Gambling(commands.Cog):
             current_time = datetime.now()
             last_used = self.cooldowns.get(ctx.author.id)
             
-            if last_used and (current_time - last_used).total_seconds() < 60:
-                remaining = 60 - int((current_time - last_used).total_seconds())
+            if last_used and (current_time - last_used).total_seconds() < self.WORK_COOLDOWN:
+                remaining = self.WORK_COOLDOWN - int((current_time - last_used).total_seconds())
                 embed = discord.Embed(
                     title="힘들어서 쉬는 중 ㅋ",
                     description=f"{remaining}초 후에 다시 시도해주세요.",
                     color=discord.Color.red()
                 )
             else:
-                amount = random.randint(100, 2000)
+                amount = random.randint(*self.WORK_REWARD_RANGE)
                 self.balances[ctx.author.id] = self.balances.get(ctx.author.id, 0) + amount
                 embed = discord.Embed(
                     title=f"☭ {ctx.author.name} 노동",
@@ -426,7 +447,7 @@ class Gambling(commands.Cog):
                 await ctx.reply(embed=embed)
                 return
 
-        if amount <= 1000:
+        if amount <= self.MIN_JACKPOT_BET:
             embed = discord.Embed(
                 title="❗ 오류",
                 description="1,000원 이하는 송금할 수 없습니다.",
@@ -435,7 +456,7 @@ class Gambling(commands.Cog):
             await ctx.reply(embed=embed)
             return
             
-        if amount >= 100000000000000:  
+        if amount >= self.MAX_BET:  
             embed = discord.Embed(
                 title="❗ 오류",
                 description="100조원 이상 송금할 수 없습니다",
