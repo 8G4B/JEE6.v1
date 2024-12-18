@@ -56,12 +56,12 @@ class Gambling(commands.Cog):
             if amount > threshold:
                 return int(amount * rate)
         return 0
-
-    @tasks.loop(time=datetime.time(hour=23, minute=18))
+    
+    @tasks.loop(seconds=1)
     async def reset_jackpot(self):
-        with self.global_lock:
-            self.jackpot = 1000000
-            self._save_data()
+        if datetime.now().hour == 23 and datetime.now().minute == 18:
+            self.jackpot = 1000000 
+            self._save_data()  
 
     def _get_lock(self, user_id):
         if user_id not in self.locks:
