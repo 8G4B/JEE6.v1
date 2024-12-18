@@ -5,6 +5,7 @@ from datetime import datetime
 import json
 import os
 import secrets
+import random
 
 class Gambling(commands.Cog):
     def __init__(self, bot):
@@ -108,7 +109,7 @@ class Gambling(commands.Cog):
             )
         else:
             result = secrets.choice(["앞", "뒤"])
-            embed = self._play_game(ctx.author.id, ctx.author.name, guess, result, bet, secrets.uniform(0.8, 1.8))
+            embed = self._play_game(ctx.author.id, ctx.author.name, guess, result, bet, random.uniform(0.8, 1.8))
         await ctx.reply(embed=embed)
 
     @commands.command(name="도박.주사위", description="주사위")
