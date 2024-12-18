@@ -58,9 +58,19 @@ class Gambling(commands.Cog):
     
     @tasks.loop(seconds=1)
     async def reset_jackpot(self):
-        if datetime.now().hour == 23 and datetime.now().minute == 25:
-            self.jackpot = 1000000 
-            self._save_data()  
+        now = datetime.now()
+        if (
+            (now.hour == 7 and now.minute == 30) or
+            (now.hour == 12 and now.minute == 30) or 
+            (now.hour == 18 and now.minute == 30)
+        ):
+            self.jackpot = 1000000
+            self._save_data()
+            return discord.Embed(
+                title="🎰 잭팟 리셋",
+                description="잭팟이 100만원으로 리셋되었습니다.",
+                color=discord.Color.green()
+            )
 
     def _get_lock(self, user_id):
         if user_id not in self.locks:
