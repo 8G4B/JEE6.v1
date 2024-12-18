@@ -199,7 +199,7 @@ class Gambling(commands.Cog):
             )
         else:
             result = secrets.choice(["앞", "뒤"])
-            embed = self._play_game(ctx.author.id, ctx.author.name, guess, result, bet, random.uniform(0.7, 1.7), "coin")
+            embed = self._play_game(ctx.author.id, ctx.author.name, guess, result, bet, random.uniform(0.6, 1.7), "coin")
         await ctx.reply(embed=embed)
 
     @commands.command(name="도박.주사위", description="주사위")
@@ -218,7 +218,7 @@ class Gambling(commands.Cog):
             )
         else:
             result = secrets.choice([str(i) for i in range(1, 7)])
-            embed = self._play_game(ctx.author.id, ctx.author.name, guess, result, bet, random.uniform(5.7, 6.7), "dice")
+            embed = self._play_game(ctx.author.id, ctx.author.name, guess, result, bet, random.uniform(4.6, 5.7), "dice")
         await ctx.reply(embed=embed)
 
     @commands.command(name="도박.잭팟", description="잭팟")
