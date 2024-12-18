@@ -19,6 +19,8 @@ class Gambling(commands.Cog):
         self.locks = {}
         self.global_lock = threading.RLock()
         self._load_data()
+
+    async def setup_hook(self):
         self.bot.loop.create_task(self._reset_jackpot_daily())
 
     async def _reset_jackpot_daily(self):
