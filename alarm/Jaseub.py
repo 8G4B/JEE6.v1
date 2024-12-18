@@ -12,14 +12,16 @@ class Jaseub(commands.Cog):
 
     @tasks.loop(seconds=1)  
     async def daily_alarm(self):
-        if datetime.now().hour == 23 and datetime.now().minute == 37: # 19, 59
+        now = datetime.now()
+        if now.hour == 23 and now.minute == 42 and now.second == 0: # 19, 59
             for guild in self.bot.guilds:
                 for channel in guild.text_channels:
-                    try:
-                        await channel.send("자습 신청 1분 전\n [DOTORI 바로가기](https://www.dotori-gsm.com/home)")
-                        break 
-                    except discord.Forbidden:
-                        continue  
+                    if 'jee6' in channel.name.lower():
+                        try:
+                            await channel.send("자습 신청 1분 전\n [DOTORI 바로가기](https://www.dotori-gsm.com/home)")
+                            break
+                        except discord.Forbidden:
+                            continue
 
     @daily_alarm.before_loop
     async def before_daily_alarm(self):
