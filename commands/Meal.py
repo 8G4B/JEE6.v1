@@ -112,8 +112,8 @@ class Meal(commands.Cog):
             )
         else:
             embed = discord.Embed(
-                title="🍳 아침",
-                description="급식 정보를 가져올 수 없습니다.",
+                title="❗ 오류",
+                description="조식 정보를 가져올 수 없습니다.",
                 color=discord.Color.red()
             )
             
@@ -134,8 +134,8 @@ class Meal(commands.Cog):
             )
         else:
             embed = discord.Embed(
-                title="🍚 점심",
-                description="급식 정보를 가져올 수 없습니다.",
+                title="❗ 오류",
+                description="중식 정보를 가져올 수 없습니다.",
                 color=discord.Color.red()
             )
         
@@ -156,8 +156,8 @@ class Meal(commands.Cog):
             )
         else:
             embed = discord.Embed(
-                title="🍖 저녁",
-                description="급식 정보를 가져올 수 없습니다.",
+                title="❗ 오류",
+                description="석식 정보를 가져올 수 없습니다.",
                 color=discord.Color.red()
             )
             
@@ -178,8 +178,8 @@ class Meal(commands.Cog):
             )
         else:
             embed = discord.Embed(
-                title="🍳 내일 아침",
-                description="급식 정보를 가져올 수 없습니다.",
+                title="❗ 오류",
+                description="내일 조식 정보를 가져올 수 없습니다.",
                 color=discord.Color.red()
             )
             
@@ -200,8 +200,8 @@ class Meal(commands.Cog):
             )
         else:
             embed = discord.Embed(
-                title="🍚 내일 점심",
-                description="급식 정보를 가져올 수 없습니다.",
+                title="❗ 오류",
+                description="내일 중식 정보를 가져올 수 없습니다.",
                 color=discord.Color.red()
             )
             
@@ -222,8 +222,8 @@ class Meal(commands.Cog):
             )
         else:
             embed = discord.Embed(
-                title="🍖 내일 저녁",
-                description="급식 정보를 가져올 수 없습니다.",
+                title="❗ 오류",
+                description="내일 석식 정보를 가져올 수 없습니다.",
                 color=discord.Color.red()
             )
             

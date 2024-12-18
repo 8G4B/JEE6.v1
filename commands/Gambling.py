@@ -174,11 +174,9 @@ class Gambling(commands.Cog):
                 winnings_after_tax = winnings - tax
                 current_balance = self.balances.get(author_id, 0)
                 self.balances[author_id] = current_balance + winnings_after_tax
-                self.jackpot += tax
             else:
                 current_balance = self.balances.get(author_id, 0)
                 self.balances[author_id] = current_balance + winnings
-                self.jackpot += abs(winnings)
                 
             self._save_data()
             return self._create_game_embed(author_name, is_correct, guess, result, bet, winnings_after_tax if is_correct else winnings, author_id, game_type, tax if is_correct else None)
