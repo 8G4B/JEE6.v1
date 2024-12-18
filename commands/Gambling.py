@@ -19,6 +19,8 @@ class Gambling(commands.Cog):
         self.locks = {}
         self.global_lock = threading.RLock()
         self._load_data()
+        
+        asyncio.create_task(self._reset_jackpot_daily())
 
     def _calculate_tax(self, income):
         if income <= 0:
@@ -41,13 +43,10 @@ class Gambling(commands.Cog):
                 return int(income * rate)
         return 0
 
-    async def setup_hook(self):
-        self.bot.loop.create_task(self._reset_jackpot_daily())
-
     async def _reset_jackpot_daily(self):
         while True:
             now = datetime.now()
-            next_reset = now.replace(hour=21, minute=0, second=0, microsecond=0)
+            next_reset = now.replace(hour=22, minute=35, second=0, microsecond=0)
             if now >= next_reset:
                 next_reset = next_reset.replace(day=now.day + 1)
             
@@ -126,10 +125,7 @@ class Gambling(commands.Cog):
             
             current_balance = self.balances.get(author_id, 0)
             if is_correct:
-                tax = self._calculate_tax(winnings)
-                winnings_after_tax = winnings - tax
-                self.balances[author_id] = current_balance + winnings_after_tax
-                winnings = winnings_after_tax 
+                self.balances[author_id] = current_balance + winnings
             else:
                 self.balances[author_id] = current_balance + winnings
                 self.jackpot += abs(winnings)
@@ -398,11 +394,9 @@ class Gambling(commands.Cog):
             multiplier = round(winnings / bet, 2) if winnings > 0 else -1
             balance = self.balances.get(author_id, 0)
             sign = '+' if winnings > 0 else ''
-            original_winnings = int(bet * multiplier)
-            tax = original_winnings - winnings
             
             description_parts.extend([
-                f"## 수익: {bet:,}원 × {multiplier} = {winnings:,}원(세금: {tax:,}원)",
+                f"## 수익: {bet:,}원 × {multiplier} = {winnings:,}원",
                 f"- 재산: {balance:,}원({sign}{winnings:,})"
             ])
         elif bet is not None:
