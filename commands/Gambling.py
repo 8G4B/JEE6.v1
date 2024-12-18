@@ -148,46 +148,52 @@ class Gambling(commands.Cog):
 
     @commands.command(name="도박.잭팟", description="잭팟")
     async def jackpot(self, ctx, bet: int = None):
-        with self._get_lock(ctx.author.id):
-            if cooldown_embed := self._check_game_cooldown(ctx.author.id, "jackpot"):
-                embed = cooldown_embed
-            elif bet is None or bet < 1000:
-                embed = discord.Embed(
-                    title="❗ 오류",
-                    description="1000원 이상 베팅하세요",
-                    color=discord.Color.red()
-                )
-            elif bet > self.balances.get(ctx.author.id, 0):
+        if cooldown_embed := self._check_game_cooldown(ctx.author.id, "jackpot"):
+            await ctx.reply(embed=cooldown_embed)
+            return
+            
+        if bet is None or bet < 1000:
+            embed = discord.Embed(
+                title="❗ 오류",
+                description="1000원 이상 베팅하세요",
+                color=discord.Color.red()
+            )
+            await ctx.reply(embed=embed)
+            return
+            
+        with self.global_lock:
+            current_balance = self.balances.get(ctx.author.id, 0)
+            if bet > current_balance:
                 embed = discord.Embed(
                     title="❗ 오류",
                     description="돈이 부족해...",
                     color=discord.Color.red()
                 )
+                await ctx.reply(embed=embed)
+                return
+                
+            self.balances[ctx.author.id] = current_balance - bet
+            self.jackpot += bet
+            
+            if secrets.randbelow(100) <= 1:
+                winnings = self.jackpot // 10
+                self.balances[ctx.author.id] = current_balance - bet + winnings
+                self.jackpot -= winnings
+                embed = discord.Embed(
+                    title=f"🎉 {ctx.author.name} 당첨",
+                    description=f"축하합니다!\n## 수익: {winnings}원\n- 재산: {self.balances[ctx.author.id]}원(+{winnings})",
+                    color=discord.Color.gold()
+                )
             else:
-                with self.global_lock:
-                    current_balance = self.balances.get(ctx.author.id, 0)
-                    self.balances[ctx.author.id] = current_balance - bet
-                    self.jackpot += bet
-                    
-                    if secrets.randbelow(100) <= 1:
-                        winnings = self.jackpot // 10
-                        self.balances[ctx.author.id] = current_balance - bet + winnings
-                        self.jackpot -= winnings
-                        embed = discord.Embed(
-                            title=f"🎉 {ctx.author.name} 당첨",
-                            description=f"축하합니다!\n## 수익: {winnings}원\n- 재산: {self.balances[ctx.author.id]}원(+{winnings})",
-                            color=discord.Color.gold()
-                        )
-                    else:
-                        embed = discord.Embed(
-                            title=f"🎰 {ctx.author.name} 잭팟 실패ㅋ",
-                            description=f"\n- 현재 잭팟: {self.jackpot}원 \n## 수익: -{bet}원\n- 재산: {self.balances[ctx.author.id]}원",
-                            color=discord.Color.red()
-                        )
-                    
-                    self._save_data()
+                embed = discord.Embed(
+                    title=f"🎰 {ctx.author.name} 잭팟 실패ㅋ",
+                    description=f"\n- 현재 잭팟: {self.jackpot}원 \n## 수익: -{bet}원\n- 재산: {self.balances[ctx.author.id]}원",
+                    color=discord.Color.red()
+                )
+            
+            self._save_data()
             await ctx.reply(embed=embed)
-        
+
     @commands.command(name="도박.노동", aliases=['도박.일', '도박.돈'], description="도박.노동")
     async def get_money(self, ctx):
         with self._get_lock(ctx.author.id):
