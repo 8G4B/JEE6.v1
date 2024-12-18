@@ -2,7 +2,7 @@ import discord
 from discord.ext import commands, tasks
 from datetime import datetime, time
 
-class Jaseub(commands.Cog):
+class Anmauija(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.daily_alarm.start()
