@@ -20,6 +20,27 @@ class Gambling(commands.Cog):
         self.global_lock = threading.RLock()
         self._load_data()
 
+    def _calculate_tax(self, income):
+        if income <= 0:
+            return 0
+            
+        tax_brackets = [ ## 세율
+            (1000000000000000, 0.45),  
+            (500000000000000, 0.42),   
+            (300000000000000, 0.40),   
+            (150000000000000, 0.38),   
+            (88000000000000, 0.35),    
+            (50000000000000, 0.24),    
+            (14000000000000, 0.15),    
+            (5000000000000, 0.06),
+            (0, 0)                  
+        ]
+        
+        for threshold, rate in tax_brackets:
+            if income > threshold:
+                return int(income * rate)
+        return 0
+
     async def setup_hook(self):
         self.bot.loop.create_task(self._reset_jackpot_daily())
 
@@ -105,7 +126,10 @@ class Gambling(commands.Cog):
             
             current_balance = self.balances.get(author_id, 0)
             if is_correct:
-                self.balances[author_id] = current_balance + winnings
+                tax = self._calculate_tax(winnings)
+                winnings_after_tax = winnings - tax
+                self.balances[author_id] = current_balance + winnings_after_tax
+                winnings = winnings_after_tax 
             else:
                 self.balances[author_id] = current_balance + winnings
                 self.jackpot += abs(winnings)
@@ -221,12 +245,14 @@ class Gambling(commands.Cog):
             
             if secrets.randbelow(100) <= 1:
                 winnings = self.jackpot // 10
-                self.balances[ctx.author.id] = current_balance - bet + winnings
+                tax = self._calculate_tax(winnings)
+                winnings_after_tax = winnings - tax
+                self.balances[ctx.author.id] = current_balance - bet + winnings_after_tax
                 self.jackpot = self.jackpot - winnings  
                 self.cooldowns[f"jackpot_win_{ctx.author.id}"] = datetime.now()
                 embed = discord.Embed(
                     title=f"🎉 {ctx.author.name} 당첨",
-                    description=f"- 현재 잭팟: {self.jackpot:,}원(-{winnings:,}) \n## 수익: {winnings:,}원\n- 재산: {self.balances[ctx.author.id]:,}원(+{winnings:,})",
+                    description=f"- 현재 잭팟: {self.jackpot:,}원(-{winnings:,}) \n## 수익: {winnings_after_tax:,}원(세금: {tax:,}원)\n- 재산: {self.balances[ctx.author.id]:,}원(+{winnings_after_tax:,})",
                     color=discord.Color.gold()
                 )
             else:
@@ -368,14 +394,24 @@ class Gambling(commands.Cog):
             f"- 결과: {result}"
         ]
         
-        if bet is not None:
+        if bet is not None and is_correct:
             multiplier = round(winnings / bet, 2) if winnings > 0 else -1
             balance = self.balances.get(author_id, 0)
             sign = '+' if winnings > 0 else ''
+            original_winnings = int(bet * multiplier)
+            tax = original_winnings - winnings
+            
+            description_parts.extend([
+                f"## 수익: {bet:,}원 × {multiplier} = {winnings:,}원(세금: {tax:,}원)",
+                f"- 재산: {balance:,}원({sign}{winnings:,})"
+            ])
+        elif bet is not None:
+            multiplier = -1
+            balance = self.balances.get(author_id, 0)
             
             description_parts.extend([
                 f"## 수익: {bet:,}원 × {multiplier} = {winnings:,}원",
-                f"- 재산: {balance:,}원({sign}{winnings:,})"
+                f"- 재산: {balance:,}원({winnings:,})"
             ])
             
         description = "\n".join(description_parts)
