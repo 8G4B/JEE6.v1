@@ -26,7 +26,7 @@ class Gambling(commands.Cog):
         if income <= 0:
             return 0
             
-        tax_brackets = [ ## 세율
+        tax_brackets = [ ## 종합소득세
             (1000000000000000, 0.45),  
             (500000000000000, 0.42),   
             (300000000000000, 0.40),   
@@ -41,6 +41,20 @@ class Gambling(commands.Cog):
         for threshold, rate in tax_brackets:
             if income > threshold:
                 return int(income * rate)
+        return 0
+
+    def _calculate_transfer_tax(self, amount):
+        tax_brackets = [ ## 증여세
+            (30000000000000, 0.15),  
+            (10000000000000, 0.125), 
+            (5000000000000, 0.10),   
+            (1000000000000, 0.075), 
+            (0, 0.05)                
+        ]
+        
+        for threshold, rate in tax_brackets:
+            if amount > threshold:
+                return int(amount * rate)
         return 0
 
     async def _reset_jackpot_daily(self):
@@ -123,15 +137,20 @@ class Gambling(commands.Cog):
             is_correct = guess == result
             winnings = int(bet * multiplier) if is_correct else -bet
             
-            current_balance = self.balances.get(author_id, 0)
             if is_correct:
-                self.balances[author_id] = current_balance + winnings
+                tax_rate = 0.01 if winnings > 10000000000000 else 0.005  # 10조원 초과시 1%, 이하시 0.5%
+                tax = int(winnings * tax_rate)
+                winnings_after_tax = winnings - tax
+                current_balance = self.balances.get(author_id, 0)
+                self.balances[author_id] = current_balance + winnings_after_tax
+                self.jackpot += tax
             else:
+                current_balance = self.balances.get(author_id, 0)
                 self.balances[author_id] = current_balance + winnings
                 self.jackpot += abs(winnings)
                 
             self._save_data()
-            return self._create_game_embed(author_name, is_correct, guess, result, bet, winnings, author_id, game_type)
+            return self._create_game_embed(author_name, is_correct, guess, result, bet, winnings_after_tax if is_correct else winnings, author_id, game_type, tax if is_correct else None)
         finally:
             lock.release()
 
@@ -369,19 +388,23 @@ class Gambling(commands.Cog):
                 await ctx.reply(embed=embed)
                 return
 
+            tax = self._calculate_transfer_tax(amount)
+            amount_after_tax = amount - tax
+            
             self.balances[ctx.author.id] = sender_balance - amount
-            self.balances[recipient.id] = self.balances.get(recipient.id, 0) + amount
+            self.balances[recipient.id] = self.balances.get(recipient.id, 0) + amount_after_tax
+            self.jackpot += tax
             
             embed = discord.Embed(
                 title="💸 송금 완료",
-                description=f"{ctx.author.name} → {recipient.name}\n## {amount:,}원 송금\n- 잔액: {self.balances[ctx.author.id]:,}원",
+                description=f"{ctx.author.name} → {recipient.name}\n## {amount:,}원 송금(세금: {tax:,}원)\n- 잔액: {self.balances[ctx.author.id]:,}원",
                 color=discord.Color.green()
             )
             
             self._save_data()
             await ctx.reply(embed=embed)
 
-    def _create_game_embed(self, author_name, is_correct, guess, result, bet=None, winnings=None, author_id=None, game_type=None):
+    def _create_game_embed(self, author_name, is_correct, guess, result, bet=None, winnings=None, author_id=None, game_type=None, tax=None):
         title = f"{'🪙' if game_type == 'coin' else '🎲' if game_type == 'dice' else '🎰'} {author_name} {'맞음 ㄹㅈㄷ' if is_correct else '틀림ㅋ'}"
         color = discord.Color.green() if is_correct else discord.Color.red()
         
@@ -391,12 +414,12 @@ class Gambling(commands.Cog):
         ]
         
         if bet is not None and is_correct:
-            multiplier = round(winnings / bet, 2) if winnings > 0 else -1
+            multiplier = round((winnings + (tax or 0)) / bet, 2) if winnings > 0 else -1
             balance = self.balances.get(author_id, 0)
             sign = '+' if winnings > 0 else ''
             
             description_parts.extend([
-                f"## 수익: {bet:,}원 × {multiplier} = {winnings:,}원",
+                f"## 수익: {bet:,}원 × {multiplier} = {winnings:,}원(세금: {tax:,}원)" if tax else f"## 수익: {bet:,}원 × {multiplier} = {winnings:,}원",
                 f"- 재산: {balance:,}원({sign}{winnings:,})"
             ])
         elif bet is not None:
