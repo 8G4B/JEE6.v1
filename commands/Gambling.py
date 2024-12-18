@@ -7,7 +7,6 @@ import os
 import secrets
 import random
 import threading
-import asyncio
 
 class Gambling(commands.Cog):
     def __init__(self, bot):
@@ -59,7 +58,7 @@ class Gambling(commands.Cog):
     
     @tasks.loop(seconds=1)
     async def reset_jackpot(self):
-        if datetime.now().hour == 23 and datetime.now().minute == 18:
+        if datetime.now().hour == 23 and datetime.now().minute == 25:
             self.jackpot = 1000000 
             self._save_data()  
 
