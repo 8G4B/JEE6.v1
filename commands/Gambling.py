@@ -282,6 +282,50 @@ class Gambling(commands.Cog):
             )
             await ctx.reply(embed=embed)
 
+    @commands.command(name="도박.송금", description="송금")
+    async def transfer(self, ctx, recipient: discord.Member = None, amount: int = None):
+        if recipient is None or amount is None:
+            embed = discord.Embed(
+                title="❗ 오류",
+                description="!도박.송금 [유저] [금액] <-- 이렇게 써",
+                color=discord.Color.red()
+            )
+            await ctx.reply(embed=embed)
+            return
+
+        if amount <= 1000:
+            embed = discord.Embed(
+                title="❗ 오류",
+                description="1000원 이하는 송금할 수 없습니다.",
+                color=discord.Color.red()
+            )
+            await ctx.reply(embed=embed)
+            return
+
+        with self._get_lock(ctx.author.id), self._get_lock(recipient.id):
+            sender_balance = self.balances.get(ctx.author.id, 0)
+            
+            if amount > sender_balance:
+                embed = discord.Embed(
+                    title="❗ 오류",
+                    description="돈이 부족해...",
+                    color=discord.Color.red()
+                )
+                await ctx.reply(embed=embed)
+                return
+
+            self.balances[ctx.author.id] = sender_balance - amount
+            self.balances[recipient.id] = self.balances.get(recipient.id, 0) + amount
+            
+            embed = discord.Embed(
+                title="💸 송금 완료",
+                description=f"{ctx.author.name} → {recipient.name}\n## {amount}원 송금\n- 잔액: {self.balances[ctx.author.id]}원",
+                color=discord.Color.green()
+            )
+            
+            self._save_data()
+            await ctx.reply(embed=embed)
+
     def _create_game_embed(self, author_name, is_correct, guess, result, bet=None, winnings=None, author_id=None, game_type=None):
         title = f"{'🪙' if game_type == 'coin' else '🎲' if game_type == 'dice' else '🎰'} {author_name} {'맞음 ㄹㅈㄷ' if is_correct else '틀림ㅋ'}"
         color = discord.Color.green() if is_correct else discord.Color.red()
