@@ -258,8 +258,12 @@ class Gambling(commands.Cog):
             sorted_balances = sorted(self.balances.items(), key=lambda item: item[1], reverse=True)
             top_3 = sorted_balances[:3]
             
-            description = "\n".join([f"{i+1}. <{user_id}>: {balance}원" for i, (user_id, balance) in enumerate(top_3)])
-
+            description_lines = []
+            for i, (user_id, balance) in enumerate(top_3):
+                user = await self.bot.fetch_user(user_id)
+                description_lines.append(f"{i+1}. {user.name}: {balance}원")
+            
+            description = "\n".join(description_lines)
             
             embed = discord.Embed(
                 title="🏅 상위 3명 랭킹",
@@ -273,10 +277,15 @@ class Gambling(commands.Cog):
         with self.global_lock:
             sorted_balances = sorted(self.balances.items(), key=lambda item: item[1], reverse=True)
             
-            description = "\n".join([f"{i+1}. <{user_id}>: {balance}원" for i, (user_id, balance) in enumerate(sorted_balances)])
+            description_lines = []
+            for i, (user_id, balance) in enumerate(sorted_balances):
+                user = await self.bot.fetch_user(user_id)
+                description_lines.append(f"{i+1}. {user.name}: {balance}원")
+                
+            description = "\n".join(description_lines)
 
             embed = discord.Embed(
-                title="🏅 전체 랭킹",
+                title="🏅 전체 랭킹", 
                 description=description,
                 color=discord.Color.blue()
             )
