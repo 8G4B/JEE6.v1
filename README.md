@@ -40,7 +40,7 @@
 
    - `!도박.잭팟 [베팅]` 을 통해 잭팟을 할 수 있어요. (쿨타임: 5초)
 
-     당첨되면 다른 사람들이 베팅한 돈을 모두 얻을 수 있고, 틀리면 베팅한 돈을 잃어요. **(확률: $\frac{1}{20}$)**
+     당첨되면 다른 사람들이 베팅한 돈을 모두 얻을 수 있고, 틀리면 베팅한 돈을 잃어요. **(확률: $\frac{1}{100}$)**
 
 3. 기타
 
@@ -84,12 +84,15 @@
    `app.py` 파일을 실행해주세요.
 
 ## 도커로 실행
+
 Windows의 경우와 Ubuntu의 경우로 나뉘어요.
 
 ### Windows
+
 1. 도커 설치
 
    [Docker Desktop](https://www.docker.com/products/docker-desktop)을 설치해주세요.
+
 2. 환경변수 설정
 
    `.env` 파일을 만들어서 환경변수를 설정해주세요. 이 파일은 보안상의 이유로 `.gitignore`에 포함되어 있어서 github에 올라가지 않아요.
@@ -99,13 +102,15 @@ Windows의 경우와 Ubuntu의 경우로 나뉘어요.
    echo "MEAL_API_KEY=[여기에 키 입력]" >> .env
    echo "GPT_API_KEY=[여기에 키 입력]" >> .env
    ```
+
 3. 도커 이미지 빌드
 
-   다음 명령어 ``PowerShell``에서 실행해주세요.
+   다음 명령어 `PowerShell`에서 실행해주세요.
 
    ```shell
    docker build -t jee6 .
    ```
+
 4. 도커 컨테이너 실행
 
    다음 명령어를 실행해주세요.
@@ -113,7 +118,9 @@ Windows의 경우와 Ubuntu의 경우로 나뉘어요.
    ```shell
    docker run --env-file .env jee6
    ```
+
 ### Ubuntu
+
 1. 도커 설치
 
    다음 명령어를 실행해주세요.
@@ -122,6 +129,7 @@ Windows의 경우와 Ubuntu의 경우로 나뉘어요.
    sudo apt-get update
    sudo apt-get install docker.io
    ```
+
 2. 환경변수 설정
 
    `.env` 파일을 만들어서 환경변수를 설정해주세요. 이 파일은 보안상의 이유로 `.gitignore`에 포함되어 있어서 github에 올라가지 않아요.
@@ -131,6 +139,7 @@ Windows의 경우와 Ubuntu의 경우로 나뉘어요.
     echo "MEAL_API_KEY=[여기에 키 입력]" >> .env
     echo "GPT_API_KEY=[여기에 키 입력]" >> .env
    ```
+
 3. 도커 이미지 빌드
 
    다음 명령어를 실행해주세요.
@@ -138,6 +147,7 @@ Windows의 경우와 Ubuntu의 경우로 나뉘어요.
    ```bash
    sudo docker build -t jee6 .
    ```
+
 4. 도커 컨테이너 실행
 
    다음 명령어를 실행해주세요.

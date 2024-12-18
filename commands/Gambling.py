@@ -107,7 +107,7 @@ class Gambling(commands.Cog):
             )
         else:
             result = random.choice(["앞", "뒤"])
-            embed = self._play_game(ctx.author.id, ctx.author.name, guess, result, bet, random.uniform(1.25, 2.75))
+            embed = self._play_game(ctx.author.id, ctx.author.name, guess, result, bet, random.uniform(0.5, 1.5))
         await ctx.reply(embed=embed)
 
     @commands.command(name="도박.주사위", description="주사위")
@@ -126,7 +126,7 @@ class Gambling(commands.Cog):
             )
         else:
             result = random.choice([str(i) for i in range(1, 7)])
-            embed = self._play_game(ctx.author.id, ctx.author.name, guess, result, bet, random.uniform(4.5, 7.5))
+            embed = self._play_game(ctx.author.id, ctx.author.name, guess, result, bet, random.uniform(3.5, 5.5))
         await ctx.reply(embed=embed)
 
     @commands.command(name="도박.잭팟", description="잭팟")
@@ -150,13 +150,13 @@ class Gambling(commands.Cog):
             self.balances[ctx.author.id] = current_balance - bet
             self.jackpot += bet
             
-            if random.random() <= 0.05:  
+            if random.random() <= 0.01:  
                 winnings = self.jackpot
                 self.balances[ctx.author.id] = current_balance - bet + winnings
                 self.jackpot = 0
                 embed = discord.Embed(
                     title=f"{ctx.author.name} 당첨",
-                    description=f"축하합니다!\n## 수익: {bet}원 × {round(winnings/bet, 2)} = {winnings}원\n- 재산: {self.balances[ctx.author.id]}원",
+                    description=f"축하합니다!\n## 수익: {winnings}원\n- 재산: {self.balances[ctx.author.id]}원",
                     color=discord.Color.gold()
                 )
             else:
@@ -183,7 +183,7 @@ class Gambling(commands.Cog):
                 color=discord.Color.red()
             )
         else:
-            amount = random.randint(50, 1000)
+            amount = random.randint(100, 2000)
             self.balances[ctx.author.id] = self.balances.get(ctx.author.id, 0) + amount
             embed = discord.Embed(
                 title=f"☭ {ctx.author.name} 노동",
