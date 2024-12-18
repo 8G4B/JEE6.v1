@@ -98,7 +98,10 @@ class Gambling(commands.Cog):
         except Exception as e:
             print(f"_save_data: {e}")
 
-    def _validate_bet(self, bet):
+    def _validate_bet(self, bet, user_id=None):
+        if isinstance(bet, str) and bet == "올인" and user_id is not None:
+            bet = self.balances.get(user_id, 0)
+            
         if bet is None or bet < 100:
             return discord.Embed(
                 title="❗ 오류",
@@ -184,45 +187,63 @@ class Gambling(commands.Cog):
         return None
 
     @commands.command(name="도박.동전", description="동전 던지기")
-    async def coin(self, ctx, guess: str = None, bet: int = None):
+    async def coin(self, ctx, guess: str = None, bet: str = None):
         if cooldown_embed := self._check_game_cooldown(ctx.author.id, "coin"):
             embed = cooldown_embed
         elif error_embed := self._validate_coin_guess(guess):
             embed = error_embed
-        elif error_embed := self._validate_bet(bet):
-            embed = error_embed
-        elif bet > self.balances.get(ctx.author.id, 0):
-            embed = discord.Embed(
-                title="❗ 오류",
-                description="돈이 부족해...",
-                color=discord.Color.red()
-            )
         else:
-            result = secrets.choice(["앞", "뒤"])
-            embed = self._play_game(ctx.author.id, ctx.author.name, guess, result, bet, random.uniform(0.6, 1.7), "coin")
+            if bet == "올인":
+                bet = self.balances.get(ctx.author.id, 0)
+            else:
+                try:
+                    bet = int(bet) if bet is not None else None
+                except ValueError:
+                    bet = None
+                    
+            if error_embed := self._validate_bet(bet, ctx.author.id):
+                embed = error_embed
+            elif bet > self.balances.get(ctx.author.id, 0):
+                embed = discord.Embed(
+                    title="❗ 오류",
+                    description="돈이 부족해...",
+                    color=discord.Color.red()
+                )
+            else:
+                result = secrets.choice(["앞", "뒤"])
+                embed = self._play_game(ctx.author.id, ctx.author.name, guess, result, bet, random.uniform(0.6, 1.7), "coin")
         await ctx.reply(embed=embed)
 
     @commands.command(name="도박.주사위", description="주사위")
-    async def dice(self, ctx, guess: str = None, bet: int = None):
+    async def dice(self, ctx, guess: str = None, bet: str = None):
         if cooldown_embed := self._check_game_cooldown(ctx.author.id, "dice"):
             embed = cooldown_embed
         elif error_embed := self._validate_dice_guess(guess):
             embed = error_embed
-        elif error_embed := self._validate_bet(bet):
-            embed = error_embed
-        elif bet > self.balances.get(ctx.author.id, 0):
-            embed = discord.Embed(
-                title="❗ 오류",
-                description="돈이 부족해...",
-                color=discord.Color.red()
-            )
         else:
-            result = secrets.choice([str(i) for i in range(1, 7)])
-            embed = self._play_game(ctx.author.id, ctx.author.name, guess, result, bet, random.uniform(4.6, 5.7), "dice")
+            if bet == "올인":
+                bet = self.balances.get(ctx.author.id, 0)
+            else:
+                try:
+                    bet = int(bet) if bet is not None else None
+                except ValueError:
+                    bet = None
+                    
+            if error_embed := self._validate_bet(bet, ctx.author.id):
+                embed = error_embed
+            elif bet > self.balances.get(ctx.author.id, 0):
+                embed = discord.Embed(
+                    title="❗ 오류",
+                    description="돈이 부족해...",
+                    color=discord.Color.red()
+                )
+            else:
+                result = secrets.choice([str(i) for i in range(1, 7)])
+                embed = self._play_game(ctx.author.id, ctx.author.name, guess, result, bet, random.uniform(4.6, 5.7), "dice")
         await ctx.reply(embed=embed)
 
     @commands.command(name="도박.잭팟", description="잭팟")
-    async def jackpot(self, ctx, bet: int = None):
+    async def jackpot(self, ctx, bet: str = None):
         if cooldown_embed := self._check_game_cooldown(ctx.author.id, "jackpot"):
             await ctx.reply(embed=cooldown_embed)
             return
@@ -230,6 +251,14 @@ class Gambling(commands.Cog):
         if cooldown_embed := self._check_game_cooldown(ctx.author.id, "jackpot_win"):
             await ctx.reply(embed=cooldown_embed)
             return
+            
+        if bet == "올인":
+            bet = self.balances.get(ctx.author.id, 0)
+        else:
+            try:
+                bet = int(bet) if bet is not None else None
+            except ValueError:
+                bet = None
             
         if bet is None or bet < 1000:
             embed = discord.Embed(
@@ -373,7 +402,7 @@ class Gambling(commands.Cog):
             await ctx.reply(embed=embed)
 
     @commands.command(name="도박.송금", description="송금")
-    async def transfer(self, ctx, recipient: discord.Member = None, amount: int = None):
+    async def transfer(self, ctx, recipient: discord.Member = None, amount: str = None):
         if recipient is None or amount is None:
             embed = discord.Embed(
                 title="❗ 오류",
@@ -382,6 +411,20 @@ class Gambling(commands.Cog):
             )
             await ctx.reply(embed=embed)
             return
+
+        if amount == "올인":
+            amount = self.balances.get(ctx.author.id, 0)
+        else:
+            try:
+                amount = int(amount)
+            except ValueError:
+                embed = discord.Embed(
+                    title="❗ 오류",
+                    description="올바른 금액을 입력하세요",
+                    color=discord.Color.red()
+                )
+                await ctx.reply(embed=embed)
+                return
 
         if amount <= 1000:
             embed = discord.Embed(
