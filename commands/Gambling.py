@@ -114,7 +114,9 @@ class Gambling(commands.Cog):
                     description=f"{time_str} 후에 다시 시도해주세요.",
                     color=discord.Color.red()
                 )
-        self.cooldowns[cooldown_key] = current_time
+        
+        if game_type != "jackpot_win":
+            self.cooldowns[cooldown_key] = current_time
         return None
 
     @commands.command(name="도박.동전", description="동전 던지기")
