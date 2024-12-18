@@ -153,25 +153,24 @@ class Gambling(commands.Cog):
             self.jackpot += bet
             
             if secrets.randbelow(100) <= 1:  
-                winnings = self.jackpot
+                winnings = self.jackpot // 10  
                 self.balances[ctx.author.id] = current_balance - bet + winnings
-                self.jackpot = 0
+                self.jackpot -= winnings  
                 embed = discord.Embed(
-                    title=f"{ctx.author.name} 당첨",
+                    title=f"🎰 {ctx.author.name} 당첨",
                     description=f"축하합니다!\n## 수익: {winnings}원\n- 재산: {self.balances[ctx.author.id]}원(+{winnings})",
                     color=discord.Color.gold()
                 )
             else:
                 embed = discord.Embed(
-                    title=f"{ctx.author.name} 잭팟 실패ㅋ",
+                    title=f"🎰 {ctx.author.name} 잭팟 실패ㅋ",
                     description=f"\n- 현재 잭팟: {self.jackpot}원 \n## 수익: -{bet}원\n- 재산: {self.balances[ctx.author.id]}원",
                     color=discord.Color.red()
                 )
             
             self._save_data()  
-            
         await ctx.reply(embed=embed)
-
+        
     @commands.command(name="도박.노동", aliases=['도박.일', '도박.돈'], description="도박.노동")
     async def get_money(self, ctx):
         current_time = datetime.now()
@@ -218,6 +217,19 @@ class Gambling(commands.Cog):
         embed = discord.Embed(
             title="🏅 상위 3명 랭킹",
             description=description if description else "랭킹이 없습니다.",
+            color=discord.Color.blue()
+        )
+        await ctx.reply(embed=embed)
+        
+    @commands.command(name="도박.전체랭킹", description="전체 랭킹")
+    async def all_ranking(self, ctx):
+        sorted_balances = sorted(self.balances.items(), key=lambda item: item[1], reverse=True)
+        
+        description = "\n".join([f"{i+1}. <@{user_id}>: {balance}원" for i, (user_id, balance) in enumerate(sorted_balances)])
+
+        embed = discord.Embed(
+            title="🏅 전체 랭킹",
+            description=description,
             color=discord.Color.blue()
         )
         await ctx.reply(embed=embed)
