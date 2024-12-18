@@ -156,7 +156,7 @@ class Gambling(commands.Cog):
                 self.jackpot = 0
                 embed = discord.Embed(
                     title=f"{ctx.author.name} 당첨",
-                    description=f"축하합니다!\n## 수익: {winnings}원\n- 재산: {self.balances[ctx.author.id]}원",
+                    description=f"축하합니다!\n## 수익: {winnings}원\n- 재산: {self.balances[ctx.author.id]}원(+{winnings})",
                     color=discord.Color.gold()
                 )
             else:
@@ -201,6 +201,21 @@ class Gambling(commands.Cog):
         embed = discord.Embed(
             title=f"💰 {ctx.author.name}의 지갑",
             description=f"현재 잔액: {balance}원",
+            color=discord.Color.blue()
+        )
+        await ctx.reply(embed=embed)
+
+    @commands.command(name="도박.랭킹", description="랭킹")
+    async def ranking(self, ctx):
+        sorted_balances = sorted(self.balances.items(), key=lambda item: item[1], reverse=True)
+        top_3 = sorted_balances[:3]
+        
+        description = "\n".join([f"{i+1}. <@{user_id}>: {balance}원" for i, (user_id, balance) in enumerate(top_3)])
+
+        
+        embed = discord.Embed(
+            title="🏅 상위 3명 랭킹",
+            description=description if description else "랭킹이 없습니다.",
             color=discord.Color.blue()
         )
         await ctx.reply(embed=embed)
