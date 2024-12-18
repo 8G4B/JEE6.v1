@@ -26,7 +26,7 @@ class Gambling(commands.Cog):
     async def _reset_jackpot_daily(self):
         while True:
             now = datetime.now()
-            next_reset = now.replace(hour=20, minute=0, second=0, microsecond=0)
+            next_reset = now.replace(hour=21, minute=0, second=0, microsecond=0)
             if now >= next_reset:
                 next_reset = next_reset.replace(day=now.day + 1)
             
@@ -34,7 +34,7 @@ class Gambling(commands.Cog):
             await asyncio.sleep(wait_seconds)
             
             with self.global_lock:
-                self.jackpot = 0
+                self.jackpot = 1000000 
                 self._save_data()
 
     def _get_lock(self, user_id):
@@ -153,7 +153,7 @@ class Gambling(commands.Cog):
             )
         else:
             result = secrets.choice(["앞", "뒤"])
-            embed = self._play_game(ctx.author.id, ctx.author.name, guess, result, bet, random.uniform(0.8, 1.8), "coin")
+            embed = self._play_game(ctx.author.id, ctx.author.name, guess, result, bet, random.uniform(0.7, 1.7), "coin")
         await ctx.reply(embed=embed)
 
     @commands.command(name="도박.주사위", description="주사위")
@@ -172,7 +172,7 @@ class Gambling(commands.Cog):
             )
         else:
             result = secrets.choice([str(i) for i in range(1, 7)])
-            embed = self._play_game(ctx.author.id, ctx.author.name, guess, result, bet, random.uniform(5.5, 6.5), "dice")
+            embed = self._play_game(ctx.author.id, ctx.author.name, guess, result, bet, random.uniform(5.7, 6.7), "dice")
         await ctx.reply(embed=embed)
 
     @commands.command(name="도박.잭팟", description="잭팟")
