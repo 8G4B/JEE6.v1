@@ -161,6 +161,10 @@ class Gambling(commands.Cog):
             await ctx.reply(embed=cooldown_embed)
             return
             
+        if cooldown_embed := self._check_game_cooldown(ctx.author.id, "jackpot_win"):
+            await ctx.reply(embed=cooldown_embed)
+            return
+            
         if bet is None or bet < 1000:
             embed = discord.Embed(
                 title="❗ 오류",
