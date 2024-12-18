@@ -16,14 +16,13 @@ class Gambling(commands.Cog):
         self.jackpot = 0
         self.data_file = 'gambling_data.json'
         self.locks = {}
-        self.global_lock = threading.Lock()
+        self.global_lock = threading.RLock()
         self._load_data()  
 
     def _get_lock(self, user_id):
-        with self.global_lock:
-            if user_id not in self.locks:
-                self.locks[user_id] = threading.Lock()
-            return self.locks[user_id]
+        if user_id not in self.locks:
+            self.locks[user_id] = threading.RLock()
+        return self.locks[user_id]
 
     def _load_data(self):
         try:
@@ -74,7 +73,15 @@ class Gambling(commands.Cog):
         return None
 
     def _play_game(self, author_id, author_name, guess, result, bet, multiplier, game_type):
-        with self._get_lock(author_id):
+        lock = self._get_lock(author_id)
+        if not lock.acquire(timeout=5):
+            return discord.Embed(
+                title="❗ 오류",
+                description="서버 이슈",
+                color=discord.Color.red()
+            )
+        
+        try:
             is_correct = guess == result
             winnings = int(bet * multiplier) if is_correct else -bet
             
@@ -87,6 +94,8 @@ class Gambling(commands.Cog):
                 
             self._save_data()
             return self._create_game_embed(author_name, is_correct, guess, result, bet, winnings, author_id, game_type)
+        finally:
+            lock.release()
 
     def _check_game_cooldown(self, user_id, game_type):
         current_time = datetime.now()
