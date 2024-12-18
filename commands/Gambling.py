@@ -83,8 +83,7 @@ class Gambling(commands.Cog):
                 self.balances[author_id] = current_balance + winnings
             else:
                 self.balances[author_id] = current_balance + winnings
-                with self.global_lock:
-                    self.jackpot += abs(winnings)
+                self.jackpot += abs(winnings)
                 
             self._save_data()
             return self._create_game_embed(author_name, is_correct, guess, result, bet, winnings, author_id, game_type)
@@ -106,23 +105,22 @@ class Gambling(commands.Cog):
 
     @commands.command(name="도박.동전", description="동전 던지기")
     async def coin(self, ctx, guess: str = None, bet: int = None):
-        with self._get_lock(ctx.author.id):
-            if cooldown_embed := self._check_game_cooldown(ctx.author.id, "coin"):
-                embed = cooldown_embed
-            elif error_embed := self._validate_coin_guess(guess):
-                embed = error_embed
-            elif error_embed := self._validate_bet(bet):
-                embed = error_embed
-            elif bet > self.balances.get(ctx.author.id, 0):
-                embed = discord.Embed(
-                    title="❗ 오류",
-                    description="돈이 부족해...",
-                    color=discord.Color.red()
-                )
-            else:
-                result = secrets.choice(["앞", "뒤"])
-                embed = self._play_game(ctx.author.id, ctx.author.name, guess, result, bet, random.uniform(0.8, 1.8), "coin")
-            await ctx.reply(embed=embed)
+        if cooldown_embed := self._check_game_cooldown(ctx.author.id, "coin"):
+            embed = cooldown_embed
+        elif error_embed := self._validate_coin_guess(guess):
+            embed = error_embed
+        elif error_embed := self._validate_bet(bet):
+            embed = error_embed
+        elif bet > self.balances.get(ctx.author.id, 0):
+            embed = discord.Embed(
+                title="❗ 오류",
+                description="돈이 부족해...",
+                color=discord.Color.red()
+            )
+        else:
+            result = secrets.choice(["앞", "뒤"])
+            embed = self._play_game(ctx.author.id, ctx.author.name, guess, result, bet, random.uniform(0.8, 1.8), "coin")
+        await ctx.reply(embed=embed)
 
     @commands.command(name="도박.주사위", description="주사위")
     async def dice(self, ctx, guess: str = None, bet: int = None):
