@@ -124,23 +124,22 @@ class Gambling(commands.Cog):
 
     @commands.command(name="도박.주사위", description="주사위")
     async def dice(self, ctx, guess: str = None, bet: int = None):
-        with self._get_lock(ctx.author.id):
-            if cooldown_embed := self._check_game_cooldown(ctx.author.id, "dice"):
-                embed = cooldown_embed
-            elif error_embed := self._validate_dice_guess(guess):
-                embed = error_embed
-            elif error_embed := self._validate_bet(bet):
-                embed = error_embed
-            elif bet > self.balances.get(ctx.author.id, 0):
-                embed = discord.Embed(
-                    title="❗ 오류",
-                    description="돈이 부족해...",
-                    color=discord.Color.red()
-                )
-            else:
-                result = secrets.choice([str(i) for i in range(1, 7)])
-                embed = self._play_game(ctx.author.id, ctx.author.name, guess, result, bet, random.uniform(5.5, 6.5), "dice")
-            await ctx.reply(embed=embed)
+        if cooldown_embed := self._check_game_cooldown(ctx.author.id, "dice"):
+            embed = cooldown_embed
+        elif error_embed := self._validate_dice_guess(guess):
+            embed = error_embed
+        elif error_embed := self._validate_bet(bet):
+            embed = error_embed
+        elif bet > self.balances.get(ctx.author.id, 0):
+            embed = discord.Embed(
+                title="❗ 오류",
+                description="돈이 부족해...",
+                color=discord.Color.red()
+            )
+        else:
+            result = secrets.choice([str(i) for i in range(1, 7)])
+            embed = self._play_game(ctx.author.id, ctx.author.name, guess, result, bet, random.uniform(5.5, 6.5), "dice")
+        await ctx.reply(embed=embed)
 
     @commands.command(name="도박.잭팟", description="잭팟")
     async def jackpot(self, ctx, bet: int = None):
