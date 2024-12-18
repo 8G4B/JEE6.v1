@@ -64,7 +64,7 @@ class Gambling(commands.Cog):
             )
         return None
 
-    def _play_game(self, author_id, author_name, guess, result, bet, multiplier):
+    def _play_game(self, author_id, author_name, guess, result, bet, multiplier, game_type):
         is_correct = guess == result
         winnings = int(bet * multiplier) if is_correct else -bet
         
@@ -76,7 +76,7 @@ class Gambling(commands.Cog):
             self.jackpot += abs(winnings)
             
         self._save_data() 
-        return self._create_game_embed(author_name, is_correct, guess, result, bet, winnings, author_id)
+        return self._create_game_embed(author_name, is_correct, guess, result, bet, winnings, author_id, game_type)
 
     def _check_game_cooldown(self, user_id, game_type):
         current_time = datetime.now()
@@ -109,7 +109,7 @@ class Gambling(commands.Cog):
             )
         else:
             result = secrets.choice(["앞", "뒤"])
-            embed = self._play_game(ctx.author.id, ctx.author.name, guess, result, bet, random.uniform(0.8, 1.8))
+            embed = self._play_game(ctx.author.id, ctx.author.name, guess, result, bet, random.uniform(0.8, 1.8), "coin")
         await ctx.reply(embed=embed)
 
     @commands.command(name="도박.주사위", description="주사위")
@@ -128,7 +128,7 @@ class Gambling(commands.Cog):
             )
         else:
             result = secrets.choice([str(i) for i in range(1, 7)])
-            embed = self._play_game(ctx.author.id, ctx.author.name, guess, result, bet, random.uniform(5.5, 6.5))
+            embed = self._play_game(ctx.author.id, ctx.author.name, guess, result, bet, random.uniform(5.5, 6.5), "dice")
         await ctx.reply(embed=embed)
 
     @commands.command(name="도박.잭팟", description="잭팟")
@@ -157,7 +157,7 @@ class Gambling(commands.Cog):
                 self.balances[ctx.author.id] = current_balance - bet + winnings
                 self.jackpot -= winnings  
                 embed = discord.Embed(
-                    title=f"🎰 {ctx.author.name} 당첨",
+                    title=f"🎉 {ctx.author.name} 당첨",
                     description=f"축하합니다!\n## 수익: {winnings}원\n- 재산: {self.balances[ctx.author.id]}원(+{winnings})",
                     color=discord.Color.gold()
                 )
@@ -234,8 +234,8 @@ class Gambling(commands.Cog):
         )
         await ctx.reply(embed=embed)
 
-    def _create_game_embed(self, author_name, is_correct, guess, result, bet=None, winnings=None, author_id=None):
-        title = f"{author_name} {'맞음 ㄹㅈㄷ' if is_correct else '틀림ㅋ'}"
+    def _create_game_embed(self, author_name, is_correct, guess, result, bet=None, winnings=None, author_id=None, game_type=None):
+        title = f"{'🪙' if game_type == 'coin' else '🎲' if game_type == 'dice' else '🎰'} {author_name} {'맞음 ㄹㅈㄷ' if is_correct else '틀림ㅋ'}"
         color = discord.Color.green() if is_correct else discord.Color.red()
         
         description_parts = [
