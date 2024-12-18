@@ -4,9 +4,10 @@ import meal_api_key
 import requests
 import json
 from datetime import datetime, timedelta
+from typing import Dict, Optional, List
 
-ATPT_OFCDC_SC_CODE = 'F10'
-SD_SCHUL_CODE = '7380292'
+ATPT_OFCDC_SC_CODE = 'F10' # 광주광역시교육청
+SD_SCHUL_CODE = '7380292' # GSM 
 
 NO_MEAL = "급식이 없습니다."
 
@@ -20,8 +21,17 @@ class RequestMeal:
     
     base_url = "https://open.neis.go.kr/hub/mealServiceDietInfo"
     
+    _cache: Dict[str, tuple[List, datetime]] = {}
+    CACHE_DURATION = timedelta(hours=1)  
+    
     @staticmethod
-    def get_meal_info(date):
+    def get_meal_info(date: str) -> Optional[List]:
+        if date in RequestMeal._cache:
+            cached_data, cache_time = RequestMeal._cache[date]
+            if datetime.now() - cache_time < RequestMeal.CACHE_DURATION:
+                return cached_data
+            del RequestMeal._cache[date]
+        
         params = RequestMeal.params.copy()
         params['MLSV_YMD'] = date
         
@@ -33,6 +43,7 @@ class RequestMeal:
                 meals = data['mealServiceDietInfo'][1]['row']
                 for meal in meals:  
                     meal['DDISH_NM'] = meal['DDISH_NM'].replace('*', '')
+                RequestMeal._cache[date] = (meals, datetime.now())
                 return meals
             return None
             
