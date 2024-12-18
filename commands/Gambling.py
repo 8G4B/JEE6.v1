@@ -26,27 +26,25 @@ class Gambling(commands.Cog):
             return self.locks[user_id]
 
     def _load_data(self):
-        with self.global_lock:
-            try:
-                if os.path.exists(self.data_file):
-                    with open(self.data_file, 'r') as f:
-                        data = json.load(f)
-                        self.balances = {int(k): v for k, v in data.get('balances', {}).items()}
-                        self.jackpot = data.get('jackpot', 0)
-            except Exception as e:
-                print(f"_load_data: {e}")
+        try:
+            if os.path.exists(self.data_file):
+                with open(self.data_file, 'r') as f:
+                    data = json.load(f)
+                    self.balances = {int(k): v for k, v in data.get('balances', {}).items()}
+                    self.jackpot = data.get('jackpot', 0)
+        except Exception as e:
+            print(f"_load_data: {e}")
 
     def _save_data(self):
-        with self.global_lock:
-            try:
-                data = {
-                    'balances': self.balances,
-                    'jackpot': self.jackpot
-                }
-                with open(self.data_file, 'w') as f:
-                    json.dump(data, f)
-            except Exception as e:
-                print(f"_save_data: {e}")
+        try:
+            data = {
+                'balances': self.balances,
+                'jackpot': self.jackpot
+            }
+            with open(self.data_file, 'w') as f:
+                json.dump(data, f)
+        except Exception as e:
+            print(f"_save_data: {e}")
 
     def _validate_bet(self, bet):
         if bet is None or bet < 100:
@@ -161,7 +159,7 @@ class Gambling(commands.Cog):
             await ctx.reply(embed=embed)
             return
             
-        with self.global_lock:
+        with self._get_lock(ctx.author.id):
             current_balance = self.balances.get(ctx.author.id, 0)
             if bet > current_balance:
                 embed = discord.Embed(
