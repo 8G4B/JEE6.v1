@@ -144,7 +144,7 @@ class Gambling(commands.Cog):
             winnings = int(bet * multiplier) if is_correct else -bet
             
             if is_correct:
-                tax_rate = 0.01 if winnings > 10000000000000 else 0.005  # 10조원 초과시 1%, 이하시 0.5%
+                tax_rate = self._calculate_tax(winnings) / winnings if winnings > 0 else 0
                 tax = int(winnings * tax_rate)
                 winnings_after_tax = winnings - tax
                 current_balance = self.balances.get(author_id, 0)
