@@ -206,7 +206,7 @@ class Gambling(commands.Cog):
                 self.cooldowns[f"jackpot_win_{ctx.author.id}"] = datetime.now()
                 embed = discord.Embed(
                     title=f"🎉 {ctx.author.name} 당첨",
-                    description=f"축하합니다!\n## 수익: {winnings:,}원\n- 재산: {self.balances[ctx.author.id]:,}원(+{winnings:,})",
+                    description=f"- 현재 잭팟: {self.jackpot:,}원(-{winnings:,}) \n## 수익: {winnings:,}원\n- 재산: {self.balances[ctx.author.id]:,}원(+{winnings:,})",
                     color=discord.Color.gold()
                 )
             else:
