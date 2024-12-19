@@ -6,7 +6,8 @@ import json
 from datetime import datetime, timedelta
 from typing import Dict, Optional, List
 
-from components.ErrorEmbed import error_embed
+  
+
 ATPT_OFCDC_SC_CODE = 'F10' # 광주광역시교육청
 SD_SCHUL_CODE = '7380292' # GSM 
 
@@ -54,6 +55,13 @@ class RequestMeal:
 class Meal(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+        
+    def error_embed(self, description: str) -> discord.Embed:
+        return discord.Embed(
+            title="❗ 오류",
+            description=description,
+            color=discord.Color.red()
+        )
     
     @commands.command(name='급식', description='급식 조회')
     async def meal(self, ctx):
