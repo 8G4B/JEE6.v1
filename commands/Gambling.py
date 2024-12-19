@@ -57,6 +57,7 @@ COIN_MULTIPLIER_RANGE = (0.6, 1.7)
 DICE_MULTIPLIER_RANGE = (4.6, 5.7)
 BLACKJACK_MULTIPLIER_RANGE = (1.5, 2.5)
 BACCARAT_MULTIPLIER_RANGE = (1.8, 2.2)
+INDIAN_POKER_MULTIPLIER_RANGE = (0.5, 1.5)
 
 # !도박.노동
 WORK_REWARD_RANGE = (100, 2000)
@@ -146,6 +147,7 @@ class Gambling(commands.Cog):
         self.cooldowns = {}
         self.blackjack_players = set()
         self.baccarat_players = set()
+        self.indian_poker_players = set()
         self.data_manager = DataManager('gambling_data.json')
         self.reset_jackpot.start()
     
@@ -160,7 +162,7 @@ class Gambling(commands.Cog):
         if income <= 0:
             return 0
             
-        if game_type in ["coin", "dice", "blackjack", "baccarat"]:
+        if game_type in ["coin", "dice", "blackjack", "baccarat", "indian_poker"]:
             for threshold, rate in SECURITIES_TRANSACTION_TAX_BRACKETS:
                 if income > threshold:
                     return int(income * rate)
@@ -301,7 +303,96 @@ class Gambling(commands.Cog):
         if ctx.author.id in self.baccarat_players and ctx.command.name == "도박.바카라":
             await ctx.reply(embed=self._create_error_embed("이미 바카라 게임이 진행 중입니다."))
             return False
+        if ctx.author.id in self.indian_poker_players and ctx.command.name == "도박.인디언":
+            await ctx.reply(embed=self._create_error_embed("이미 인디언 포커 게임이 진행 중입니다."))
+            return False
         return True
+
+    @commands.command(name="도박.인디언", description="인디언 포커")
+    async def indian_poker(self, ctx, bet: str = None):
+        if cooldown_embed := self._check_game_cooldown(ctx.author.id, "indian_poker"):
+            await ctx.reply(embed=cooldown_embed)
+            return
+            
+        if bet == "올인":
+            bet = self.data_manager.get_balance(ctx.author.id)
+        else:
+            try:
+                bet = int(bet) if bet is not None else None
+            except ValueError:
+                bet = None
+                
+        if error_embed := self._validate_bet(bet, ctx.author.id):
+            await ctx.reply(embed=error_embed)
+            return
+            
+        if bet > self.data_manager.get_balance(ctx.author.id):
+            await ctx.reply(embed=self._create_error_embed("돈이 부족해..."))
+            return
+            
+        self.indian_poker_players.add(ctx.author.id)
+        
+        player_card = random.randint(1, 10)
+        banker_card = random.randint(1, 10)
+        
+        embed = discord.Embed(
+            title=f"🃏 {ctx.author.name}의 인디언 포커",
+            description=f"JEE6의 카드: {banker_card}\n선택하세요",
+            color=discord.Color.blue()
+        )
+        embed.add_field(name="선택", value="💀 Die / 📞 Call", inline=False)
+        
+        game_message = await ctx.reply(embed=embed)
+        await game_message.add_reaction("💀")
+        await game_message.add_reaction("📞")
+        
+        def check(reaction, user):
+            return user == ctx.author and str(reaction.emoji) in ["💀", "📞"] and reaction.message.id == game_message.id
+            
+        try:
+            reaction, user = await self.bot.wait_for('reaction_add', timeout=30.0, check=check)
+            
+            with self.data_manager._get_lock(ctx.author.id):
+                if str(reaction.emoji) == "💀": # 다이
+                    loss = bet // 2
+                    self.data_manager.subtract_balance(ctx.author.id, loss)
+                    embed = discord.Embed(
+                        title=f"🃏 {ctx.author.name} Die",
+                        description=f"{ctx.author.name}의 카드: {player_card}\nJEE6의 카드: {banker_card}\n## 수익: {bet:,}원 × -0.5 = -{loss:,}원\n- 재산: {self.data_manager.get_balance(ctx.author.id):,}원",
+                        color=discord.Color.red()
+                    )
+                else:  # 콜
+                    if player_card > banker_card:
+                        multiplier = random.uniform(*INDIAN_POKER_MULTIPLIER_RANGE)
+                        winnings = int(bet * multiplier)
+                        tax = self._calculate_tax(winnings, "indian_poker")
+                        winnings_after_tax = winnings - tax
+                        self.data_manager.add_balance(ctx.author.id, winnings_after_tax)
+                        embed = discord.Embed(
+                            title=f"🃏 {ctx.author.name} 승리",
+                            description=f"{ctx.author.name}의 카드: {player_card}\nJEE6의 카드: {banker_card}\n## 수익: {bet:,}원 × {multiplier:.2f} = {winnings:,}원(세금: {tax:,}원)\n- 재산: {self.data_manager.get_balance(ctx.author.id):,}원",
+                            color=discord.Color.green()
+                        )
+                    else:
+                        self.data_manager.subtract_balance(ctx.author.id, bet)
+                        embed = discord.Embed(
+                            title=f"🃏 {ctx.author.name} 패배",
+                            description=f"{ctx.author.name}의 카드: {player_card}\nJEE6의 카드: {banker_card}\n## 수익: {bet:,}원 × -1 = -{bet:,}원\n- 재산: {self.data_manager.get_balance(ctx.author.id):,}원",
+                            color=discord.Color.red()
+                        )
+                        
+                await game_message.edit(embed=embed)
+                
+        except asyncio.TimeoutError:
+            embed = discord.Embed(
+                title="⏳️ 시간 초과",
+                description="30초 동안 응답이 없어 취소됐어요",
+                color=discord.Color.red()
+            )
+            await game_message.edit(embed=embed)
+            
+        finally:
+            self.indian_poker_players.remove(ctx.author.id)
 
     @commands.command(name="도박.바카라", description="바카라")
     async def baccarat(self, ctx, bet: str = None):
