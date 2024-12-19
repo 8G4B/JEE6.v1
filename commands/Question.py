@@ -3,7 +3,6 @@ from discord.ext import commands
 import openai
 from gpt_api_key import GPT_API_KEY
 
-
   
 
 class Question(commands.Cog):
@@ -11,18 +10,16 @@ class Question(commands.Cog):
         self.bot = bot
         self.api_key = GPT_API_KEY
         openai.api_key = self.api_key
-        
-    def error_embed(self, description: str) -> discord.Embed:
-        return discord.Embed(
-            title="❗ 오류",
-            description=description,
-            color=discord.Color.red()
-        )
 
     @commands.command(name="질문", aliases=['물어보기'], description="질문")
     async def question(self, ctx, *, question=None):
         if question is None:
-            await ctx.reply(embed=error_embed("!질문 [질문할 내용] <-- 이렇게 써"))
+            embed = discord.Embed(
+                title="❗ 오류",
+                description="!질문 [질문할 내용] <-- 이렇게 써",
+                color=discord.Color.red()
+            )
+            await ctx.reply(embed=embed)
             return
 
         try:
@@ -44,6 +41,10 @@ class Question(commands.Cog):
             embed.set_footer(text=f"질문: {question}")
             
         except Exception as e:
-            embed = error_embed("GPT API")
+            embed = discord.Embed(
+                title="❗ 오류", 
+                description="GPT API",
+                color=discord.Color.red()
+            )
             
         await ctx.reply(embed=embed)

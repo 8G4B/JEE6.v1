@@ -6,8 +6,6 @@ import json
 from datetime import datetime, timedelta
 from typing import Dict, Optional, List
 
-  
-
 ATPT_OFCDC_SC_CODE = 'F10' # 광주광역시교육청
 SD_SCHUL_CODE = '7380292' # GSM 
 
@@ -55,13 +53,6 @@ class RequestMeal:
 class Meal(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        
-    def error_embed(self, description: str) -> discord.Embed:
-        return discord.Embed(
-            title="❗ 오류",
-            description=description,
-            color=discord.Color.red()
-        )
     
     @commands.command(name='급식', description='급식 조회')
     async def meal(self, ctx):
@@ -98,7 +89,11 @@ class Meal(commands.Cog):
                 color=discord.Color.orange()
             )
         else:
-            embed = error_embed("나이스 API 이슈")
+            embed = discord.Embed(
+                title="❗ 오류",
+                description="나이스 API 이슈",
+                color=discord.Color.red()
+            )
             
         await ctx.reply(embed=embed)
         
@@ -116,7 +111,11 @@ class Meal(commands.Cog):
                 color=discord.Color.orange()
             )
         else:
-            embed = error_embed("조식 정보를 가져올 수 없습니다.")
+            embed = discord.Embed(
+                title="❗ 오류",
+                description="조식 정보를 가져올 수 없습니다.",
+                color=discord.Color.red()
+            )
             
         await ctx.reply(embed=embed)
         
@@ -134,7 +133,11 @@ class Meal(commands.Cog):
                 color=discord.Color.orange()
             )
         else:
-            embed = error_embed("중식 정보를 가져올 수 없습니다.")
+            embed = discord.Embed(
+                title="❗ 오류",
+                description="중식 정보를 가져올 수 없습니다.",
+                color=discord.Color.red()
+            )
         
         await ctx.reply(embed=embed)
         
@@ -152,7 +155,11 @@ class Meal(commands.Cog):
                 color=discord.Color.orange()
             )
         else:
-            embed = error_embed("석식 정보를 가져올 수 없습니다.")
+            embed = discord.Embed(
+                title="❗ 오류",
+                description="석식 정보를 가져올 수 없습니다.",
+                color=discord.Color.red()
+            )
             
         await ctx.reply(embed=embed)
         
@@ -170,7 +177,11 @@ class Meal(commands.Cog):
                 color=discord.Color.orange()
             )
         else:
-            embed = error_embed("내일 조식 정보를 가져올 수 없습니다.")
+            embed = discord.Embed(
+                title="❗ 오류",
+                description="내일 조식 정보를 가져올 수 없습니다.",
+                color=discord.Color.red()
+            )
             
         await ctx.reply(embed=embed)
     
@@ -188,7 +199,11 @@ class Meal(commands.Cog):
                 color=discord.Color.orange()
             )
         else:
-            embed = error_embed("내일 중식 정보를 가져올 수 없습니다.")
+            embed = discord.Embed(
+                title="❗ 오류",
+                description="내일 중식 정보를 가져올 수 없습니다.",
+                color=discord.Color.red()
+            )
             
         await ctx.reply(embed=embed)
 
@@ -206,6 +221,10 @@ class Meal(commands.Cog):
                 color=discord.Color.orange()
             )
         else:
-            embed = error_embed("내일 석식 정보를 가져올 수 없습니다.")
+            embed = discord.Embed(
+                title="❗ 오류",
+                description="내일 석식 정보를 가져올 수 없습니다.",
+                color=discord.Color.red()
+            )
             
         await ctx.reply(embed=embed)

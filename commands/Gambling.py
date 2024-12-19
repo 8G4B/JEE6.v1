@@ -65,7 +65,7 @@ class Gambling(commands.Cog):
         self.data_file = 'gambling_data.json'
         self.locks = {}
         self.global_lock = threading.RLock()
-        self.blackjack_players = set()  # 블랙잭 게임 중인 플레이어 저장
+        self.blackjack_players = set()
         self._load_data()
         
         self.reset_jackpot.start()
