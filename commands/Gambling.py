@@ -66,6 +66,7 @@ class Gambling(commands.Cog):
         self.data_file = 'gambling_data.json'
         self.locks = {}
         self.global_lock = threading.RLock()
+        self.blackjack_players = set()  # 블랙잭 게임 중인 플레이어 저장
         self._load_data()
         
         self.reset_jackpot.start()
@@ -225,6 +226,13 @@ class Gambling(commands.Cog):
                 
         return value
 
+    async def cog_check(self, ctx):
+        # 블랙잭 게임 중인 플레이어가 다른 명령어를 사용하려고 할 때 차단
+        if ctx.author.id in self.blackjack_players and ctx.command.name != "도박.블랙잭":
+            await ctx.reply(embed=error_embed("블랙잭 게임이 진행 중입니다."))
+            return False
+        return True
+
     @commands.command(name="도박.블랙잭", description="블랙잭")
     async def blackjack(self, ctx, bet: str = None):
         if cooldown_embed := self._check_game_cooldown(ctx.author.id, "blackjack"):
@@ -246,6 +254,9 @@ class Gambling(commands.Cog):
         if bet > self.balances.get(ctx.author.id, 0):
             await ctx.reply(embed=error_embed("돈이 부족해..."))
             return
+            
+        # 블랙잭 게임 시작 시 플레이어 추가
+        self.blackjack_players.add(ctx.author.id)
             
         cards = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'] * 4
         random.shuffle(cards)
@@ -291,6 +302,7 @@ class Gambling(commands.Cog):
                             color=discord.Color.red()
                         )
                         await game_message.edit(embed=embed)
+                        self.blackjack_players.remove(ctx.author.id)  # 게임 종료 시 플레이어 제거
                         return
                         
                     embed = discord.Embed(
@@ -336,6 +348,7 @@ class Gambling(commands.Cog):
                             
                         self._save_data()
                         await game_message.edit(embed=embed)
+                        self.blackjack_players.remove(ctx.author.id)  # 게임 종료 시 플레이어 제거
                         return
                         
             except asyncio.TimeoutError:
@@ -345,6 +358,7 @@ class Gambling(commands.Cog):
                     color=discord.Color.red()
                 )
                 await game_message.edit(embed=embed)
+                self.blackjack_players.remove(ctx.author.id)  # 게임 종료 시 플레이어 제거
                 return
 
     @commands.command(name="도박.동전", description="동전 던지기")
