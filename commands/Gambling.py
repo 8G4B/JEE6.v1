@@ -7,6 +7,7 @@ import os
 import secrets
 import random
 import threading
+import asyncio
 
 class Gambling(commands.Cog):
     MIN_BET = 100
@@ -19,32 +20,38 @@ class Gambling(commands.Cog):
     WORK_COOLDOWN = 60
     
     INCOME_TAX_BRACKETS = [ # 종합소득세
-        (1000000000000000, 0.45),  
-        (500000000000000, 0.42),   
-        (300000000000000, 0.40),   
-        (150000000000000, 0.38),   
-        (88000000000000, 0.35),    
-        (50000000000000, 0.24),    
-        (14000000000000, 0.15),    
-        (5000000000000, 0.06),
-        (0, 0)                  
+        (1_000_000_000_000_000, 0.45),
+        (  500_000_000_000_000, 0.42),
+        (  300_000_000_000_000, 0.40),
+        (  150_000_000_000_000, 0.38),
+        (   88_000_000_000_000, 0.35),
+        (   50_000_000_000_000, 0.24),
+        (   14_000_000_000_000, 0.15),
+        (    5_000_000_000_000, 0.06),
+        (0, 0)                
+    ]
+
+    SECURITIES_TRANSACTION_TAX_BRACKETS = [ 
+        (30_000_000_000_000, 0.02),
+        (10_000_000_000_000, 0.01),
+        (0, 0.005)
     ]
     
-    TRANSFER_TAX_BRACKETS = [ # 증여세
-        (30000000000000, 0.15),  
-        (10000000000000, 0.125), 
-        (5000000000000, 0.10),   
-        (1000000000000, 0.075), 
-        (0, 0.05)                
+    GIFT_TAX_BRACKETS = [ # 증여세
+        (30_000_000_000_000, 0.15),
+        (10_000_000_000_000, 0.125),
+        ( 5_000_000_000_000, 0.10),
+        ( 1_000_000_000_000, 0.075),
+        (0, 0.05)             
     ]
     
     COIN_MULTIPLIER_RANGE = (0.6, 1.7)
     DICE_MULTIPLIER_RANGE = (4.6, 5.7)
+    BLACKJACK_MULTIPLIER = 2.5
     
     WORK_REWARD_RANGE = (100, 2000)
     
-    JACKPOT_RESET_TIMES = [
-        (7, 30),
+    UNIT_TIMES = [ (7, 30),
         (12, 30),
         (18, 30)
     ]
@@ -61,8 +68,14 @@ class Gambling(commands.Cog):
         
         self.reset_jackpot.start()
 
-    def _calculate_tax(self, income):
+    def _calculate_tax(self, income, game_type=None):
         if income <= 0:
+            return 0
+            
+        if game_type in ["coin", "dice"]:
+            for threshold, rate in self.SECURITIES_TRANSACTION_TAX_BRACKETS:
+                if income > threshold:
+                    return int(income * rate)
             return 0
             
         for threshold, rate in self.INCOME_TAX_BRACKETS:
@@ -70,8 +83,8 @@ class Gambling(commands.Cog):
                 return int(income * rate)
         return 0
 
-    def _calculate_transfer_tax(self, amount):
-        for threshold, rate in self.TRANSFER_TAX_BRACKETS:
+    def _calculate_gift_tax(self, amount):
+        for threshold, rate in self.GIFT_TAX_BRACKETS:
             if amount > threshold:
                 return int(amount * rate)
         return 0
@@ -79,7 +92,7 @@ class Gambling(commands.Cog):
     @tasks.loop(seconds=1)
     async def reset_jackpot(self):
         now = datetime.now()
-        for hour, minute in self.JACKPOT_RESET_TIMES:
+        for hour, minute in self.UNIT_TIMES:
             if now.hour == hour and now.minute == minute:
                 self.jackpot = self.INITIAL_JACKPOT
                 self._save_data()
@@ -169,7 +182,7 @@ class Gambling(commands.Cog):
             
             
             if is_correct:
-                tax_rate = self._calculate_tax(winnings) / winnings if winnings > 0 else 0
+                tax_rate = self._calculate_tax(winnings, game_type) / winnings if winnings > 0 else 0
                 tax = int(winnings * tax_rate)
                 winnings_after_tax = winnings - tax
                 current_balance = self.balances.get(author_id, 0)
@@ -204,6 +217,158 @@ class Gambling(commands.Cog):
         if game_type != "jackpot_win":
             self.cooldowns[cooldown_key] = current_time
         return None
+
+    def _get_card_value(self, card):
+        if card in ['J', 'Q', 'K']:
+            return 10
+        elif card == 'A':
+            return 11
+        return int(card)
+
+    def _calculate_hand_value(self, hand):
+        value = 0
+        aces = 0
+        
+        for card in hand:
+            if card == 'A':
+                aces += 1
+            else:
+                value += self._get_card_value(card)
+                
+        for _ in range(aces):
+            if value + 11 <= 21:
+                value += 11
+            else:
+                value += 1
+                
+        return value
+
+    @commands.command(name="도박.블랙잭", description="블랙잭")
+    async def blackjack(self, ctx, bet: str = None):
+        if cooldown_embed := self._check_game_cooldown(ctx.author.id, "blackjack"):
+            await ctx.reply(embed=cooldown_embed)
+            return
+            
+        if bet == "올인":
+            bet = self.balances.get(ctx.author.id, 0)
+        else:
+            try:
+                bet = int(bet) if bet is not None else None
+            except ValueError:
+                bet = None
+                
+        if error_embed := self._validate_bet(bet, ctx.author.id):
+            await ctx.reply(embed=error_embed)
+            return
+            
+        if bet > self.balances.get(ctx.author.id, 0):
+            embed = discord.Embed(
+                title="❗ 오류",
+                description="돈이 부족해...",
+                color=discord.Color.red()
+            )
+            await ctx.reply(embed=embed)
+            return
+            
+        cards = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'] * 4
+        random.shuffle(cards)
+        
+        player_hand = [cards.pop(), cards.pop()]
+        dealer_hand = [cards.pop(), cards.pop()]
+        
+        player_value = self._calculate_hand_value(player_hand)
+        dealer_value = self._calculate_hand_value(dealer_hand)
+        
+        embed = discord.Embed(
+            title=f"🃏 {ctx.author.name}의 블랙잭",
+            description=f"{ctx.author.name}의 패: {' '.join(player_hand)} (합계: {player_value})\nJEE6의 패: {dealer_hand[0]} ?",
+            color=discord.Color.blue()
+        )
+        embed.add_field(name="선택", value="👊 Hit 또는 🛑 Stand", inline=False)
+        
+        game_message = await ctx.reply(embed=embed)
+        await game_message.add_reaction("👊")  
+        await game_message.add_reaction("🛑")  
+        
+        def check(reaction, user):
+            return user == ctx.author and str(reaction.emoji) in ["👊", "🛑"] and reaction.message.id == game_message.id
+            
+        while True:
+            try:
+                reaction, user = await self.bot.wait_for('reaction_add', timeout=30.0, check=check)
+                await reaction.remove(user) 
+                
+                if str(reaction.emoji) == "👊":
+                    player_hand.append(cards.pop())
+                    player_value = self._calculate_hand_value(player_hand)
+                    
+                    if player_value > 21:
+                        with self._get_lock(ctx.author.id):
+                            current_balance = self.balances.get(ctx.author.id, 0)
+                            self.balances[ctx.author.id] = current_balance - bet
+                            self._save_data()
+                            
+                        embed = discord.Embed(
+                            title=f"🃏 {ctx.author.name} 버스트!",
+                            description=f"{ctx.author.name}의 패: {' '.join(player_hand)} (합계: {player_value})\nJEE6의 패: {' '.join(dealer_hand)} (합계: {dealer_value})\n## 수익: -{bet:,}원\n- 재산: {self.balances[ctx.author.id]:,}원",
+                            color=discord.Color.red()
+                        )
+                        await game_message.edit(embed=embed)
+                        return
+                        
+                    embed = discord.Embed(
+                        title=f"🃏 {ctx.author.name}의 블랙잭",
+                        description=f"{ctx.author.name}의 패: {' '.join(player_hand)} (합계: {player_value})\nJEE6의 패: {dealer_hand[0]} ?",
+                        color=discord.Color.blue()
+                    )
+                    embed.add_field(name="선택", value="👊 Hit 또는 🛑 Stand", inline=False)
+                    await game_message.edit(embed=embed)
+                    
+                elif str(reaction.emoji) == "🛑":
+                    while dealer_value < 17:
+                        dealer_hand.append(cards.pop())
+                        dealer_value = self._calculate_hand_value(dealer_hand)
+                        
+                    with self._get_lock(ctx.author.id):
+                        current_balance = self.balances.get(ctx.author.id, 0)
+                        
+                        if dealer_value > 21 or player_value > dealer_value:
+                            winnings = int(bet * self.BLACKJACK_MULTIPLIER if player_value == 21 else bet)
+                            tax = self._calculate_tax(winnings)
+                            winnings_after_tax = winnings - tax
+                            self.balances[ctx.author.id] = current_balance + winnings_after_tax
+                            
+                            embed = discord.Embed(
+                                title=f"🃏 {ctx.author.name} 승리",
+                                description=f"{ctx.author.name}의 패: {' '.join(player_hand)} (합계: {player_value})\nJEE6의 패: {' '.join(dealer_hand)} (합계: {dealer_value})\n## 수익: {winnings_after_tax:,}원(세금: {tax:,}원)\n- 재산: {self.balances[ctx.author.id]:,}원",
+                                color=discord.Color.green()
+                            )
+                        elif player_value < dealer_value:
+                            self.balances[ctx.author.id] = current_balance - bet
+                            embed = discord.Embed(
+                                title=f"🃏 {ctx.author.name} 패배",
+                                description=f"{ctx.author.name}의 패: {' '.join(player_hand)} (합계: {player_value})\nJEE6의 패: {' '.join(dealer_hand)} (합계: {dealer_value})\n## 수익: -{bet:,}원\n- 재산: {self.balances[ctx.author.id]:,}원",
+                                color=discord.Color.red()
+                            )
+                        else:
+                            embed = discord.Embed(
+                                title=f"🃏 {ctx.author.name} 무승부",
+                                description=f"{ctx.author.name}의 패: {' '.join(player_hand)} (합계: {player_value})\nJEE6의 패: {' '.join(dealer_hand)} (합계: {dealer_value})\n## 수익: 0원\n- 재산: {self.balances[ctx.author.id]:,}원",
+                                color=discord.Color.blue()
+                            )
+                            
+                        self._save_data()
+                        await game_message.edit(embed=embed)
+                        return
+                        
+            except asyncio.TimeoutError:
+                embed = discord.Embed(
+                    title="⏳️ 시간 초과",
+                    description="30초 동안 응답이 없어 취소됐어요",
+                    color=discord.Color.red()
+                )
+                await game_message.edit(embed=embed)
+                return
 
     @commands.command(name="도박.동전", description="동전 던지기")
     async def coin(self, ctx, guess: str = None, bet: str = None):
@@ -475,7 +640,7 @@ class Gambling(commands.Cog):
                 await ctx.reply(embed=embed)
                 return
 
-            tax = self._calculate_transfer_tax(amount)
+            tax = self._calculate_gift_tax(amount)
             amount_after_tax = amount - tax
             
             self.balances[ctx.author.id] = sender_balance - amount
