@@ -282,7 +282,6 @@ class Gambling(commands.Cog):
             ))
             return
             
-        # 블랙잭 게임 시작 시 플레이어 추가
         self.blackjack_players.add(ctx.author.id)
             
         cards = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'] * 4
@@ -325,7 +324,7 @@ class Gambling(commands.Cog):
                             
                         embed = discord.Embed(
                             title=f"🃏 {ctx.author.name} 버스트!",
-                            description=f"{ctx.author.name}의 패: {' '.join(player_hand)} (합계: {player_value})\nJEE6의 패: {' '.join(dealer_hand)} (합계: {dealer_value})\n## 수익: -{bet:,}원\n- 재산: {self.balances[ctx.author.id]:,}원",
+                            description=f"{ctx.author.name}의 패: {' '.join(player_hand)} (합계: {player_value})\nJEE6의 패: {' '.join(dealer_hand)} (합계: {dealer_value})\n## 수익: {bet:,}원 × -1 = -{bet:,}원\n- 재산: {self.balances[ctx.author.id]:,}원",
                             color=discord.Color.red()
                         )
                         await game_message.edit(embed=embed)
@@ -349,21 +348,22 @@ class Gambling(commands.Cog):
                         current_balance = self.balances.get(ctx.author.id, 0)
                         
                         if dealer_value > 21 or player_value > dealer_value:
-                            winnings = int(bet * random.uniform(*self.BLACKJACK_MULTIPLIER_RANGE) if player_value == 21 else bet)
+                            multiplier = random.uniform(*self.BLACKJACK_MULTIPLIER_RANGE) if player_value == 21 else 1
+                            winnings = int(bet * multiplier)
                             tax = self._calculate_tax(winnings)
                             winnings_after_tax = winnings - tax
                             self.balances[ctx.author.id] = current_balance + winnings_after_tax
                             
                             embed = discord.Embed(
                                 title=f"🃏 {ctx.author.name} 승리",
-                                description=f"{ctx.author.name}의 패: {' '.join(player_hand)} (합계: {player_value})\nJEE6의 패: {' '.join(dealer_hand)} (합계: {dealer_value})\n## 수익: {winnings_after_tax:,}원(세금: {tax:,}원)\n- 재산: {self.balances[ctx.author.id]:,}원",
+                                description=f"{ctx.author.name}의 패: {' '.join(player_hand)} (합계: {player_value})\nJEE6의 패: {' '.join(dealer_hand)} (합계: {dealer_value})\n## 수익: {bet:,}원 × {multiplier:.2f} = {winnings:,}원(세금: {tax:,}원)\n- 재산: {self.balances[ctx.author.id]:,}원",
                                 color=discord.Color.green()
                             )
                         elif player_value < dealer_value or player_value == dealer_value:
                             self.balances[ctx.author.id] = current_balance - bet
                             embed = discord.Embed(
                                 title=f"🃏 {ctx.author.name} {'패배' if player_value < dealer_value else '무승부'}",
-                                description=f"{ctx.author.name}의 패: {' '.join(player_hand)} (합계: {player_value})\nJEE6의 패: {' '.join(dealer_hand)} (합계: {dealer_value})\n## 수익: -{bet:,}원\n- 재산: {self.balances[ctx.author.id]:,}원",
+                                description=f"{ctx.author.name}의 패: {' '.join(player_hand)} (합계: {player_value})\nJEE6의 패: {' '.join(dealer_hand)} (합계: {dealer_value})\n## 수익: {bet:,}원 × -1 = -{bet:,}원\n- 재산: {self.balances[ctx.author.id]:,}원",
                                 color=discord.Color.red()
                             )
                             
