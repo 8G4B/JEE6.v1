@@ -96,18 +96,18 @@ class Gambling(commands.Cog):
             return 0
             
         if game_type in ["coin", "dice", "blackjack", "baccarat"]:
-            for threshold, rate in self.SECURITIES_TRANSACTION_TAX_BRACKETS:
+            for threshold, rate in SECURITIES_TRANSACTION_TAX_BRACKETS:
                 if income > threshold:
                     return int(income * rate)
             return 0
             
-        for threshold, rate in self.INCOME_TAX_BRACKETS:
+        for threshold, rate in INCOME_TAX_BRACKETS:
             if income > threshold:
                 return int(income * rate)
         return 0
 
     def _calculate_gift_tax(self, amount: int) -> int:
-        for threshold, rate in self.GIFT_TAX_BRACKETS:
+        for threshold, rate in GIFT_TAX_BRACKETS:
             if amount > threshold:
                 return int(amount * rate)
         return 0
@@ -155,10 +155,10 @@ class Gambling(commands.Cog):
         if isinstance(bet, str) and bet == "올인" and user_id is not None:
             bet = self.balances.get(user_id, 0)
             
-        if (bet is None) or (bet < self.MIN_BET):
+        if (bet is None) or (bet < MIN_BET):
             return self._create_error_embed("100원 이상 베팅하세요")
             
-        if bet >= self.MAX_BET:
+        if bet >= MAX_BET:
             return self._create_error_embed("100조원 이상 베팅할 수 없습니다")
             
         return None
@@ -207,7 +207,7 @@ class Gambling(commands.Cog):
         last_used = self.cooldowns.get(cooldown_key)
         
         if last_used:
-            cooldown_time = self.JACKPOT_WIN_COOLDOWN if game_type == "jackpot_win" else self.GAME_COOLDOWN
+            cooldown_time = JACKPOT_WIN_COOLDOWN if game_type == "jackpot_win" else GAME_COOLDOWN
             if (current_time - last_used).total_seconds() < cooldown_time:
                 remaining = cooldown_time - int((current_time - last_used).total_seconds())
                 minutes = remaining // 60
@@ -293,11 +293,11 @@ class Gambling(commands.Cog):
         self.baccarat_players.add(ctx.author.id)
         
         embed = discord.Embed(
-            title=f"🎲 {ctx.author.name}의 바카라",
+            title=f"🃏 {ctx.author.name}의 바카라",
             description="베팅할 곳을 선택하세요",
             color=discord.Color.blue()
         )
-        embed.add_field(name="선택", value="👤 플레이어 / 🏦 뱅커 / 🤝 타이", inline=False)
+        embed.add_field(name="선택", value=f"👤 Player: {ctx.author.name} / 🏦 Banker: JEE6 / 🤝 Tie", inline=False)
         
         game_message = await ctx.reply(embed=embed)
         await game_message.add_reaction("👤")
@@ -310,7 +310,7 @@ class Gambling(commands.Cog):
         try:
             reaction, user = await self.bot.wait_for('reaction_add', timeout=30.0, check=check)
             
-            guess = {"👤": "플레이어", "🏦": "뱅커", "🤝": "타이"}[str(reaction.emoji)]
+            guess = {"👤": "Player", "🏦": "Banker", "🤝": "Tie"}[str(reaction.emoji)]
             
             cards = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'] * 4
             random.shuffle(cards)
@@ -334,32 +334,32 @@ class Gambling(commands.Cog):
                 banker_value = self._calculate_baccarat_value(banker_hand)
                 
             if player_value > banker_value:
-                result = "플레이어"
+                result = "Player"
             elif banker_value > player_value:
-                result = "뱅커"
+                result = "Banker"
             elif player_value == banker_value:
-                result = "타이"
+                result = "Tie"
                 
             with self._get_lock(ctx.author.id):
                 current_balance = self.balances.get(ctx.author.id, 0)
                 
                 if guess == result:
-                    multiplier = 8 if result == "타이" else random.uniform(*self.BACCARAT_MULTIPLIER_RANGE)
+                    multiplier = 8 if result == "Tie" else random.uniform(*BACCARAT_MULTIPLIER_RANGE)
                     winnings = int(bet * multiplier)
                     tax = self._calculate_tax(winnings, "baccarat")
                     winnings_after_tax = winnings - tax
                     self.balances[ctx.author.id] = current_balance + winnings_after_tax
                     
                     embed = discord.Embed(
-                        title=f"🎲 {ctx.author.name} 승리",
-                        description=f"플레이어: {' '.join(player_hand)} (합계: {player_value})\n뱅커: {' '.join(banker_hand)} (합계: {banker_value})\n## 수익: {bet:,}원 × {multiplier:.2f} = {winnings:,}원(세금: {tax:,}원)\n- 재산: {self.balances[ctx.author.id]:,}원",
+                        title=f"🃏 {ctx.author.name} 승리",
+                        description=f"{ctx.author.name}: {' '.join(player_hand)} (합계: {player_value})\nJEE6: {' '.join(banker_hand)} (합계: {banker_value})\n## 수익: {bet:,}원 × {multiplier:.2f} = {winnings:,}원(세금: {tax:,}원)\n- 재산: {self.balances[ctx.author.id]:,}원",
                         color=discord.Color.green()
                     )
                 else:
                     self.balances[ctx.author.id] = current_balance - bet
                     embed = discord.Embed(
-                        title=f"🎲 {ctx.author.name} 패배",
-                        description=f"플레이어: {' '.join(player_hand)} (합계: {player_value})\n뱅커: {' '.join(banker_hand)} (합계: {banker_value})\n## 수익: {bet:,}원 × -1 = -{bet:,}원\n- 재산: {self.balances[ctx.author.id]:,}원",
+                        title=f"🃏 {ctx.author.name} 패배",
+                        description=f"{ctx.author.name}: {' '.join(player_hand)} (합계: {player_value})\nJEE6: {' '.join(banker_hand)} (합계: {banker_value})\n## 수익: {bet:,}원 × -1 = -{bet:,}원\n- 재산: {self.balances[ctx.author.id]:,}원",
                         color=discord.Color.red()
                     )
                     
@@ -415,7 +415,7 @@ class Gambling(commands.Cog):
             description=f"{ctx.author.name}의 패: {' '.join(player_hand)} (합계: {player_value})\nJEE6의 패: {dealer_hand[0]} ?",
             color=discord.Color.blue()
         )
-        embed.add_field(name="선택", value="👊 Hit 또는 🛑 Stand", inline=False)
+        embed.add_field(name="선택", value="👊 Hit / 🛑 Stand", inline=False)
         
         game_message = await ctx.reply(embed=embed)
         await game_message.add_reaction("👊")  
@@ -465,7 +465,7 @@ class Gambling(commands.Cog):
                         current_balance = self.balances.get(ctx.author.id, 0)
                         
                         if dealer_value > 21 or player_value > dealer_value:
-                            multiplier = random.uniform(*self.BLACKJACK_MULTIPLIER_RANGE) if player_value == 21 else 1
+                            multiplier = random.uniform(*BLACKJACK_MULTIPLIER_RANGE) if player_value == 21 else 1
                             winnings = int(bet * multiplier)
                             tax = self._calculate_tax(winnings, "blackjack")
                             winnings_after_tax = winnings - tax
@@ -520,7 +520,7 @@ class Gambling(commands.Cog):
                 embed = self._create_error_embed("돈이 부족해...")
             else:
                 result = secrets.choice(["앞", "뒤"])
-                embed = self._play_game(ctx.author.id, ctx.author.name, guess, result, bet, random.uniform(*self.COIN_MULTIPLIER_RANGE), "coin")
+                embed = self._play_game(ctx.author.id, ctx.author.name, guess, result, bet, random.uniform(*COIN_MULTIPLIER_RANGE), "coin")
         await ctx.reply(embed=embed)
 
     @commands.command(name="도박.주사위", description="주사위")
@@ -544,7 +544,7 @@ class Gambling(commands.Cog):
                 embed = self._create_error_embed("돈이 부족해...")
             else:
                 result = secrets.choice([str(i) for i in range(1, 7)])
-                embed = self._play_game(ctx.author.id, ctx.author.name, guess, result, bet, random.uniform(*self.DICE_MULTIPLIER_RANGE), "dice")
+                embed = self._play_game(ctx.author.id, ctx.author.name, guess, result, bet, random.uniform(*DICE_MULTIPLIER_RANGE), "dice")
         await ctx.reply(embed=embed)
 
     @commands.command(name="도박.잭팟", description="잭팟")
@@ -565,11 +565,11 @@ class Gambling(commands.Cog):
             except ValueError:
                 bet = None
             
-        if bet is None or bet < self.MIN_JACKPOT_BET:
+        if bet is None or bet < MIN_JACKPOT_BET:
             await ctx.reply(embed=self._create_error_embed("1,000원 이상 베팅하세요"))
             return
             
-        if bet >= self.MAX_BET:  
+        if bet >= MAX_BET:  
             await ctx.reply(embed=self._create_error_embed("100조원 이상 베팅할 수 없습니다"))
             return
             
