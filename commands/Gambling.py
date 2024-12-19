@@ -699,19 +699,48 @@ class Gambling(commands.Cog):
         with self.global_lock:
             sorted_balances = sorted(self.balances.items(), key=lambda item: item[1], reverse=True)
             
-            description_lines = []
-            for i, (user_id, balance) in enumerate(sorted_balances):
-                user = await self.bot.fetch_user(user_id)
-                description_lines.append(f"{i+1}. {user.name}: {balance:,}원")
-                
-            description = "\n".join(description_lines)
+            pages = []
+            for i in range(0, len(sorted_balances), 10):
+                page_lines = []
+                for j, (user_id, balance) in enumerate(sorted_balances[i:i+10], start=i+1):
+                    user = await self.bot.fetch_user(user_id)
+                    page_lines.append(f"{j}. {user.name}: {balance:,}원")
+                pages.append("\n".join(page_lines))
 
+            current_page = 0
             embed = discord.Embed(
-                title="🏅 전체 랭킹", 
-                description=description,
+                title="🏅 전체 랭킹",
+                description=pages[current_page],
                 color=discord.Color.blue()
             )
-            await ctx.reply(embed=embed)
+            embed.set_footer(text=f"{current_page + 1}/{len(pages)}")
+            
+            message = await ctx.reply(embed=embed)
+            
+            if len(pages) > 1:
+                await message.add_reaction("◀️")
+                await message.add_reaction("▶️")
+
+                def check(reaction, user):
+                    return user == ctx.author and str(reaction.emoji) in ["◀️", "▶️"] and reaction.message == message
+
+                while True:
+                    try:
+                        reaction, user = await self.bot.wait_for("reaction_add", timeout=30.0, check=check)
+                        
+                        if str(reaction.emoji) == "▶️" and current_page < len(pages) - 1:
+                            current_page += 1
+                        elif str(reaction.emoji) == "◀️" and current_page > 0:
+                            current_page -= 1
+
+                        embed.description = pages[current_page]
+                        embed.set_footer(text=f"{current_page + 1}/{len(pages)}")
+                        await message.edit(embed=embed)
+                        await message.remove_reaction(reaction, user)
+
+                    except asyncio.TimeoutError:
+                        await message.clear_reactions()
+                        break
 
     @commands.command(name="도박.송금", description="송금")
     async def transfer(self, ctx, recipient: discord.Member = None, amount: str = None):
