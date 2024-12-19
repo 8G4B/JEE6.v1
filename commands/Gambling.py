@@ -115,9 +115,9 @@ class Gambling(commands.Cog):
     @tasks.loop(seconds=1)
     async def reset_jackpot(self):
         now = datetime.now()
-        for hour, minute in self.UNIT_TIMES:
+        for hour, minute in UNIT_TIMES:
             if now.hour == hour and now.minute == minute:
-                self.jackpot = self.INITIAL_JACKPOT
+                self.jackpot = INITIAL_JACKPOT
                 self._save_data()
                 return discord.Embed(
                     title="🎰 잭팟 리셋",
