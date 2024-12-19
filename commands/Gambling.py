@@ -9,54 +9,66 @@ import random
 import threading
 import asyncio
 
+# 최소배팅액
+MIN_BET = 100
+MIN_JACKPOT_BET = 1000
+
+# 최대배팅액
+MAX_BET = 100_000_000_000_000 
+
+# 잭팟 초기화
+INITIAL_JACKPOT = 1_000_000
+
+# 쿨타임
+JACKPOT_WIN_COOLDOWN = 1800  
+GAME_COOLDOWN = 5
+WORK_COOLDOWN = 60
+
+INCOME_TAX_BRACKETS = [ # 종합소득세
+    (1_000_000_000_000_000, 0.45),
+    (  500_000_000_000_000, 0.42),
+    (  300_000_000_000_000, 0.40),
+    (  150_000_000_000_000, 0.38),
+    (   88_000_000_000_000, 0.35),
+    (   50_000_000_000_000, 0.24),
+    (   14_000_000_000_000, 0.15),
+    (    5_000_000_000_000, 0.06),
+    (0, 0)                
+]
+
+# 증권거래세
+SECURITIES_TRANSACTION_TAX_BRACKETS = [ 
+    (30_000_000_000_000, 0.02),
+    (10_000_000_000_000, 0.01),
+    (0, 0.005)
+]
+
+# 증여세
+GIFT_TAX_BRACKETS = [ 
+    (30_000_000_000_000, 0.15),
+    (10_000_000_000_000, 0.125),
+    ( 5_000_000_000_000, 0.10),
+    ( 1_000_000_000_000, 0.075),
+    (0, 0.05)             
+]
+
+# 배수
+COIN_MULTIPLIER_RANGE = (0.6, 1.7)
+DICE_MULTIPLIER_RANGE = (4.6, 5.7)
+BLACKJACK_MULTIPLIER_RANGE = (1.5, 2.5)
+
+# !도박.노동
+WORK_REWARD_RANGE = (100, 2000)
+
+# 리셋시간
+UNIT_TIMES = [ (7, 30),
+    (12, 30),
+    (18, 30)
+]
+
+# TODO: 리팩토링.. 제발..
 
 class Gambling(commands.Cog):
-    MIN_BET = 100
-    MIN_JACKPOT_BET = 1000
-    MAX_BET = 100_000_000_000_000 
-    INITIAL_JACKPOT = 1_000_000
-    
-    JACKPOT_WIN_COOLDOWN = 1800  
-    GAME_COOLDOWN = 5
-    WORK_COOLDOWN = 60
-    
-    INCOME_TAX_BRACKETS = [ # 종합소득세
-        (1_000_000_000_000_000, 0.45),
-        (  500_000_000_000_000, 0.42),
-        (  300_000_000_000_000, 0.40),
-        (  150_000_000_000_000, 0.38),
-        (   88_000_000_000_000, 0.35),
-        (   50_000_000_000_000, 0.24),
-        (   14_000_000_000_000, 0.15),
-        (    5_000_000_000_000, 0.06),
-        (0, 0)                
-    ]
-
-    SECURITIES_TRANSACTION_TAX_BRACKETS = [ 
-        (30_000_000_000_000, 0.02),
-        (10_000_000_000_000, 0.01),
-        (0, 0.005)
-    ]
-    
-    GIFT_TAX_BRACKETS = [ # 증여세
-        (30_000_000_000_000, 0.15),
-        (10_000_000_000_000, 0.125),
-        ( 5_000_000_000_000, 0.10),
-        ( 1_000_000_000_000, 0.075),
-        (0, 0.05)             
-    ]
-    
-    COIN_MULTIPLIER_RANGE = (0.6, 1.7)
-    DICE_MULTIPLIER_RANGE = (4.6, 5.7)
-    BLACKJACK_MULTIPLIER_RANGE = (1.5, 2.5)
-    
-    WORK_REWARD_RANGE = (100, 2000)
-    
-    UNIT_TIMES = [ (7, 30),
-        (12, 30),
-        (18, 30)
-    ]
-    
     def __init__(self, bot):
         self.bot = bot
         self.cooldowns = {}
@@ -77,7 +89,7 @@ class Gambling(commands.Cog):
             color=discord.Color.red()
         )
 
-    def _calculate_tax(self, income, game_type=None):
+    def _calculate_tax(self, income: int, game_type: str = None) -> int:
         if income <= 0:
             return 0
             
@@ -92,7 +104,7 @@ class Gambling(commands.Cog):
                 return int(income * rate)
         return 0
 
-    def _calculate_gift_tax(self, amount):
+    def _calculate_gift_tax(self, amount: int) -> int:
         for threshold, rate in self.GIFT_TAX_BRACKETS:
             if amount > threshold:
                 return int(amount * rate)
@@ -111,7 +123,7 @@ class Gambling(commands.Cog):
                     color=discord.Color.green()
                 )
 
-    def _get_lock(self, user_id):
+    def _get_lock(self, user_id) -> threading.RLock:
         if user_id not in self.locks:
             self.locks[user_id] = threading.RLock()
         return self.locks[user_id]
@@ -209,14 +221,14 @@ class Gambling(commands.Cog):
             self.cooldowns[cooldown_key] = current_time
         return None
 
-    def _get_card_value(self, card):
+    def _get_card_value(self, card: str) -> int:
         if card in ['J', 'Q', 'K']:
             return 10
         elif card == 'A':
             return 11
         return int(card)
 
-    def _calculate_hand_value(self, hand):
+    def _calculate_hand_value(self, hand: list[str]) -> int:
         value = 0
         aces = 0
         
@@ -308,7 +320,7 @@ class Gambling(commands.Cog):
                             color=discord.Color.red()
                         )
                         await game_message.edit(embed=embed)
-                        self.blackjack_players.remove(ctx.author.id)  # 게임 종료 시 플레이어 제거
+                        self.blackjack_players.remove(ctx.author.id)  
                         return
                         
                     embed = discord.Embed(
