@@ -48,7 +48,7 @@ class Gambling(commands.Cog):
     
     COIN_MULTIPLIER_RANGE = (0.6, 1.7)
     DICE_MULTIPLIER_RANGE = (4.6, 5.7)
-    BLACKJACK_MULTIPLIER_RANGE = (1.5, 2.0)
+    BLACKJACK_MULTIPLIER_RANGE = (1.5, 2.5)
     
     WORK_REWARD_RANGE = (100, 2000)
     
