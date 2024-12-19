@@ -2,6 +2,7 @@ import discord
 from discord.ext import commands
 import openai
 from gpt_api_key import GPT_API_KEY
+from components.ErrorEmbed import error_embed
 class Question(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -11,12 +12,7 @@ class Question(commands.Cog):
     @commands.command(name="질문", aliases=['물어보기'], description="질문")
     async def question(self, ctx, *, question=None):
         if question is None:
-            embed = discord.Embed(
-                title="❗ 오류",
-                description="!질문 [질문할 내용] <-- 이렇게 써",
-                color=discord.Color.red()
-            )
-            await ctx.reply(embed=embed)
+            await ctx.reply(embed=error_embed("!질문 [질문할 내용] <-- 이렇게 써"))
             return
 
         try:
@@ -38,10 +34,6 @@ class Question(commands.Cog):
             embed.set_footer(text=f"질문: {question}")
             
         except Exception as e:
-            embed = discord.Embed(
-                title="❗ 오류",
-                description="GPT API",
-                color=discord.Color.red()
-            )
+            embed = error_embed("GPT API")
             
         await ctx.reply(embed=embed)
