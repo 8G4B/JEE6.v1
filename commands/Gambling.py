@@ -351,14 +351,14 @@ class Gambling(commands.Cog):
                     self.balances[ctx.author.id] = current_balance + winnings_after_tax
                     
                     embed = discord.Embed(
-                        title=f"🃏 {ctx.author.name} 승리",
+                        title=f"🃏 {ctx.author.name} 맞음 ㄹㅈㄷ",
                         description=f"{ctx.author.name}: {' '.join(player_hand)} (합계: {player_value})\nJEE6: {' '.join(banker_hand)} (합계: {banker_value})\n## 수익: {bet:,}원 × {multiplier:.2f} = {winnings:,}원(세금: {tax:,}원)\n- 재산: {self.balances[ctx.author.id]:,}원",
                         color=discord.Color.green()
                     )
                 else:
                     self.balances[ctx.author.id] = current_balance - bet
                     embed = discord.Embed(
-                        title=f"🃏 {ctx.author.name} 패배",
+                        title=f"🃏 {ctx.author.name} 틀림ㅋ",
                         description=f"{ctx.author.name}: {' '.join(player_hand)} (합계: {player_value})\nJEE6: {' '.join(banker_hand)} (합계: {banker_value})\n## 수익: {bet:,}원 × -1 = -{bet:,}원\n- 재산: {self.balances[ctx.author.id]:,}원",
                         color=discord.Color.red()
                     )
@@ -616,15 +616,15 @@ class Gambling(commands.Cog):
             current_time = datetime.now()
             last_used = self.cooldowns.get(ctx.author.id)
             
-            if last_used and (current_time - last_used).total_seconds() < self.WORK_COOLDOWN:
-                remaining = self.WORK_COOLDOWN - int((current_time - last_used).total_seconds())
+            if last_used and (current_time - last_used).total_seconds() < WORK_COOLDOWN:
+                remaining = WORK_COOLDOWN - int((current_time - last_used).total_seconds())
                 embed = discord.Embed(
                     title="힘들어서 쉬는 중 ㅋ",
                     description=f"{remaining}초 후에 다시 시도해주세요.",
                     color=discord.Color.red()
                 )
             else:
-                amount = random.randint(*self.WORK_REWARD_RANGE)
+                amount = random.randint(*WORK_REWARD_RANGE)
                 self.balances[ctx.author.id] = self.balances.get(ctx.author.id, 0) + amount
                 embed = discord.Embed(
                     title=f"☭ {ctx.author.name} 노동",
@@ -701,11 +701,11 @@ class Gambling(commands.Cog):
                 await ctx.reply(embed=self._create_error_embed("올바른 금액을 입력하세요"))
                 return
 
-        if amount <= self.MIN_JACKPOT_BET:
+        if amount <= MIN_JACKPOT_BET:
             await ctx.reply(embed=self._create_error_embed("1,000원 이하는 송금할 수 없습니다."))
             return
             
-        if amount >= self.MAX_BET:  
+        if amount >= MAX_BET:  
             await ctx.reply(embed=self._create_error_embed("100조원 이상 송금할 수 없습니다"))
             return
 
