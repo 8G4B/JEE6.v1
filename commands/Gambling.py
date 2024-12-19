@@ -227,7 +227,6 @@ class Gambling(commands.Cog):
         return value
 
     async def cog_check(self, ctx):
-        # 블랙잭 게임 중인 플레이어가 다른 명령어를 사용하려고 할 때 차단
         if ctx.author.id in self.blackjack_players and ctx.command.name != "도박.블랙잭":
             await ctx.reply(embed=error_embed("블랙잭 게임이 진행 중입니다."))
             return False
@@ -332,23 +331,17 @@ class Gambling(commands.Cog):
                                 description=f"{ctx.author.name}의 패: {' '.join(player_hand)} (합계: {player_value})\nJEE6의 패: {' '.join(dealer_hand)} (합계: {dealer_value})\n## 수익: {winnings_after_tax:,}원(세금: {tax:,}원)\n- 재산: {self.balances[ctx.author.id]:,}원",
                                 color=discord.Color.green()
                             )
-                        elif player_value < dealer_value:
+                        elif player_value < dealer_value or player_value == dealer_value:
                             self.balances[ctx.author.id] = current_balance - bet
                             embed = discord.Embed(
-                                title=f"🃏 {ctx.author.name} 패배",
+                                title=f"🃏 {ctx.author.name} {'패배' if player_value < dealer_value else '무승부'}",
                                 description=f"{ctx.author.name}의 패: {' '.join(player_hand)} (합계: {player_value})\nJEE6의 패: {' '.join(dealer_hand)} (합계: {dealer_value})\n## 수익: -{bet:,}원\n- 재산: {self.balances[ctx.author.id]:,}원",
                                 color=discord.Color.red()
-                            )
-                        else:
-                            embed = discord.Embed(
-                                title=f"🃏 {ctx.author.name} 무승부",
-                                description=f"{ctx.author.name}의 패: {' '.join(player_hand)} (합계: {player_value})\nJEE6의 패: {' '.join(dealer_hand)} (합계: {dealer_value})\n## 수익: 0원\n- 재산: {self.balances[ctx.author.id]:,}원",
-                                color=discord.Color.blue()
                             )
                             
                         self._save_data()
                         await game_message.edit(embed=embed)
-                        self.blackjack_players.remove(ctx.author.id)  # 게임 종료 시 플레이어 제거
+                        self.blackjack_players.remove(ctx.author.id)  
                         return
                         
             except asyncio.TimeoutError:
@@ -358,7 +351,7 @@ class Gambling(commands.Cog):
                     color=discord.Color.red()
                 )
                 await game_message.edit(embed=embed)
-                self.blackjack_players.remove(ctx.author.id)  # 게임 종료 시 플레이어 제거
+                self.blackjack_players.remove(ctx.author.id) 
                 return
 
     @commands.command(name="도박.동전", description="동전 던지기")
