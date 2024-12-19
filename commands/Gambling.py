@@ -75,7 +75,7 @@ class Gambling(commands.Cog):
         if income <= 0:
             return 0
             
-        if game_type in ["coin", "dice"]:
+        if game_type in ["coin", "dice", "blackjack"]:
             for threshold, rate in self.SECURITIES_TRANSACTION_TAX_BRACKETS:
                 if income > threshold:
                     return int(income * rate)
@@ -350,7 +350,7 @@ class Gambling(commands.Cog):
                         if dealer_value > 21 or player_value > dealer_value:
                             multiplier = random.uniform(*self.BLACKJACK_MULTIPLIER_RANGE) if player_value == 21 else 1
                             winnings = int(bet * multiplier)
-                            tax = self._calculate_tax(winnings)
+                            tax = self._calculate_tax(winnings, "blackjack")
                             winnings_after_tax = winnings - tax
                             self.balances[ctx.author.id] = current_balance + winnings_after_tax
                             
