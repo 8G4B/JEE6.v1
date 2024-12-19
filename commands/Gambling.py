@@ -48,7 +48,7 @@ class Gambling(commands.Cog):
     
     COIN_MULTIPLIER_RANGE = (0.6, 1.7)
     DICE_MULTIPLIER_RANGE = (4.6, 5.7)
-    BLACKJACK_MULTIPLIER = 2.5
+    BLACKJACK_MULTIPLIER_RANGE = (1.5, 2.0)
     
     WORK_REWARD_RANGE = (100, 2000)
     
@@ -247,10 +247,10 @@ class Gambling(commands.Cog):
         return value
 
     async def cog_check(self, ctx):
-        if ctx.author.id in self.blackjack_players and ctx.command.name != "도박.블랙잭":
+        if ctx.author.id in self.blackjack_players and ctx.command.name == "도박.블랙잭":
             await ctx.reply(embed=discord.Embed(
                 title="❗ 오류",
-                description="블랙잭 게임이 진행 중입니다.",
+                description="이미 블랙잭 게임이 진행 중입니다.",
                 color=discord.Color.red()
             ))
             return False
@@ -349,7 +349,7 @@ class Gambling(commands.Cog):
                         current_balance = self.balances.get(ctx.author.id, 0)
                         
                         if dealer_value > 21 or player_value > dealer_value:
-                            winnings = int(bet * self.BLACKJACK_MULTIPLIER if player_value == 21 else bet)
+                            winnings = int(bet * random.uniform(*self.BLACKJACK_MULTIPLIER_RANGE) if player_value == 21 else bet)
                             tax = self._calculate_tax(winnings)
                             winnings_after_tax = winnings - tax
                             self.balances[ctx.author.id] = current_balance + winnings_after_tax
