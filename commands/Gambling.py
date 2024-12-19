@@ -56,6 +56,7 @@ GIFT_TAX_BRACKETS = [
 COIN_MULTIPLIER_RANGE = (0.6, 1.7)
 DICE_MULTIPLIER_RANGE = (4.6, 5.7)
 BLACKJACK_MULTIPLIER_RANGE = (1.5, 2.5)
+BACCARAT_MULTIPLIER_RANGE = (1.8, 2.2)
 
 # !도박.노동
 WORK_REWARD_RANGE = (100, 2000)
@@ -78,6 +79,7 @@ class Gambling(commands.Cog):
         self.locks = {}
         self.global_lock = threading.RLock()
         self.blackjack_players = set()
+        self.baccarat_players = set()
         self._load_data()
         
         self.reset_jackpot.start()
@@ -93,7 +95,7 @@ class Gambling(commands.Cog):
         if income <= 0:
             return 0
             
-        if game_type in ["coin", "dice", "blackjack"]:
+        if game_type in ["coin", "dice", "blackjack", "baccarat"]:
             for threshold, rate in self.SECURITIES_TRANSACTION_TAX_BRACKETS:
                 if income > threshold:
                     return int(income * rate)
@@ -245,12 +247,135 @@ class Gambling(commands.Cog):
                 value += 1
                 
         return value
+        
+    def _calculate_baccarat_value(self, hand: list[str]) -> int:
+        value = 0
+        for card in hand:
+            if card in ['J', 'Q', 'K', '10']:
+                continue
+            elif card == 'A':
+                value += 1
+            else:
+                value += int(card)
+        return value % 10
 
     async def cog_check(self, ctx):
         if ctx.author.id in self.blackjack_players and ctx.command.name == "도박.블랙잭":
             await ctx.reply(embed=self._create_error_embed("이미 블랙잭 게임이 진행 중입니다."))
             return False
+        if ctx.author.id in self.baccarat_players and ctx.command.name == "도박.바카라":
+            await ctx.reply(embed=self._create_error_embed("이미 바카라 게임이 진행 중입니다."))
+            return False
         return True
+
+    @commands.command(name="도박.바카라", description="바카라")
+    async def baccarat(self, ctx, bet: str = None):
+        if cooldown_embed := self._check_game_cooldown(ctx.author.id, "baccarat"):
+            await ctx.reply(embed=cooldown_embed)
+            return
+            
+        if bet == "올인":
+            bet = self.balances.get(ctx.author.id, 0)
+        else:
+            try:
+                bet = int(bet) if bet is not None else None
+            except ValueError:
+                bet = None
+                
+        if error_embed := self._validate_bet(bet, ctx.author.id):
+            await ctx.reply(embed=error_embed)
+            return
+            
+        if bet > self.balances.get(ctx.author.id, 0):
+            await ctx.reply(embed=self._create_error_embed("돈이 부족해..."))
+            return
+            
+        self.baccarat_players.add(ctx.author.id)
+        
+        embed = discord.Embed(
+            title=f"🎲 {ctx.author.name}의 바카라",
+            description="베팅할 곳을 선택하세요",
+            color=discord.Color.blue()
+        )
+        embed.add_field(name="선택", value="👤 플레이어 / 🏦 뱅커 / 🤝 타이", inline=False)
+        
+        game_message = await ctx.reply(embed=embed)
+        await game_message.add_reaction("👤")
+        await game_message.add_reaction("🏦")
+        await game_message.add_reaction("🤝")
+        
+        def check(reaction, user):
+            return user == ctx.author and str(reaction.emoji) in ["👤", "🏦", "🤝"] and reaction.message.id == game_message.id
+            
+        try:
+            reaction, user = await self.bot.wait_for('reaction_add', timeout=30.0, check=check)
+            
+            guess = {"👤": "플레이어", "🏦": "뱅커", "🤝": "타이"}[str(reaction.emoji)]
+            
+            cards = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'] * 4
+            random.shuffle(cards)
+            
+            player_hand = [cards.pop(), cards.pop()]
+            banker_hand = [cards.pop(), cards.pop()]
+            
+            player_value = self._calculate_baccarat_value(player_hand)
+            banker_value = self._calculate_baccarat_value(banker_hand)
+            
+            '''
+            3번째 카드 경우
+            플레이어가 5 이하, 뱅커 5 이하
+            '''
+            if player_value <= 5:
+                player_hand.append(cards.pop())
+                player_value = self._calculate_baccarat_value(player_hand)
+                
+            if banker_value <= 5:
+                banker_hand.append(cards.pop())
+                banker_value = self._calculate_baccarat_value(banker_hand)
+                
+            if player_value > banker_value:
+                result = "플레이어"
+            elif banker_value > player_value:
+                result = "뱅커"
+            elif player_value == banker_value:
+                result = "타이"
+                
+            with self._get_lock(ctx.author.id):
+                current_balance = self.balances.get(ctx.author.id, 0)
+                
+                if guess == result:
+                    multiplier = 8 if result == "타이" else random.uniform(*self.BACCARAT_MULTIPLIER_RANGE)
+                    winnings = int(bet * multiplier)
+                    tax = self._calculate_tax(winnings, "baccarat")
+                    winnings_after_tax = winnings - tax
+                    self.balances[ctx.author.id] = current_balance + winnings_after_tax
+                    
+                    embed = discord.Embed(
+                        title=f"🎲 {ctx.author.name} 승리",
+                        description=f"플레이어: {' '.join(player_hand)} (합계: {player_value})\n뱅커: {' '.join(banker_hand)} (합계: {banker_value})\n## 수익: {bet:,}원 × {multiplier:.2f} = {winnings:,}원(세금: {tax:,}원)\n- 재산: {self.balances[ctx.author.id]:,}원",
+                        color=discord.Color.green()
+                    )
+                else:
+                    self.balances[ctx.author.id] = current_balance - bet
+                    embed = discord.Embed(
+                        title=f"🎲 {ctx.author.name} 패배",
+                        description=f"플레이어: {' '.join(player_hand)} (합계: {player_value})\n뱅커: {' '.join(banker_hand)} (합계: {banker_value})\n## 수익: {bet:,}원 × -1 = -{bet:,}원\n- 재산: {self.balances[ctx.author.id]:,}원",
+                        color=discord.Color.red()
+                    )
+                    
+                self._save_data()
+                await game_message.edit(embed=embed)
+                
+        except asyncio.TimeoutError:
+            embed = discord.Embed(
+                title="⏳️ 시간 초과",
+                description="30초 동안 응답이 없어 취소됐어요",
+                color=discord.Color.red()
+            )
+            await game_message.edit(embed=embed)
+            
+        finally:
+            self.baccarat_players.remove(ctx.author.id)
 
     @commands.command(name="도박.블랙잭", description="블랙잭")
     async def blackjack(self, ctx, bet: str = None):
