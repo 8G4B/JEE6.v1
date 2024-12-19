@@ -70,6 +70,12 @@ class Gambling(commands.Cog):
         
         self.reset_jackpot.start()
     
+    def _create_error_embed(self, description: str) -> discord.Embed:
+        return discord.Embed(
+            title="❗ 오류",
+            description=description,
+            color=discord.Color.red()
+        )
 
     def _calculate_tax(self, income, game_type=None):
         if income <= 0:
@@ -136,45 +142,27 @@ class Gambling(commands.Cog):
             bet = self.balances.get(user_id, 0)
             
         if (bet is None) or (bet < self.MIN_BET):
-            return discord.Embed(
-                title="❗ 오류",
-                description="100원 이상 베팅하세요",
-                color=discord.Color.red()
-            )
+            return self._create_error_embed("100원 이상 베팅하세요")
+            
         if bet >= self.MAX_BET:
-            return discord.Embed(
-                title="❗ 오류", 
-                description="100조원 이상 베팅할 수 없습니다",
-                color=discord.Color.red()
-            )
+            return self._create_error_embed("100조원 이상 베팅할 수 없습니다")
+            
         return None
 
     def _validate_coin_guess(self, guess):
         if guess not in ["앞", "뒤"]:
-            return discord.Embed(
-                title="❗ 오류",
-                description="**'앞'**이랑 **'뒤'**만 입력해라...",
-                color=discord.Color.red()
-            )
+            return self._create_error_embed("**'앞'**이랑 **'뒤'**만 입력해라...")
         return None
 
     def _validate_dice_guess(self, guess):
         if guess not in [str(i) for i in range(1, 7)]:
-            return discord.Embed(
-                title="❗ 오류",
-                description="**1부터 6까지 숫자**만 입력해라...",
-                color=discord.Color.red()
-            )
+            return self._create_error_embed("**1부터 6까지 숫자**만 입력해라...")
         return None
 
     def _play_game(self, author_id, author_name, guess, result, bet, multiplier, game_type):
         lock = self._get_lock(author_id)
         if not lock.acquire(timeout=5):
-            return discord.Embed(
-                title="❗ 오류",
-                description="서버 이슈",
-                color=discord.Color.red()
-            )
+            return self._create_error_embed("서버 이슈")
         
         try:
             is_correct = (guess == result)
@@ -248,11 +236,7 @@ class Gambling(commands.Cog):
 
     async def cog_check(self, ctx):
         if ctx.author.id in self.blackjack_players and ctx.command.name == "도박.블랙잭":
-            await ctx.reply(embed=discord.Embed(
-                title="❗ 오류",
-                description="이미 블랙잭 게임이 진행 중입니다.",
-                color=discord.Color.red()
-            ))
+            await ctx.reply(embed=self._create_error_embed("이미 블랙잭 게임이 진행 중입니다."))
             return False
         return True
 
@@ -275,11 +259,7 @@ class Gambling(commands.Cog):
             return
             
         if bet > self.balances.get(ctx.author.id, 0):
-            await ctx.reply(embed=discord.Embed(
-                title="❗ 오류",
-                description="돈이 부족해...",
-                color=discord.Color.red()
-            ))
+            await ctx.reply(embed=self._create_error_embed("돈이 부족해..."))
             return
             
         self.blackjack_players.add(ctx.author.id)
@@ -400,11 +380,7 @@ class Gambling(commands.Cog):
             if error_embed := self._validate_bet(bet, ctx.author.id):
                 embed = error_embed
             elif bet > self.balances.get(ctx.author.id, 0):
-                embed = discord.Embed(
-                    title="❗ 오류",
-                    description="돈이 부족해...",
-                    color=discord.Color.red()
-                )
+                embed = self._create_error_embed("돈이 부족해...")
             else:
                 result = secrets.choice(["앞", "뒤"])
                 embed = self._play_game(ctx.author.id, ctx.author.name, guess, result, bet, random.uniform(*self.COIN_MULTIPLIER_RANGE), "coin")
@@ -428,11 +404,7 @@ class Gambling(commands.Cog):
             if error_embed := self._validate_bet(bet, ctx.author.id):
                 embed = error_embed
             elif bet > self.balances.get(ctx.author.id, 0):
-                embed = discord.Embed(
-                    title="❗ 오류",
-                    description="돈이 부족해...",
-                    color=discord.Color.red()
-                )
+                embed = self._create_error_embed("돈이 부족해...")
             else:
                 result = secrets.choice([str(i) for i in range(1, 7)])
                 embed = self._play_game(ctx.author.id, ctx.author.name, guess, result, bet, random.uniform(*self.DICE_MULTIPLIER_RANGE), "dice")
@@ -457,21 +429,11 @@ class Gambling(commands.Cog):
                 bet = None
             
         if bet is None or bet < self.MIN_JACKPOT_BET:
-            await ctx.reply(embed=discord.Embed(
-                title="❗ 오류",
-                description="1,000원 이상 베팅하세요",
-                color=discord.Color.red()
-            ))
-            await ctx.reply(embed=embed)
+            await ctx.reply(embed=self._create_error_embed("1,000원 이상 베팅하세요"))
             return
             
         if bet >= self.MAX_BET:  
-            await ctx.reply(embed=discord.Embed(
-                title="❗ 오류",
-                description="100조원 이상 베팅할 수 없습니다",
-                color=discord.Color.red()
-            ))
-            await ctx.reply(embed=embed)
+            await ctx.reply(embed=self._create_error_embed("100조원 이상 베팅할 수 없습니다"))
             return
             
         with self._get_lock(ctx.author.id):
@@ -479,19 +441,11 @@ class Gambling(commands.Cog):
             min_bet = current_balance // 100  # 재산의 1프로
             
             if bet > current_balance:
-                await ctx.reply(embed=discord.Embed(
-                    title="❗ 오류",
-                    description="돈이 부족해...",
-                    color=discord.Color.red()
-                ))
+                await ctx.reply(embed=self._create_error_embed("돈이 부족해..."))
                 return
                 
             if bet < min_bet:
-                await ctx.reply(embed=discord.Embed(
-                    title="❗ 오류",
-                    description=f"현재 재산의 1% 이상 베팅하세요. (최소 {min_bet:,}원)",
-                    color=discord.Color.red()
-                ))
+                await ctx.reply(embed=self._create_error_embed(f"현재 재산의 1% 이상 베팅하세요. (최소 {min_bet:,}원)"))
                 return
                 
             self.balances[ctx.author.id] = current_balance - bet
@@ -598,11 +552,7 @@ class Gambling(commands.Cog):
     @commands.command(name="도박.송금", description="송금")
     async def transfer(self, ctx, recipient: discord.Member = None, amount: str = None):
         if recipient is None or amount is None:
-            await ctx.reply(embed=discord.Embed(
-                title="❗ 오류",
-                description="!도박.송금 [유저] [금액] <-- 이렇게 써",
-                color=discord.Color.red()
-            ))
+            await ctx.reply(embed=self._create_error_embed("!도박.송금 [유저] [금액] <-- 이렇게 써"))
             return
 
         if amount == "올인":
@@ -611,38 +561,22 @@ class Gambling(commands.Cog):
             try:
                 amount = int(amount)
             except ValueError:
-                await ctx.reply(embed=discord.Embed(
-                    title="❗ 오류",
-                    description="올바른 금액을 입력하세요",
-                    color=discord.Color.red()
-                ))
+                await ctx.reply(embed=self._create_error_embed("올바른 금액을 입력하세요"))
                 return
 
         if amount <= self.MIN_JACKPOT_BET:
-            await ctx.reply(embed=discord.Embed(
-                title="❗ 오류",
-                description="1,000원 이하는 송금할 수 없습니다.",
-                color=discord.Color.red()
-            ))
+            await ctx.reply(embed=self._create_error_embed("1,000원 이하는 송금할 수 없습니다."))
             return
             
         if amount >= self.MAX_BET:  
-            await ctx.reply(embed=discord.Embed(
-                title="❗ 오류",
-                description="100조원 이상 송금할 수 없습니다",
-                color=discord.Color.red()
-            ))
+            await ctx.reply(embed=self._create_error_embed("100조원 이상 송금할 수 없습니다"))
             return
 
         with self._get_lock(ctx.author.id), self._get_lock(recipient.id):
             sender_balance = self.balances.get(ctx.author.id, 0)
             
             if amount > sender_balance:
-                await ctx.reply(embed=discord.Embed(
-                    title="❗ 오류",
-                    description="돈이 부족해...",
-                    color=discord.Color.red()
-                ))
+                await ctx.reply(embed=self._create_error_embed("돈이 부족해..."))
                 return
 
             tax = self._calculate_gift_tax(amount)
