@@ -340,14 +340,14 @@ class Gambling(commands.Cog):
             description=f"JEE6의 카드: {banker_card}\n선택하세요",
             color=discord.Color.blue()
         )
-        embed.add_field(name="선택", value="💀 Die / 📞 Call", inline=False)
+        embed.add_field(name="선택", value="💀 Die / ✅ Call", inline=False)
         
         game_message = await ctx.reply(embed=embed)
         await game_message.add_reaction("💀")
-        await game_message.add_reaction("📞")
+        await game_message.add_reaction("✅")
         
         def check(reaction, user):
-            return user == ctx.author and str(reaction.emoji) in ["💀", "📞"] and reaction.message.id == game_message.id
+            return user == ctx.author and str(reaction.emoji) in ["💀", "✅"] and reaction.message.id == game_message.id
             
         try:
             reaction, user = await self.bot.wait_for('reaction_add', timeout=30.0, check=check)
@@ -715,22 +715,21 @@ class Gambling(commands.Cog):
                 self.cooldowns[f"jackpot_win_{ctx.author.id}"] = datetime.now()
                 embed = discord.Embed(
                     title=f"🎉 {ctx.author.name} 당첨",
-                    description=f"- 현재 잭팟: {self.jackpot:,}원(-{winnings:,}) \n## 수익: {winnings_after_tax:,}원(세금: {tax:,}원)\n- 재산: {self.balances[ctx.author.id]:,}원(+{winnings_after_tax:,})",
+                    description=f"- 현재 잭팟: {self.data_manager.get_jackpot():,}원(-{winnings:,}) \n## 수익: {winnings_after_tax:,}원(세금: {tax:,}원)\n- 재산: {self.data_manager.get_balance(ctx.author.id):,}원(+{winnings_after_tax:,})",
                     color=discord.Color.gold()
                 )
             else:
                 embed = discord.Embed(
                     title=f"🎰 {ctx.author.name} 잭팟 실패ㅋ",
-                    description=f"\n- 현재 잭팟: {self.jackpot:,}원 \n## 수익: -{bet:,}원\n- 재산: {self.balances[ctx.author.id]:,}원",
+                    description=f"\n- 현재 잭팟: {self.data_manager.get_jackpot():,}원 \n## 수익: -{bet:,}원\n- 재산: {self.data_manager.get_balance(ctx.author.id):,}원",
                     color=discord.Color.red()
                 )
             
-            self._save_data()
             await ctx.reply(embed=embed)
 
     @commands.command(name="도박.노동", aliases=['도박.일', '도박.돈'], description="도박.노동")
     async def get_money(self, ctx):
-        with self._get_lock(ctx.author.id):
+        with self.data_manager._get_lock(ctx.author.id):
             current_time = datetime.now()
             last_used = self.cooldowns.get(ctx.author.id)
             
@@ -743,21 +742,21 @@ class Gambling(commands.Cog):
                 )
             else:
                 amount = random.randint(*WORK_REWARD_RANGE)
-                self.balances[ctx.author.id] = self.balances.get(ctx.author.id, 0) + amount
+                current_balance = self.data_manager.get_balance(ctx.author.id)
+                self.data_manager.set_balance(ctx.author.id, current_balance + amount)
                 embed = discord.Embed(
                     title=f"☭ {ctx.author.name} 노동",
-                    description=f"정당한 노동을 통해 {amount:,}원을 벌었다. \n- 재산: {self.balances.get(ctx.author.id, 0):,}원(+{amount:,})",
+                    description=f"정당한 노동을 통해 {amount:,}원을 벌었다. \n- 재산: {self.data_manager.get_balance(ctx.author.id):,}원(+{amount:,})",
                     color=discord.Color.green()
                 )
                 self.cooldowns[ctx.author.id] = current_time
-                self._save_data()  
             
             await ctx.reply(embed=embed)
 
     @commands.command(name="도박.지갑", aliases=['도박.잔액', '도박.직바'], description="잔액 확인")
     async def check_balance(self, ctx):
-        with self._get_lock(ctx.author.id):
-            balance = self.balances.get(ctx.author.id, 0)
+        with self.data_manager._get_lock(ctx.author.id):
+            balance = self.data_manager.get_balance(ctx.author.id)
             embed = discord.Embed(
                 title=f"💰 {ctx.author.name}의 지갑",
                 description=f"현재 잔액: {balance:,}원",
@@ -767,8 +766,8 @@ class Gambling(commands.Cog):
 
     @commands.command(name="도박.랭킹", description="랭킹")
     async def ranking(self, ctx):
-        with self.global_lock:
-            sorted_balances = sorted(self.balances.items(), key=lambda item: item[1], reverse=True)
+        with self.data_manager.global_lock:
+            sorted_balances = self.data_manager.get_sorted_balances()
             top_3 = sorted_balances[:3]
             
             description_lines = []
@@ -787,8 +786,8 @@ class Gambling(commands.Cog):
         
     @commands.command(name="도박.전체랭킹", description="전체 랭킹")
     async def all_ranking(self, ctx):
-        with self.global_lock:
-            sorted_balances = sorted(self.balances.items(), key=lambda item: item[1], reverse=True)
+        with self.data_manager.global_lock:
+            sorted_balances = self.data_manager.get_sorted_balances()
             
             pages = []
             for i in range(0, len(sorted_balances), 10):
@@ -840,7 +839,7 @@ class Gambling(commands.Cog):
             return
 
         if amount == "올인":
-            amount = self.balances.get(ctx.author.id, 0)
+            amount = self.data_manager.get_balance(ctx.author.id)
         else:
             try:
                 amount = int(amount)
@@ -856,8 +855,8 @@ class Gambling(commands.Cog):
             await ctx.reply(embed=self._create_error_embed("100조원 이상 송금할 수 없습니다"))
             return
 
-        with self._get_lock(ctx.author.id), self._get_lock(recipient.id):
-            sender_balance = self.balances.get(ctx.author.id, 0)
+        with self.data_manager._get_lock(ctx.author.id), self.data_manager._get_lock(recipient.id):
+            sender_balance = self.data_manager.get_balance(ctx.author.id)
             
             if amount > sender_balance:
                 await ctx.reply(embed=self._create_error_embed("돈이 부족해..."))
@@ -866,17 +865,16 @@ class Gambling(commands.Cog):
             tax = self._calculate_gift_tax(amount)
             amount_after_tax = amount - tax
             
-            self.balances[ctx.author.id] = sender_balance - amount
-            self.balances[recipient.id] = self.balances.get(recipient.id, 0) + amount_after_tax
-            self.jackpot += tax
+            self.data_manager.subtract_balance(ctx.author.id, amount)
+            self.data_manager.add_balance(recipient.id, amount_after_tax)
+            self.data_manager.add_jackpot(tax)
             
             embed = discord.Embed(
                 title="💸 송금 완료",
-                description=f"{ctx.author.name} → {recipient.name}\n## {amount:,}원 송금(세금: {tax:,}원)\n- 잔액: {self.balances[ctx.author.id]:,}원",
+                description=f"{ctx.author.name} → {recipient.name}\n## {amount:,}원 송금(세금: {tax:,}원)\n- 잔액: {self.data_manager.get_balance(ctx.author.id):,}원",
                 color=discord.Color.green()
             )
             
-            self._save_data()
             await ctx.reply(embed=embed)
 
     def _create_game_embed(self, author_name, is_correct, guess, result, bet=None, winnings=None, author_id=None, game_type=None, tax=None):
@@ -890,7 +888,7 @@ class Gambling(commands.Cog):
         
         if bet is not None and is_correct:
             multiplier = round((winnings + (tax or 0)) / bet, 2) if winnings > 0 else -1
-            balance = self.balances.get(author_id, 0)
+            balance = self.data_manager.get_balance(author_id)
             sign = '+' if winnings > 0 else ''
             
             description_parts.extend([
@@ -899,7 +897,7 @@ class Gambling(commands.Cog):
             ])
         elif bet is not None:
             multiplier = -1
-            balance = self.balances.get(author_id, 0)
+            balance = self.data_manager.get_balance(author_id)
             
             description_parts.extend([
                 f"## 수익: {bet:,}원 × {multiplier} = {winnings:,}원",
