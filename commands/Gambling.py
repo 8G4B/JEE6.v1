@@ -56,8 +56,8 @@ GIFT_TAX_BRACKETS = [
 # 배수
 COIN_MULTIPLIER_RANGE = (0.6, 1.7)
 DICE_MULTIPLIER_RANGE = (4.6, 5.7)
-BLACKJACK_MULTIPLIER_RANGE = (1.5, 2.5)
-BACCARAT_MULTIPLIER_RANGE = (1.8, 2.2)
+BLACKJACK_MULTIPLIER_RANGE = (1.2, 1.5)
+BACCARAT_MULTIPLIER_RANGE = (1.2, 1.5)
 INDIAN_POKER_MULTIPLIER_RANGE = (0.5, 1.5)
 
 # !도박.노동
@@ -419,11 +419,13 @@ class Gambling(commands.Cog):
                 await game_message.edit(embed=embed)
                 
         except asyncio.TimeoutError:
-            embed = discord.Embed(
-                title="⏳️ 시간 초과",
-                description="30초 동안 응답이 없어 취소됐어요",
-                color=discord.Color.red()
-            )
+            with self.data_manager._get_lock(ctx.author.id):
+                self.data_manager.subtract_balance(ctx.author.id, bet)
+                embed = discord.Embed(
+                    title="⏳️ 시간 초과",
+                    description=f"30초 동안 응답이 없어 베팅금 {bet:,}원을 잃었습니다.\n- 재산: {self.data_manager.get_balance(ctx.author.id):,}원",
+                    color=discord.Color.red()
+                )
             await game_message.edit(embed=embed)
             
         finally:
@@ -525,11 +527,13 @@ class Gambling(commands.Cog):
                 await game_message.edit(embed=embed)
                 
         except asyncio.TimeoutError:
-            embed = discord.Embed(
-                title="⏳️ 시간 초과",
-                description="30초 동안 응답이 없어 취소됐어요",
-                color=discord.Color.red()
-            )
+            with self.data_manager._get_lock(ctx.author.id):
+                self.data_manager.subtract_balance(ctx.author.id, bet)
+                embed = discord.Embed(
+                    title="⏳️ 시간 초과",
+                    description=f"30초 동안 응답이 없어 베팅금 {bet:,}원을 잃었습니다.\n- 재산: {self.data_manager.get_balance(ctx.author.id):,}원",
+                    color=discord.Color.red()
+                )
             await game_message.edit(embed=embed)
             
         finally:
@@ -619,7 +623,7 @@ class Gambling(commands.Cog):
                         
                     with self.data_manager._get_lock(ctx.author.id):
                         if dealer_value > 21 or player_value > dealer_value:
-                            multiplier = random.uniform(*BLACKJACK_MULTIPLIER_RANGE) if player_value == 21 else 1
+                            multiplier = 2.0 if player_value == 21 else random.uniform(*BLACKJACK_MULTIPLIER_RANGE)
                             winnings = int(bet * multiplier)
                             tax = self._calculate_tax(winnings, "blackjack")
                             winnings_after_tax = winnings - tax
@@ -643,11 +647,13 @@ class Gambling(commands.Cog):
                         return
                         
             except asyncio.TimeoutError:
-                embed = discord.Embed(
-                    title="⏳️ 시간 초과",
-                    description="30초 동안 응답이 없어 취소됐어요",
-                    color=discord.Color.red()
-                )
+                with self.data_manager._get_lock(ctx.author.id):
+                    self.data_manager.subtract_balance(ctx.author.id, bet)
+                    embed = discord.Embed(
+                        title="⏳️ 시간 초과",
+                        description=f"30초 동안 응답이 없어 베팅금 {bet:,}원을 잃었습니다.\n- 재산: {self.data_manager.get_balance(ctx.author.id):,}원",
+                        color=discord.Color.red()
+                    )
                 await game_message.edit(embed=embed)
                 self.blackjack_players.remove(ctx.author.id) 
                 return
@@ -1017,13 +1023,13 @@ class Gambling(commands.Cog):
         ]
         
         if bet is not None and is_correct:
-            multiplier = round((winnings + (tax or 0)) / bet, 2) if winnings > 0 else -1
+            total_winnings = winnings + (tax or 0)  
+            multiplier = total_winnings / bet  
             balance = self.data_manager.get_balance(author_id)
-            sign = '+' if winnings > 0 else ''
             
             description_parts.extend([
-                f"## 수익: {bet:,}원 × {multiplier} = {winnings:,}원(세금: {tax:,}원)" if tax else f"## 수익: {bet:,}원 × {multiplier} = {winnings:,}원",
-                f"- 재산: {balance:,}원({sign}{winnings:,})"
+                f"## 수익: {bet:,}원 × {multiplier:.2f} = {winnings:,}원(세금: {tax:,}원)" if tax else f"## 수익: {bet:,}원 × {multiplier:.2f} = {winnings:,}원",
+                f"- 재산: {balance:,}원(+{winnings:,})"
             ])
         elif bet is not None:
             multiplier = -1
