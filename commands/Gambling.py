@@ -8,6 +8,7 @@ import secrets
 import random
 import threading
 import asyncio
+import time
 
 # 최소배팅액
 MIN_BET = 100
@@ -75,12 +76,42 @@ class DataManager:
         self.jackpot = 0
         self.locks = {}
         self.global_lock = threading.RLock()
+        self.dirty = False  # 데이터 변경 여부
+        self.last_save = datetime.now()
         self._load_data()
+        
+        self._start_batch_save()
 
-    def _get_lock(self, user_id) -> threading.RLock:
-        if user_id not in self.locks:
-            self.locks[user_id] = threading.RLock()
-        return self.locks[user_id]
+    def _start_batch_save(self):
+        def save_periodically():
+            while True:
+                time.sleep(60)  
+                self._batch_save()
+                
+        save_thread = threading.Thread(target=save_periodically, daemon=True)
+        save_thread.start()
+
+    def _batch_save(self):
+        with self.global_lock:
+            if not self.dirty:
+                return
+                
+            try:
+                data = {
+                    'balances': self.balances,
+                    'jackpot': self.jackpot
+                }
+                # 임시 파일
+                temp_file = f"{self.data_file}.tmp"
+                with open(temp_file, 'w') as f:
+                    json.dump(data, f)
+                    
+                # 파일 교체
+                os.replace(temp_file, self.data_file)
+                self.dirty = False
+                self.last_save = datetime.now()
+            except Exception as e:
+                print(f"Batch save error: {e}")
 
     def _load_data(self):
         try:
@@ -90,18 +121,17 @@ class DataManager:
                     self.balances = {int(k): v for k, v in data.get('balances', {}).items()}
                     self.jackpot = data.get('jackpot', 0)
         except Exception as e:
-            print(f"load: {e}")
+            print(f"Load error: {e}")
 
     def _save_data(self):
-        try:
-            data = {
-                'balances': self.balances,
-                'jackpot': self.jackpot
-            }
-            with open(self.data_file, 'w') as f:
-                json.dump(data, f)
-        except Exception as e:
-            print(f"save: {e}")
+        self.dirty = True
+        if (datetime.now() - self.last_save).total_seconds() > 300: # 5분
+            self._batch_save()
+
+    def _get_lock(self, user_id) -> threading.RLock:
+        if user_id not in self.locks:
+            self.locks[user_id] = threading.RLock()
+        return self.locks[user_id]
 
     def get_balance(self, user_id):
         return self.balances.get(user_id, 0)
@@ -308,7 +338,7 @@ class Gambling(commands.Cog):
             return False
         return True
 
-    @commands.command(name="도박.인디언", description="인디언 포커")
+    @commands.command(name="도박.인디언", aliases=['도박.인디언포커'], description="인디언 포커")
     async def indian_poker(self, ctx, bet: str = None):
         if cooldown_embed := self._check_game_cooldown(ctx.author.id, "indian_poker"):
             await ctx.reply(embed=cooldown_embed)
@@ -337,7 +367,7 @@ class Gambling(commands.Cog):
         
         embed = discord.Embed(
             title=f"🃏 {ctx.author.name}의 인디언 포커",
-            description=f"JEE6의 카드: {banker_card}\n선택하세요",
+            description=f"{ctx.author.name}의 카드: ?\nJEE6의 카드: {banker_card}",
             color=discord.Color.blue()
         )
         embed.add_field(name="선택", value="💀 Die / ✅ Call", inline=False)
