@@ -623,7 +623,7 @@ class Gambling(commands.Cog):
                             winnings = int(bet * multiplier)
                             tax = self._calculate_tax(winnings, "blackjack")
                             winnings_after_tax = winnings - tax
-                            self.data_manager.add_balance(ctx.author.id, winnings_after_tax - bet)
+                            self.data_manager.add_balance(ctx.author.id, winnings_after_tax)
                             
                             embed = discord.Embed(
                                 title=f"🃏 {ctx.author.name} 승리",
