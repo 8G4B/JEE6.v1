@@ -3,20 +3,27 @@ from discord.ext import commands
 import openai
 from gpt_api_key import GPT_API_KEY
 
-class GPTService:
+class RequestGPT:
     def __init__(self):
         self.api_key = GPT_API_KEY
         openai.api_key = self.api_key
         
-    def get_answer(self, question: str) -> str:
+    def send_request(self, model: str, system: str, user: str) -> str:
         response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
+            model=model,
             messages=[
-                {"role": "system", "content": "다음 질문에 대해 간단히 답변해주세요."},
-                {"role": "user", "content": question}
+                {"role": "system", "content": system},
+                {"role": "user", "content": user}
             ]
         )
         return response.choices[0].message.content
+
+class GPTService:
+    def __init__(self):
+        self.gpt_request = RequestGPT()
+        
+    def get_answer(self, user: str) -> str:
+        return self.gpt_request.send_request("gpt-3.5-turbo", "다음 질문에 대해 간단히 답변해주세요.", user)
 
 class QuestionEmbed:
     @staticmethod
