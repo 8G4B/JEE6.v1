@@ -653,52 +653,109 @@ class Gambling(commands.Cog):
                 return
 
     @commands.command(name="도박.동전", description="동전 던지기")
-    async def coin(self, ctx, guess: str = None, bet: str = None):
+    async def coin(self, ctx, bet: str = None):
         if cooldown_embed := self._check_game_cooldown(ctx.author.id, "coin"):
-            embed = cooldown_embed
-        elif error_embed := self._validate_coin_guess(guess):
-            embed = error_embed
+            await ctx.reply(embed=cooldown_embed)
+            return
+            
+        if bet == "올인":
+            bet = self.data_manager.get_balance(ctx.author.id)
         else:
-            if bet == "올인":
-                bet = self.data_manager.get_balance(ctx.author.id)
-            else:
-                try:
-                    bet = int(bet) if bet is not None else None
-                except ValueError:
-                    bet = None
-                    
-            if error_embed := self._validate_bet(bet, ctx.author.id):
-                embed = error_embed
-            elif bet > self.data_manager.get_balance(ctx.author.id):
-                embed = self._create_error_embed("돈이 부족해...")
-            else:
-                result = secrets.choice(["앞", "뒤"])
-                embed = self._play_game(ctx.author.id, ctx.author.name, guess, result, bet, random.uniform(*COIN_MULTIPLIER_RANGE), "coin")
-        await ctx.reply(embed=embed)
+            try:
+                bet = int(bet) if bet is not None else None
+            except ValueError:
+                bet = None
+                
+        if error_embed := self._validate_bet(bet, ctx.author.id):
+            await ctx.reply(embed=error_embed)
+            return
+            
+        if bet > self.data_manager.get_balance(ctx.author.id):
+            await ctx.reply(embed=self._create_error_embed("돈이 부족해..."))
+            return
+
+        embed = discord.Embed(
+            title=f"🪙 {ctx.author.name}의 동전 게임",
+            description="앞면 또는 뒷면을 선택하세요",
+            color=discord.Color.blue()
+        )
+        embed.add_field(name="선택", value="⭕ 앞면 / ❌ 뒷면", inline=False)
+        
+        game_message = await ctx.reply(embed=embed)
+        await game_message.add_reaction("⭕")
+        await game_message.add_reaction("❌")
+        
+        def check(reaction, user):
+            return user == ctx.author and str(reaction.emoji) in ["⭕", "❌"] and reaction.message.id == game_message.id
+            
+        try:
+            reaction, user = await self.bot.wait_for('reaction_add', timeout=30.0, check=check)
+            
+            guess = "앞" if str(reaction.emoji) == "⭕" else "뒤"
+            result = secrets.choice(["앞", "뒤"])
+            embed = self._play_game(ctx.author.id, ctx.author.name, guess, result, bet, random.uniform(*COIN_MULTIPLIER_RANGE), "coin")
+            await game_message.edit(embed=embed)
+            
+        except asyncio.TimeoutError:
+            embed = discord.Embed(
+                title="⏳️ 시간 초과",
+                description="30초 동안 응답이 없어 취소됐어요",
+                color=discord.Color.red()
+            )
+            await game_message.edit(embed=embed)
 
     @commands.command(name="도박.주사위", description="주사위")
-    async def dice(self, ctx, guess: str = None, bet: str = None):
+    async def dice(self, ctx, bet: str = None):
         if cooldown_embed := self._check_game_cooldown(ctx.author.id, "dice"):
-            embed = cooldown_embed
-        elif error_embed := self._validate_dice_guess(guess):
-            embed = error_embed
+            await ctx.reply(embed=cooldown_embed)
+            return
+            
+        if bet == "올인":
+            bet = self.data_manager.get_balance(ctx.author.id)
         else:
-            if bet == "올인":
-                bet = self.data_manager.get_balance(ctx.author.id)
-            else:
-                try:
-                    bet = int(bet) if bet is not None else None
-                except ValueError:
-                    bet = None
-                    
-            if error_embed := self._validate_bet(bet, ctx.author.id):
-                embed = error_embed
-            elif bet > self.data_manager.get_balance(ctx.author.id):
-                embed = self._create_error_embed("돈이 부족해...")
-            else:
-                result = secrets.choice([str(i) for i in range(1, 7)])
-                embed = self._play_game(ctx.author.id, ctx.author.name, guess, result, bet, random.uniform(*DICE_MULTIPLIER_RANGE), "dice")
-        await ctx.reply(embed=embed)
+            try:
+                bet = int(bet) if bet is not None else None
+            except ValueError:
+                bet = None
+                
+        if error_embed := self._validate_bet(bet, ctx.author.id):
+            await ctx.reply(embed=error_embed)
+            return
+            
+        if bet > self.data_manager.get_balance(ctx.author.id):
+            await ctx.reply(embed=self._create_error_embed("돈이 부족해..."))
+            return
+
+        embed = discord.Embed(
+            title=f"🎲 {ctx.author.name}의 주사위 게임",
+            description="1부터 6까지 숫자를 선택하세요",
+            color=discord.Color.blue()
+        )
+        embed.add_field(name="선택", value="1️⃣ 2️⃣ 3️⃣ 4️⃣ 5️⃣ 6️⃣", inline=False)
+        
+        game_message = await ctx.reply(embed=embed)
+        reactions = ["1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣", "6️⃣"]
+        for reaction in reactions:
+            await game_message.add_reaction(reaction)
+        
+        def check(reaction, user):
+            return user == ctx.author and str(reaction.emoji) in reactions and reaction.message.id == game_message.id
+            
+        try:
+            reaction, user = await self.bot.wait_for('reaction_add', timeout=30.0, check=check)
+            
+            guess = str(reactions.index(str(reaction.emoji)) + 1)
+            result = secrets.choice([str(i) for i in range(1, 7)])
+            embed = self._play_game(ctx.author.id, ctx.author.name, guess, result, bet, random.uniform(*DICE_MULTIPLIER_RANGE), "dice")
+            await game_message.edit(embed=embed)
+            
+        except asyncio.TimeoutError:
+            embed = discord.Embed(
+                title="⏳️ 시간 초과",
+                description="30초 동안 응답이 없어 취소됐어요",
+                color=discord.Color.red()
+            )
+            await game_message.edit(embed=embed)
 
     @commands.command(name="도박.잭팟", description="잭팟")
     async def jackpot(self, ctx, bet: str = None):
