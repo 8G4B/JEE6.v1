@@ -279,7 +279,12 @@ class Gambling(commands.Cog):
                 remaining = cooldown_time - int((current_time - last_used).total_seconds())
                 minutes = remaining // 60
                 seconds = remaining % 60
-                time_str = f"{minutes}분 {seconds}초" if minutes > 0 else f"{seconds}초"
+                
+                if minutes > 0:
+                    time_str = f"{minutes}분 {seconds}초"
+                else:
+                    time_str = f"{seconds}초"
+                
                 return discord.Embed(
                     title="⏳️ 쿨타임",
                     description=f"{time_str} 후에 다시 시도해주세요.",
@@ -819,13 +824,45 @@ class Gambling(commands.Cog):
         with self.data_manager.global_lock:
             sorted_balances = self.data_manager.get_sorted_balances()
             
+            member_dict = {member.id: member.display_name for member in ctx.guild.members}
+            
             pages = []
-            for i in range(0, len(sorted_balances), 10):
+            page_size = 10
+            total_users = len(sorted_balances)
+            
+            for page_num in range((total_users + page_size - 1) // page_size):
+                start_idx = page_num * page_size
+                end_idx = min(start_idx + page_size, total_users)
+                
+                page_users = sorted_balances[start_idx:end_idx]
                 page_lines = []
-                for j, (user_id, balance) in enumerate(sorted_balances[i:i+10], start=i+1):
-                    user = await self.bot.fetch_user(user_id)
-                    page_lines.append(f"{j}. {user.name}: {balance:,}원")
+                
+                for rank, (user_id, balance) in enumerate(page_users, start=start_idx + 1):
+                    username = member_dict.get(user_id)
+                    
+                    if not username:
+                        try:
+                            user = self.bot.get_user(user_id)
+                            if user:
+                                username = user.name
+                            else:
+                                user = await self.bot.fetch_user(user_id)
+                                username = user.name
+                        except:
+                            username = f"알 수 없음({user_id})"
+                    
+                    page_lines.append(f"{rank}. {username}: {balance:,}원")
+                
                 pages.append("\n".join(page_lines))
+
+            if not pages:
+                embed = discord.Embed(
+                    title="🏅 전체 랭킹",
+                    description="랭킹 정보가 없습니다.",
+                    color=discord.Color.blue()
+                )
+                await ctx.reply(embed=embed)
+                return
 
             current_page = 0
             embed = discord.Embed(
@@ -842,11 +879,17 @@ class Gambling(commands.Cog):
                 await message.add_reaction("▶️")
 
                 def check(reaction, user):
-                    return user == ctx.author and str(reaction.emoji) in ["◀️", "▶️"] and reaction.message == message
+                    return (user == ctx.author and 
+                            str(reaction.emoji) in ["◀️", "▶️"] and 
+                            reaction.message.id == message.id)
 
                 while True:
                     try:
-                        reaction, user = await self.bot.wait_for("reaction_add", timeout=30.0, check=check)
+                        reaction, user = await self.bot.wait_for(
+                            "reaction_add", 
+                            timeout=30.0, 
+                            check=check
+                        )
                         
                         if str(reaction.emoji) == "▶️" and current_page < len(pages) - 1:
                             current_page += 1
