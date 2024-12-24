@@ -10,7 +10,10 @@ class Lol(commands.Cog):
         self.base_url = "https://kr.api.riotgames.com"
         self.headers = {
             "X-Riot-Token": self.api_key,
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36"
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+            "Accept-Language": "ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7", 
+            "Accept-Charset": "application/x-www-form-urlencoded; charset=UTF-8",
+            "Origin": "https://developer.riotgames.com"
         }
 
     def _create_error_embed(self, error_message, additional_info=None):
@@ -24,6 +27,38 @@ class Lol(commands.Cog):
             color=discord.Color.red()
         )
         return embed
+      
+    @commands.command(name="롤.전적", description="소환사 이름을 입력하여 전적을 조회합니다")
+    async def lol_history(self, ctx, *, riot_id: str):
+        try:
+            if '#' not in riot_id:
+                await ctx.reply(embed=self._create_error_embed("!롤.전적 닉네임#태그"))
+                return
+                
+            game_name, tag_line = riot_id.split('#')
+            
+            account_url = f"https://asia.api.riotgames.com/riot/account/v1/accounts/by-riot-id/{game_name}/{tag_line}"
+            account_response = requests.get(account_url, headers=self.headers)
+
+            if account_response.status_code != 200:
+                await ctx.reply(embed=self._create_error_embed(account_response.status_code))
+                return
+
+            account_data = account_response.json()
+            puuid = account_data['puuid']
+            original_game_name = account_data['gameName']
+            tag_line = account_data['tagLine']
+
+            embed = discord.Embed(
+                title=f"{original_game_name}#{tag_line}의 정보",
+                description=f"{original_game_name}#{tag_line}의 PUUID: {puuid}",
+                color=discord.Color.dark_blue()
+            )
+
+            await ctx.reply(embed=embed)
+
+        except Exception as e:
+            await ctx.reply(embed=self._create_error_embed(str(e)))
 
     @commands.command(name="롤.로테이션", description="현재 무료 로테이션 챔피언 목록을 보여줍니다")
     async def lol_rotation(self, ctx):
