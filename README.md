@@ -1,6 +1,6 @@
 # JEE6
 
-<img src="https://github.com/user-attachments/assets/d6b5f0cd-9363-40ad-a356-c1449664750b" width="50%"/> <br/>
+<img src="https://github.com/user-attachments/assets/d6b5f0cd-9363-40ad-a356-c1449664750b" width="30%"/> <br/>
 
 > JEE6은 GSM 학생들을 위해 여러 기능을 제공하는 discord 봇입니다.
 
@@ -16,7 +16,7 @@
 
     > NIES API를 이용했어요.
 
-    - `!급식` 을 통해 다음 급식을 확인할 수 있어요.
+    - `!급식` `!밥`을 통해 다음 급식을 확인할 수 있어요.
 
     - `!급식.아침` `!급식.점심` `!급식.저녁` 을 통해 오늘의 각 식사메뉴를 확인할 수 있어요.
 
@@ -34,7 +34,7 @@
 
     - `!도박.랭킹` 을 통해 상위 3명의 랭킹을 볼 수 있고, `!도박.전체랭킹` 를 통해 전체 랭킹을 볼 수 있어요.
 
-      - 전체랭킹 조회는 조금 오래 걸려요...
+      - ~~전체랭킹 조회는 조금 오래 걸려요...~~ 최적화 완료.
 
     - `!도박.송금 [유저] [금액]` 을 통해 돈을 송금할 수 있어요.
 
@@ -92,7 +92,7 @@
 
     - `!롤.로테이션` 을 통해 현재 무료 로테이션 챔피언 목록을 확인할 수 있어요.
 
-    - `!롤.티어 [유저명]` 을 통해 티어를 확인할 수 있어요.
+    - `!롤.티어 [유저명]` 을 통해 그 유저의 티어를 확인할 수 있어요.
 
     - `!롤.전적 [유저명]` 을 통해 최근 5게임 전적을 확인할 수 있어요.
 
@@ -121,17 +121,24 @@
    - python-dotenv
    - discord.py
    - requests
+   - aiohttp
    - openai
+   - riotwatcher
 
 2. 환경변수 설정
 
    `.env` 파일을 만들어서 환경변수를 설정해주세요. 이 파일은 보안상의 이유로 `.gitignore`에 포함되어 있어서 github에 올라가지 않아요.
 
+   터미널에 다음 명령어를 입력하거나,
+
    ```shell
    echo "DISCORD_TOKEN=[여기에 토큰 입력]" >> .env
    echo "MEAL_API_KEY=[여기에 키 입력]" >> .env
    echo "GPT_API_KEY=[여기에 키 입력]" >> .env
+   echo "RIOT_API_KEY=[여기에 키 입력]" >> .env
    ```
+
+   root 디렉토리에 `.env` 파일을 만들어서 직접 설정해도 됩니다.
 
 3. 실행
 
@@ -151,11 +158,16 @@ Windows의 경우와 Ubuntu의 경우로 나뉘어요.
 
    `.env` 파일을 만들어서 환경변수를 설정해주세요. 이 파일은 보안상의 이유로 `.gitignore`에 포함되어 있어서 github에 올라가지 않아요.
 
+   터미널에 다음 명령어를 입력하거나,
+
    ```shell
    echo "DISCORD_TOKEN=[여기에 토큰 입력]" >> .env
    echo "MEAL_API_KEY=[여기에 키 입력]" >> .env
    echo "GPT_API_KEY=[여기에 키 입력]" >> .env
+   echo "RIOT_API_KEY=[여기에 키 입력]" >> .env
    ```
+
+   root 디렉토리에 `.env` 파일을 만들어서 직접 설정해도 됩니다.
 
 3. 도커 이미지 빌드
 
@@ -194,6 +206,7 @@ Windows의 경우와 Ubuntu의 경우로 나뉘어요.
     echo "DISCORD_TOKEN=[여기에 토큰 입력]" >> .env
     echo "MEAL_API_KEY=[여기에 키 입력]" >> .env
     echo "GPT_API_KEY=[여기에 키 입력]" >> .env
+    echo "RIOT_API_KEY=[여기에 키 입력]" >> .env
    ```
 
 3. 도커 이미지 빌드
