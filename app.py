@@ -1,6 +1,6 @@
 import discord
 from discord.ext import commands
-from discord_token import TOKEN
+from shared.discord_token import TOKEN
 import asyncio
 import logging
 

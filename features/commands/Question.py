@@ -1,7 +1,7 @@
 import discord
 from discord.ext import commands
 import openai
-from gpt_api_key import GPT_API_KEY
+from shared.gpt_api_key import GPT_API_KEY
 
 class RequestGPT:
     def __init__(self):

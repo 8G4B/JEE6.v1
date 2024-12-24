@@ -1,6 +1,6 @@
 import discord
 from discord.ext import commands
-import meal_api_key
+from shared.meal_api_key import MEAL_API_KEY
 import requests
 import json
 from datetime import datetime, timedelta
@@ -13,7 +13,7 @@ NO_MEAL = "급식이 없습니다."
 
 class RequestMeal:
     params = {
-        'key': meal_api_key.MEAL_API_KEY,
+        'key': MEAL_API_KEY,
         'type': 'json',
         'ATPT_OFCDC_SC_CODE': ATPT_OFCDC_SC_CODE, 
         'SD_SCHUL_CODE': SD_SCHUL_CODE,  
