@@ -2,7 +2,7 @@
 
 <img src="https://github.com/user-attachments/assets/d6b5f0cd-9363-40ad-a356-c1449664750b" width="50%"/> <br/>
 
-> JEE6은 discord 봇입니다.
+> JEE6은 GSM 학생들을 위해 여러 기능을 제공하는 discord 봇입니다.
 
 [JEE6 서버에 초대하기](https://discord.com/oauth2/authorize?client_id=1318114372438196328&permissions=8&integration_type=0&scope=bot)
 
@@ -86,7 +86,17 @@
         | 5조원 초과 10조원 이하      | 42%  |
         | 10조원 초과                 | 45%  |
 
-3.  기타
+3.  롤 관련
+
+    > RIOT API를 이용했어요.
+
+    - `!롤.로테이션` 을 통해 현재 무료 로테이션 챔피언 목록을 확인할 수 있어요.
+
+    - `!롤.티어 [유저명]` 을 통해 티어를 확인할 수 있어요.
+
+    - `!롤.전적 [유저명]` 을 통해 최근 5게임 전적을 확인할 수 있어요.
+
+4.  기타
 
     - `!시간` 을 통해 현재 서버 시간을 확인할 수 있어요.
 
