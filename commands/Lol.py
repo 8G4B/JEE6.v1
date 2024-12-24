@@ -1,97 +1,65 @@
 import discord
 from discord.ext import commands
-from riotwatcher import LolWatcher
-import riot_api_key
+import requests
+import os
 
 class Lol(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.api_key = riot_api_key.RIOT_API_KEY
-        self.watcher = LolWatcher(str(self.api_key))
-        self.summoner_region = 'kr'  
-        self.match_region = 'ASIA'  
+        self.api_key = 'RGAPI-45f6885e-9973-4365-b991-8d5129816dd8'
+        self.base_url = "https://kr.api.riotgames.com"
+        self.headers = {
+            "X-Riot-Token": self.api_key,
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36"
+        }
 
-    def _create_error_embed(self, error_message):
+    def _create_error_embed(self, error_message, additional_info=None):
+        description = str(error_message)
+        if additional_info:
+            description += " " + str(additional_info)
+            
         embed = discord.Embed(
             title="❗ 오류",
-            description=str(error_message),
+            description=description,
             color=discord.Color.red()
         )
         return embed
 
-    @commands.command(name="롤.전적", aliases=['롤.전적검색'], description="롤 전적조회")
-    async def lol_record(self, ctx, *, arg=None):
-        if arg is None:
-            await ctx.reply("!롤.전적 닉넴#태그")
-            return
-
+    @commands.command(name="롤.로테이션", description="현재 무료 로테이션 챔피언 목록을 보여줍니다")
+    async def lol_rotation(self, ctx):
         try:
-            name, tag = arg.split('#')
+            rotation_url = f"{self.base_url}/lol/platform/v3/champion-rotations"
+            rotation_response = requests.get(rotation_url, headers=self.headers)
             
-            if not self.api_key:
-                await ctx.reply(embed=self._create_error_embed("API 키 없음"))
+            if rotation_response.status_code != 200:
+                await ctx.reply(embed=self._create_error_embed(rotation_response.status_code))
                 return
                 
-            try:
-                summoner = self.watcher.summoner.by_name(self.summoner_region, name)
-            except Exception as e:
-                if "401" in str(e):
-                    await ctx.reply(embed=self._create_error_embed("API 키 이상해"))
-                    return
-                raise e
-                
-            puuid = summoner['puuid']
+            rotation_data = rotation_response.json()
             
-            # 최근 5게임 조회
-            matches = self.watcher.match.matchlist_by_puuid(self.match_region, puuid, count=5)
+            ddragon_version_url = "https://ddragon.leagueoflegends.com/api/versions.json"
+            version_response = requests.get(ddragon_version_url)
+            latest_version = version_response.json()[0]
+            
+            champions_url = f"http://ddragon.leagueoflegends.com/cdn/{latest_version}/data/ko_KR/champion.json"
+            champions_response = requests.get(champions_url)
+            champions_data = champions_response.json()
+            
+            # 챔 ID를 이름으로 변환
+            champion_names = []
+            for champ_id in rotation_data['freeChampionIds']:
+                for champ_name, champ_info in champions_data['data'].items():
+                    if int(champ_info['key']) == champ_id:
+                        champion_names.append(champ_info['name'])
+                        break
             
             embed = discord.Embed(
-                title=f"{name}#{tag}님의 최근 전적",
-                color=discord.Color.dark_blue()
+                title="이번 주 로테이션",
+                description=", ".join(champion_names),
+                color=discord.Color.blue()
             )
-
-            for match_id in matches:
-                match = self.watcher.match.by_id(self.match_region, match_id)
-                
-                # 게임 정보
-                game_duration = match['info']['gameDuration'] // 60  
-                queue_id = match['info']['queueId']
-                game_mode = self._get_queue_type(queue_id)  
-                
-                for participant in match['info']['participants']:
-                    if participant['puuid'] == puuid:
-                        champion = participant['championName']
-                        kills = participant['kills']
-                        deaths = participant['deaths']
-                        assists = participant['assists']
-                        kda = f"{kills}/{deaths}/{assists}"
-                        win = "승리" if participant['win'] else "패배"
-                        
-                        embed.add_field(
-                            name=f"{champion} - {win} ({game_mode})",
-                            value=f"KDA: {kda} | 게임 시간: {game_duration}분",
-                            inline=False
-                        )
-
+            
             await ctx.reply(embed=embed)
-
+            
         except Exception as e:
             await ctx.reply(embed=self._create_error_embed(str(e)))
-
-    def _get_queue_type(self, queue_id):
-        queue_types = {
-            400: "일반",
-            420: "솔랭",
-            430: "일반",
-            440: "자유랭크",
-            450: "무작위 총력전",
-            700: "격전",
-            830: "AI 대전",
-            840: "AI 대전",
-            850: "AI 대전",
-            900: "URF",
-            1020: "단일챔피언",
-            1300: "돌격 넥서스",
-            1400: "궁극기 주문서"
-        }
-        return queue_types.get(queue_id, "기타")
