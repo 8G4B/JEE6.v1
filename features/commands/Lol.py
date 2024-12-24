@@ -6,6 +6,7 @@ from shared.riot_api_key import RIOT_API_KEY
 import aiohttp
 import asyncio
 from typing import Dict, List
+import time
 
 class RequestLol:
     def __init__(self):
@@ -123,6 +124,10 @@ class LolService:
             'NEXUSBLITZ': '넥서스 돌격',
             'ULTBOOK': '궁극기 주문서'
         }
+        self.account_cache = {}
+        self.tier_cache = {}
+        self.match_cache = {}
+        self.cache_timeout = 600  # 10시간 캐쉬
         
     async def get_account_info(self, session: aiohttp.ClientSession, riot_id: str) -> Dict:
         if '#' not in riot_id:
@@ -134,7 +139,9 @@ class LolService:
         async with session.get(account_url, headers=self.request.headers) as response:
             if response.status != 200:
                 raise ValueError(response.status)
-            return await response.json()
+            account_data = await response.json()
+            self.account_cache[riot_id] = (time.time(), account_data)
+            return account_data
             
     async def get_tier_info(self, session: aiohttp.ClientSession, puuid: str) -> tuple[Dict, str]:
         summoner_url = f"{self.request.base_url}/lol/summoner/v4/summoners/by-puuid/{puuid}"
@@ -160,23 +167,41 @@ class LolService:
         
     async def get_match_history(self, session: aiohttp.ClientSession, puuid: str) -> List[Dict]:
         matches_url = f"https://asia.api.riotgames.com/lol/match/v5/matches/by-puuid/{puuid}/ids?start=0&count=5"
-        async with session.get(matches_url, headers=self.request.headers) as response:
-            if response.status != 200:
-                raise ValueError(response.status)
-            match_ids = await response.json()
+        
+        async def fetch_matches():
+            async with session.get(matches_url, headers=self.request.headers) as response:
+                if response.status != 200:
+                    raise ValueError(response.status)
+                return await response.json()
 
+        async def fetch_match_details(match_ids):
+            tasks = []
+            for match_id in match_ids:
+                if match_id in self.match_cache:
+                    cache_time, data = self.match_cache[match_id]
+                    if time.time() - cache_time < self.cache_timeout:
+                        tasks.append(asyncio.create_task(asyncio.sleep(0, result=data)))
+                        continue
+                
+                url = f"https://asia.api.riotgames.com/lol/match/v5/matches/{match_id}"
+                tasks.append(
+                    asyncio.create_task(fetch_single_match(session, url, match_id))
+                )
+            return await asyncio.gather(*tasks, return_exceptions=True)
+
+        async def fetch_single_match(session, url, match_id):
+            async with session.get(url, headers=self.request.headers) as response:
+                if response.status == 200:
+                    data = await response.json()
+                    self.match_cache[match_id] = (time.time(), data)
+                    return data
+                return None
+
+        match_ids = await fetch_matches()
         if not match_ids:
             raise ValueError("최근 게임 기록이 없습니다.")
-            
-        async def fetch_match(match_id):
-            match_url = f"https://asia.api.riotgames.com/lol/match/v5/matches/{match_id}"
-            async with session.get(match_url, headers=self.request.headers) as response:
-                if response.status == 200:
-                    return await response.json()
-                return None
-                
-        match_data_tasks = [fetch_match(match_id) for match_id in match_ids]
-        match_data_list = await asyncio.gather(*match_data_tasks)
+
+        match_data_list = await fetch_match_details(match_ids)
         match_data_list = [data for data in match_data_list if data is not None]
         
         formatted_matches = []
