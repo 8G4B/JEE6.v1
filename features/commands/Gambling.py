@@ -887,7 +887,10 @@ class Gambling(commands.Cog):
         with self.data_manager.global_lock:
             sorted_balances = self.data_manager.get_sorted_balances()
             
-            member_dict = {member.id: member.display_name for member in ctx.guild.members}
+            member_dict = {}
+            
+            if ctx.guild:
+                member_dict = {member.id: member.display_name for member in ctx.guild.members}
             
             pages = []
             page_size = 10
