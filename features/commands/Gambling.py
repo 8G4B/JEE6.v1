@@ -1090,19 +1090,22 @@ class Gambling(commands.Cog):
             self.indian_poker_players.remove(ctx.author.id)
 
     async def cog_check(self, ctx):
-        if ctx.author.id in self.blackjack_players and ctx.command.name == "도박.블랙잭":
-            await ctx.reply(embed=GamblingEmbed.create_error_embed("이미 블랙잭 게임이 진행 중입니다."))
+        if ctx.author.id in (self.blackjack_players | self.baccarat_players | 
+                           self.indian_poker_players | self.coin_players | self.dice_players):
+            
+            current_game = None
+            if ctx.author.id in self.blackjack_players:
+                current_game = "블랙잭"
+            elif ctx.author.id in self.baccarat_players:
+                current_game = "바카라" 
+            elif ctx.author.id in self.indian_poker_players:
+                current_game = "인디언 포커"
+            elif ctx.author.id in self.coin_players:
+                current_game = "동전"
+            elif ctx.author.id in self.dice_players:
+                current_game = "주사위"
+                
+            await ctx.reply(embed=GamblingEmbed.create_error_embed(f"이미 {current_game} 게임이 진행 중입니다."))
             return False
-        if ctx.author.id in self.baccarat_players and ctx.command.name == "도박.바카라":
-            await ctx.reply(embed=GamblingEmbed.create_error_embed("이미 바카라 게임이 진행 중입니다."))
-            return False
-        if ctx.author.id in self.indian_poker_players and ctx.command.name == "도박.인디언":
-            await ctx.reply(embed=GamblingEmbed.create_error_embed("이미 인디언 포커 게임이 진행 중입니다."))
-            return False
-        if ctx.author.id in self.coin_players and ctx.command.name == "도박.동전":
-            await ctx.reply(embed=GamblingEmbed.create_error_embed("이미 동전 게임이 진행 중입니다."))
-            return False
-        if ctx.author.id in self.dice_players and ctx.command.name == "도박.주사위":
-            await ctx.reply(embed=GamblingEmbed.create_error_embed("이미 주사위 게임이 진행 중입니다."))
-            return False
+            
         return True
