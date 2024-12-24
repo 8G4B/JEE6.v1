@@ -42,7 +42,7 @@ class RequestMeal:
             if 'mealServiceDietInfo' in data:
                 meals = data['mealServiceDietInfo'][1]['row']
                 for meal in meals:  
-                    meal['DDISH_NM'] = meal['DDISH_NM'].replace('*', '')
+                    meal['DDISH_NM'] = '\n'.join(f'- {dish.strip()}' for dish in meal['DDISH_NM'].replace('*', '').split('<br/>') if dish.strip())
                 RequestMeal._cache[date] = (meals, datetime.now())
                 return meals
             return None
@@ -55,7 +55,7 @@ class MealEmbed:
     def create_meal_embed(title: str, menu: str) -> discord.Embed:
         return discord.Embed(
             title=title,
-            description=menu.replace("<br/>", "\n"),
+            description=menu,
             color=discord.Color.orange()
         )
     
@@ -91,7 +91,7 @@ class MealService:
             menu = next((meal["DDISH_NM"] for meal in meal_info if meal["MMEAL_SC_CODE"] == "3"), NO_MEAL)
             title = "🍖 저녁"
         else:
-            tomorrow = (now + timedelta(days=1)).strftime("%Y%m%d")
+            tomorrow = (now + timedelta(days=1)).strftime("%Y%m%d")g
             tomorrow_meal_info = RequestMeal.get_meal_info(tomorrow)
             if tomorrow_meal_info:
                 menu = next((meal["DDISH_NM"] for meal in tomorrow_meal_info if meal["MMEAL_SC_CODE"] == "1"), NO_MEAL)
