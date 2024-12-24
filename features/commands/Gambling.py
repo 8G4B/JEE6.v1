@@ -63,6 +63,9 @@ class GamblingConfig:
         (18, 30)
     ]
 
+
+
+
 class GamblingEmbed:
     @staticmethod
     def create_error_embed(description: str) -> discord.Embed:
@@ -282,17 +285,38 @@ class GamblingService:
                 value += int(card)
         return value % 10
 
+class GamblingManager:
+    def __init__(self):
+        self.active_games: Dict[int, str] = {}
+        self.lock = threading.RLock()
+        
+    def start_game(self, user_id: int, game_type: str) -> bool:
+        with self.lock:
+            if user_id in self.active_games:
+                return False
+            self.active_games[user_id] = game_type
+            return True
+            
+    def end_game(self, user_id: int) -> None:
+        with self.lock:
+            self.active_games.pop(user_id, None)
+            
+    def get_active_game(self, user_id: int) -> Optional[str]:
+        with self.lock:
+            return self.active_games.get(user_id)
+
 class Gambling(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.cooldowns: Dict[str, datetime] = {}
-        self.blackjack_players: set = set()
-        self.baccarat_players: set = set()
-        self.indian_poker_players: set = set()
-        self.coin_players: set = set()
-        self.dice_players: set = set()
+        self.game_manager = GamblingManager()
         self.data_manager = DataManager('gambling_data.json')
         self.gambling_service = GamblingService(self.data_manager)
+        self.blackjack_players = set()
+        self.baccarat_players = set()
+        self.indian_poker_players = set()
+        self.coin_players = set()
+        self.dice_players = set()
         self.reset_jackpot.start()
 
     def _check_game_cooldown(self, user_id: int, game_type: str) -> Optional[discord.Embed]:
@@ -370,9 +394,13 @@ class Gambling(commands.Cog):
 
     @commands.command(name="도박.동전", description="동전 던지기")
     async def coin(self, ctx, bet: str = None):
-        self.coin_players.add(ctx.author.id)
+        if not self.game_manager.start_game(ctx.author.id, "coin"):
+            await ctx.reply(embed=GamblingEmbed.create_error_embed("이미 다른 게임이 진행 중입니다."))
+            return
+
         if cooldown_embed := self._check_game_cooldown(ctx.author.id, "coin"):
             await ctx.reply(embed=cooldown_embed)
+            self.game_manager.end_game(ctx.author.id)
             return
 
         try:
@@ -382,10 +410,12 @@ class Gambling(commands.Cog):
 
         if error_embed := self.gambling_service.validate_bet(bet, ctx.author.id):
             await ctx.reply(embed=error_embed)
+            self.game_manager.end_game(ctx.author.id)
             return
 
         if bet > self.data_manager.get_balance(ctx.author.id):
             await ctx.reply(embed=GamblingEmbed.create_error_embed("돈이 부족해..."))
+            self.game_manager.end_game(ctx.author.id)
             return
 
         embed = discord.Embed(
@@ -424,13 +454,17 @@ class Gambling(commands.Cog):
             await game_message.edit(embed=embed)
 
         finally:
-            self.coin_players.remove(ctx.author.id)
+            self.game_manager.end_game(ctx.author.id)
 
     @commands.command(name="도박.주사위", description="주사위")
     async def dice(self, ctx, bet: str = None):
-        self.dice_players.add(ctx.author.id)
+        if not self.game_manager.start_game(ctx.author.id, "dice"):
+            await ctx.reply(embed=GamblingEmbed.create_error_embed("이미 다른 게임이 진행 중입니다."))
+            return
+
         if cooldown_embed := self._check_game_cooldown(ctx.author.id, "dice"):
             await ctx.reply(embed=cooldown_embed)
+            self.game_manager.end_game(ctx.author.id)
             return
 
         try:
@@ -440,10 +474,12 @@ class Gambling(commands.Cog):
 
         if error_embed := self.gambling_service.validate_bet(bet, ctx.author.id):
             await ctx.reply(embed=error_embed)
+            self.game_manager.end_game(ctx.author.id)
             return
 
         if bet > self.data_manager.get_balance(ctx.author.id):
             await ctx.reply(embed=GamblingEmbed.create_error_embed("돈이 부족해..."))
+            self.game_manager.end_game(ctx.author.id)
             return
 
         embed = discord.Embed(
@@ -483,16 +519,22 @@ class Gambling(commands.Cog):
             await game_message.edit(embed=embed)
 
         finally:
-            self.dice_players.remove(ctx.author.id)
+            self.game_manager.end_game(ctx.author.id)
 
     @commands.command(name="도박.잭팟", description="잭팟")
     async def jackpot(self, ctx, bet: str = None):
+        if not self.game_manager.start_game(ctx.author.id, "jackpot"):
+            await ctx.reply(embed=GamblingEmbed.create_error_embed("이미 다른 게임이 진행 중입니다."))
+            return
+
         if cooldown_embed := self._check_game_cooldown(ctx.author.id, "jackpot"):
             await ctx.reply(embed=cooldown_embed)
+            self.game_manager.end_game(ctx.author.id)
             return
 
         if cooldown_embed := self._check_game_cooldown(ctx.author.id, "jackpot_win"):
             await ctx.reply(embed=cooldown_embed)
+            self.game_manager.end_game(ctx.author.id)
             return
 
         try:
@@ -502,10 +544,12 @@ class Gambling(commands.Cog):
 
         if bet is None or bet < GamblingConfig.MIN_JACKPOT_BET:
             await ctx.reply(embed=GamblingEmbed.create_error_embed("1,000원 이상 베팅하세요"))
+            self.game_manager.end_game(ctx.author.id)
             return
 
         if bet >= GamblingConfig.MAX_BET:
             await ctx.reply(embed=GamblingEmbed.create_error_embed("100조원 이상 베팅할 수 없습니다"))
+            self.game_manager.end_game(ctx.author.id)
             return
 
         with self.data_manager._get_lock(ctx.author.id):
@@ -514,11 +558,13 @@ class Gambling(commands.Cog):
 
             if bet > current_balance:
                 await ctx.reply(embed=GamblingEmbed.create_error_embed("돈이 부족해..."))
+                self.game_manager.end_game(ctx.author.id)
                 return
 
             if bet < min_bet:
                 await ctx.reply(embed=GamblingEmbed.create_error_embed(
                     f"현재 재산의 1% 이상 베팅하세요. (최소 {min_bet:,}원)"))
+                self.game_manager.end_game(ctx.author.id)
                 return
 
             self.data_manager.subtract_balance(ctx.author.id, bet)
@@ -553,9 +599,14 @@ class Gambling(commands.Cog):
                 )
 
             await ctx.reply(embed=embed)
+            self.game_manager.end_game(ctx.author.id)
 
     @commands.command(name="도박.노동", aliases=['도박.일', '도박.돈'], description="도박.노동")
     async def work(self, ctx):
+        if not self.game_manager.start_game(ctx.author.id, "work"):
+            await ctx.reply(embed=GamblingEmbed.create_error_embed("이미 다른 게임이 진행 중입니다."))
+            return
+
         with self.data_manager._get_lock(ctx.author.id):
             current_time = datetime.now()
             last_used = self.cooldowns.get(ctx.author.id)
@@ -581,6 +632,7 @@ class Gambling(commands.Cog):
                 self.cooldowns[ctx.author.id] = current_time
 
             await ctx.reply(embed=embed)
+            self.game_manager.end_game(ctx.author.id)
 
     @commands.command(name="도박.지갑", aliases=['도박.잔액', '도박.직바'], description="잔액 확인")
     async def balance(self, ctx):
