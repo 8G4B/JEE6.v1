@@ -69,7 +69,7 @@ class Lol(commands.Cog):
         account_data = account_response.json()
         return account_data
 
-    @commands.command(name="롤.티어", description="이번 시즌 통계")
+    @commands.command(name="롤.티어", aliases=['롤.랭크'], description="이번 시즌 티어")
     async def lol_history(self, ctx, *, riot_id: str):
         try:
             account_data = self._get_account_info(riot_id)
@@ -114,7 +114,7 @@ class Lol(commands.Cog):
                     description = "솔로랭크 정보가 없습니다."
 
             embed = discord.Embed(
-                title=f"{original_game_name}#{tag_line}의 전적",
+                title=f"🇱 이번 시즌 {original_game_name}#{tag_line}의 티어",
                 description=description,
                 color=discord.Color.dark_blue()
             )
@@ -156,7 +156,7 @@ class Lol(commands.Cog):
                         break
             
             embed = discord.Embed(
-                title="이번 주 로테이션",
+                title="🇱 이번 주 로테이션",
                 description=", ".join(champion_names),
                 color=discord.Color.blue()
             )
