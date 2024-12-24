@@ -3,6 +3,8 @@ from discord.ext import commands
 import requests
 import urllib.request
 from shared.riot_api_key import RIOT_API_KEY
+import aiohttp
+import asyncio
 
 class Lol(commands.Cog):
     def __init__(self, bot):
@@ -16,6 +18,7 @@ class Lol(commands.Cog):
             "Accept-Charset": "application/x-www-form-urlencoded; charset=UTF-8",
             "Origin": "https://developer.riotgames.com"
         }
+        self.session = None
         
         urllib.request.urlretrieve("https://static.wikia.nocookie.net/leagueoflegends/images/1/13/Season_2023_-_Unranked.png/revision/latest?cb=20231007211937", "assets/rank/UNRANKED.png")
         urllib.request.urlretrieve("https://static.wikia.nocookie.net/leagueoflegends/images/f/f8/Season_2023_-_Iron.png/revision/latest?cb=20231007195831", "assets/rank/IRON.png")
@@ -45,6 +48,13 @@ class Lol(commands.Cog):
 
         self.champions_data = self._get_champion_data()
 
+    async def cog_load(self):
+        self.session = aiohttp.ClientSession()
+
+    async def cog_unload(self):
+        if self.session:
+            await self.session.close()
+
     def _create_error_embed(self, error_message, additional_info=None):
         description = str(error_message)
         if additional_info:
@@ -57,20 +67,17 @@ class Lol(commands.Cog):
         )
         return embed
       
-    def _get_account_info(self, riot_id: str):
+    async def _get_account_info(self, riot_id: str):
         if '#' not in riot_id:
             raise ValueError("닉넴#태그 형식으로 입력하세요")
             
         game_name, tag_line = riot_id.split('#')
         
         account_url = f"https://asia.api.riotgames.com/riot/account/v1/accounts/by-riot-id/{game_name}/{tag_line}"
-        account_response = requests.get(account_url, headers=self.headers)
-
-        if account_response.status_code != 200:
-            raise ValueError(account_response.status_code)
-
-        account_data = account_response.json()
-        return account_data
+        async with self.session.get(account_url, headers=self.headers) as response:
+            if response.status != 200:
+                raise ValueError(response.status)
+            return await response.json()
 
     def _get_champion_data(self):
         ddragon_version_url = "https://ddragon.leagueoflegends.com/api/versions.json"
@@ -87,31 +94,25 @@ class Lol(commands.Cog):
                     if champ_name == champion_id), champion_id)
 
     @commands.command(name="롤.티어", aliases=['롤.랭크'], description="이번 시즌 티어")
-    async def lol_history(self, ctx, *, riot_id: str):
+    async def lol_tier(self, ctx, *, riot_id: str):
         try:
-            account_data = self._get_account_info(riot_id)
-            
+            account_data = await self._get_account_info(riot_id)
             puuid = account_data['puuid']
-            original_game_name = account_data['gameName'] 
+            original_game_name = account_data['gameName']
             tag_line = account_data['tagLine']
 
             summoner_url = f"{self.base_url}/lol/summoner/v4/summoners/by-puuid/{puuid}"
-            summoner_response = requests.get(summoner_url, headers=self.headers)
+            async with self.session.get(summoner_url, headers=self.headers) as response:
+                if response.status != 200:
+                    raise ValueError(response.status)
+                summoner_data = await response.json()
 
-            if summoner_response.status_code != 200:
-                raise ValueError(summoner_response.status_code)
+            ranked_url = f"{self.base_url}/lol/league/v4/entries/by-summoner/{summoner_data['id']}"
+            async with self.session.get(ranked_url, headers=self.headers) as response:
+                if response.status != 200:
+                    raise ValueError(response.status)
+                ranked_data = await response.json()
 
-            summoner_data = summoner_response.json()
-            summoner_id = summoner_data['id']  # summonerId
-
-            ranked_url = f"{self.base_url}/lol/league/v4/entries/by-summoner/{summoner_id}"
-            ranked_response = requests.get(ranked_url, headers=self.headers)
-
-            if ranked_response.status_code != 200:
-                raise ValueError(ranked_response.status_code)
-
-            ranked_data = ranked_response.json()
-            
             tier = "UNRANKED"
             if not ranked_data:
                 description = "랭크 정보가 없습니다."
@@ -147,19 +148,17 @@ class Lol(commands.Cog):
     @commands.command(name="롤.전적", description="최근 5게임 전적 조회")
     async def lol_history(self, ctx, *, riot_id: str):
         try:
-            account_data = self._get_account_info(riot_id)
+            account_data = await self._get_account_info(riot_id)
             puuid = account_data['puuid']
             original_game_name = account_data['gameName']
             tag_line = account_data['tagLine']
 
             matches_url = f"https://asia.api.riotgames.com/lol/match/v5/matches/by-puuid/{puuid}/ids?start=0&count=5"
-            matches_response = requests.get(matches_url, headers=self.headers)
-            
-            if matches_response.status_code != 200:
-                raise ValueError(matches_response.status_code)
-                
-            match_ids = matches_response.json()
-            
+            async with self.session.get(matches_url, headers=self.headers) as response:
+                if response.status != 200:
+                    raise ValueError(response.status)
+                match_ids = await response.json()
+
             if not match_ids:
                 raise ValueError("최근 게임 기록이 없습니다.")
 
@@ -182,15 +181,18 @@ class Lol(commands.Cog):
                 'ULTBOOK': '궁극기 주문서'
             }
 
-            for match_id in match_ids:
+            # 매치 데이터를 병렬로 
+            async def fetch_match(match_id):
                 match_url = f"https://asia.api.riotgames.com/lol/match/v5/matches/{match_id}"
-                match_response = requests.get(match_url, headers=self.headers)
-                
-                if match_response.status_code != 200:
-                    continue
-                    
-                match_data = match_response.json()
-                
+                async with self.session.get(match_url, headers=self.headers) as response:
+                    if response.status == 200:
+                        return await response.json()
+                    return None
+            match_data_tasks = [fetch_match(match_id) for match_id in match_ids]
+            match_data_list = await asyncio.gather(*match_data_tasks)
+            match_data_list = [data for data in match_data_list if data is not None]
+
+            for match_data in match_data_list:
                 participant = next(p for p in match_data['info']['participants'] if p['puuid'] == puuid)
                 
                 champion_id = participant['championName']
