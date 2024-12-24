@@ -28,25 +28,26 @@ class Lol(commands.Cog):
         )
         return embed
       
+    def _get_account_info(self, riot_id: str):
+        if '#' not in riot_id:
+            raise ValueError("!롤.전적 닉네임#태그")
+            
+        game_name, tag_line = riot_id.split('#')
+        
+        account_url = f"https://asia.api.riotgames.com/riot/account/v1/accounts/by-riot-id/{game_name}/{tag_line}"
+        account_response = requests.get(account_url, headers=self.headers)
+
+        if account_response.status_code != 200:
+            raise ValueError(account_response.status_code)
+
+        return account_response.json()
+
     @commands.command(name="롤.전적", description="소환사 이름을 입력하여 전적을 조회합니다")
     async def lol_history(self, ctx, *, riot_id: str):
         try:
-            if '#' not in riot_id:
-                await ctx.reply(embed=self._create_error_embed("!롤.전적 닉네임#태그"))
-                return
-                
-            game_name, tag_line = riot_id.split('#')
-            
-            account_url = f"https://asia.api.riotgames.com/riot/account/v1/accounts/by-riot-id/{game_name}/{tag_line}"
-            account_response = requests.get(account_url, headers=self.headers)
-
-            if account_response.status_code != 200:
-                await ctx.reply(embed=self._create_error_embed(account_response.status_code))
-                return
-
-            account_data = account_response.json()
+            account_data = self._get_account_info(riot_id)
             puuid = account_data['puuid']
-            original_game_name = account_data['gameName']
+            original_game_name = account_data['gameName'] 
             tag_line = account_data['tagLine']
 
             embed = discord.Embed(
