@@ -70,6 +70,20 @@ class Lol(commands.Cog):
         account_data = account_response.json()
         return account_data
 
+    def _get_champion_data(self):
+        ddragon_version_url = "https://ddragon.leagueoflegends.com/api/versions.json"
+        version_response = requests.get(ddragon_version_url)
+        latest_version = version_response.json()[0]
+        
+        champions_url = f"http://ddragon.leagueoflegends.com/cdn/{latest_version}/data/ko_KR/champion.json"
+        champions_response = requests.get(champions_url)
+        return champions_response.json()
+
+    def _get_champion_name_kr(self, champion_id, champions_data):
+        return next((champ_info['name'] 
+                    for champ_name, champ_info in champions_data['data'].items() 
+                    if champ_name == champion_id), champion_id)
+
     @commands.command(name="롤.티어", aliases=['롤.랭크'], description="이번 시즌 티어")
     async def lol_history(self, ctx, *, riot_id: str):
         try:
@@ -147,14 +161,7 @@ class Lol(commands.Cog):
             if not match_ids:
                 raise ValueError("최근 게임 기록이 없습니다.")
 
-            # 챔프이름 한글로
-            ddragon_version_url = "https://ddragon.leagueoflegends.com/api/versions.json"
-            version_response = requests.get(ddragon_version_url)
-            latest_version = version_response.json()[0]
-            
-            champions_url = f"http://ddragon.leagueoflegends.com/cdn/{latest_version}/data/ko_KR/champion.json"
-            champions_response = requests.get(champions_url)
-            champions_data = champions_response.json()
+            champions_data = self._get_champion_data()
 
             embed = discord.Embed(
                 title=f"🇱 {original_game_name}#{tag_line}의 최근 5게임",
@@ -185,8 +192,7 @@ class Lol(commands.Cog):
                 participant = next(p for p in match_data['info']['participants'] if p['puuid'] == puuid)
                 
                 champion_id = participant['championName']
-                champion_name = next((champ_info['name'] for champ_name, champ_info in champions_data['data'].items() 
-                                   if champ_name == champion_id), champion_id)
+                champion_name = self._get_champion_name_kr(champion_id, champions_data)
                 
                 kills = participant['kills']
                 deaths = participant['deaths']
@@ -223,13 +229,7 @@ class Lol(commands.Cog):
                 
             rotation_data = rotation_response.json()
             
-            ddragon_version_url = "https://ddragon.leagueoflegends.com/api/versions.json"
-            version_response = requests.get(ddragon_version_url)
-            latest_version = version_response.json()[0]
-            
-            champions_url = f"http://ddragon.leagueoflegends.com/cdn/{latest_version}/data/ko_KR/champion.json"
-            champions_response = requests.get(champions_url)
-            champions_data = champions_response.json()
+            champions_data = self._get_champion_data()
             
             # 챔 ID를 이름으로 변환
             champion_names = []
