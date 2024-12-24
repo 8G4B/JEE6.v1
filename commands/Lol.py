@@ -1,7 +1,7 @@
 import discord
 from discord.ext import commands
 import requests
-import os
+import urllib.request
 
 class Lol(commands.Cog):
     def __init__(self, bot):
@@ -14,6 +14,32 @@ class Lol(commands.Cog):
             "Accept-Language": "ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7", 
             "Accept-Charset": "application/x-www-form-urlencoded; charset=UTF-8",
             "Origin": "https://developer.riotgames.com"
+        }
+        
+        urllib.request.urlretrieve("https://static.wikia.nocookie.net/leagueoflegends/images/1/13/Season_2023_-_Unranked.png/revision/latest?cb=20231007211937", "assets/rank/UNRANKED.png")
+        urllib.request.urlretrieve("https://static.wikia.nocookie.net/leagueoflegends/images/f/f8/Season_2023_-_Iron.png/revision/latest?cb=20231007195831", "assets/rank/IRON.png")
+        urllib.request.urlretrieve("https://static.wikia.nocookie.net/leagueoflegends/images/c/cb/Season_2023_-_Bronze.png/revision/latest?cb=20231007195824", "assets/rank/BRONZE.png")
+        urllib.request.urlretrieve("https://static.wikia.nocookie.net/leagueoflegends/images/c/c4/Season_2023_-_Silver.png/revision/latest?cb=20231007195834", "assets/rank/SILVER.png")
+        urllib.request.urlretrieve("https://static.wikia.nocookie.net/leagueoflegends/images/7/78/Season_2023_-_Gold.png/revision/latest?cb=20231007195829", "assets/rank/GOLD.png")
+        urllib.request.urlretrieve("https://static.wikia.nocookie.net/leagueoflegends/images/b/bd/Season_2023_-_Platinum.png/revision/latest?cb=20231007195833", "assets/rank/PLATINUM.png")
+        urllib.request.urlretrieve("https://static.wikia.nocookie.net/leagueoflegends/images/4/4b/Season_2023_-_Emerald.png/revision/latest?cb=20231007195827", "assets/rank/EMERALD.png")
+        urllib.request.urlretrieve("https://static.wikia.nocookie.net/leagueoflegends/images/3/37/Season_2023_-_Diamond.png/revision/latest?cb=20231007195826", "assets/rank/DIAMOND.png")
+        urllib.request.urlretrieve("https://static.wikia.nocookie.net/leagueoflegends/images/d/d5/Season_2023_-_Master.png/revision/latest?cb=20231007195832", "assets/rank/MASTER.png")
+        urllib.request.urlretrieve("https://static.wikia.nocookie.net/leagueoflegends/images/6/64/Season_2023_-_Grandmaster.png/revision/latest?cb=20231007195830", "assets/rank/GRANDMASTER.png")
+        urllib.request.urlretrieve("https://static.wikia.nocookie.net/leagueoflegends/images/1/14/Season_2023_-_Challenger.png/revision/latest?cb=20231007195825", "assets/rank/CHALLENGER.png")
+        
+        self.rank_images = {
+            "UNRANKED": discord.File("assets/rank/UNRANKED.png", filename="UNRANKED.png"),
+            "IRON": discord.File("assets/rank/IRON.png", filename="IRON.png"),
+            "BRONZE": discord.File("assets/rank/BRONZE.png", filename="BRONZE.png"), 
+            "SILVER": discord.File("assets/rank/SILVER.png", filename="SILVER.png"),
+            "GOLD": discord.File("assets/rank/GOLD.png", filename="GOLD.png"),
+            "PLATINUM": discord.File("assets/rank/PLATINUM.png", filename="PLATINUM.png"),
+            "EMERALD": discord.File("assets/rank/EMERALD.png", filename="EMERALD.png"),
+            "DIAMOND": discord.File("assets/rank/DIAMOND.png", filename="DIAMOND.png"),
+            "MASTER": discord.File("assets/rank/MASTER.png", filename="MASTER.png"),
+            "GRANDMASTER": discord.File("assets/rank/GRANDMASTER.png", filename="GRANDMASTER.png"),
+            "CHALLENGER": discord.File("assets/rank/CHALLENGER.png", filename="CHALLENGER.png")
         }
 
     def _create_error_embed(self, error_message, additional_info=None):
@@ -69,6 +95,7 @@ class Lol(commands.Cog):
 
             ranked_data = ranked_response.json()
             
+            tier = "UNRANKED"
             if not ranked_data:
                 description = "랭크 정보가 없습니다."
             else:
@@ -91,8 +118,11 @@ class Lol(commands.Cog):
                 description=description,
                 color=discord.Color.dark_blue()
             )
+            
+            rank_image = discord.File(f"assets/rank/{tier}.png", filename=f"{tier}.png")
+            embed.set_thumbnail(url=f"attachment://{tier}.png")
 
-            await ctx.reply(embed=embed)
+            await ctx.reply(embed=embed, file=rank_image)
 
         except Exception as e:
             await ctx.reply(embed=self._create_error_embed(str(e)))
