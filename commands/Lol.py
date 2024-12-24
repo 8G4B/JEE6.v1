@@ -109,7 +109,7 @@ class Lol(commands.Cog):
                     losses = solo_rank['losses']
                     win_rate = round((wins / (wins + losses)) * 100, 1)
                     
-                    description = f"티어: {tier} {rank} {lp}LP\n{wins+losses}전 {wins}승 {losses}패 (승률 {win_rate}%)"
+                    description = f"## {tier} {rank} {lp}LP\n {wins+losses}전 {wins}승 {losses}패 (승률 {win_rate}%)"
                 else:
                     description = "솔로랭크 정보가 없습니다."
 
