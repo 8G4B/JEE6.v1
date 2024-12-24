@@ -2,11 +2,12 @@ import discord
 from discord.ext import commands
 import requests
 import urllib.request
+from riot_api_key import RIOT_API_KEY
 
 class Lol(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.api_key = 'RGAPI-45f6885e-9973-4365-b991-8d5129816dd8'
+        self.api_key = RIOT_API_KEY
         self.base_url = "https://kr.api.riotgames.com"
         self.headers = {
             "X-Riot-Token": self.api_key,
