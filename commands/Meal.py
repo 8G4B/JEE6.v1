@@ -91,7 +91,7 @@ class MealService:
             menu = next((meal["DDISH_NM"] for meal in meal_info if meal["MMEAL_SC_CODE"] == "3"), NO_MEAL)
             title = "🍖 저녁"
         else:
-            tomorrow = (now + timedelta(days=1)).strftime("%Y%m%d")g
+            tomorrow = (now + timedelta(days=1)).strftime("%Y%m%d")
             tomorrow_meal_info = RequestMeal.get_meal_info(tomorrow)
             if tomorrow_meal_info:
                 menu = next((meal["DDISH_NM"] for meal in tomorrow_meal_info if meal["MMEAL_SC_CODE"] == "1"), NO_MEAL)
