@@ -6,10 +6,10 @@ WORKDIR /app
 COPY requirements.txt .
 # app.py 파일을 /app 디렉토리로 복사합니다
 COPY app.py .
-# commands 디렉토리를 /app/commands 디렉토리로 복사합니다
+# 각 디렉토리를 /app 하위 디렉토리로 복사합니다
 COPY commands/ ./commands/
-# alarm 디렉토리를 /app/alarm 디렉토리로 복사합니다
 COPY alarm/ ./alarm/
+COPY assets/ ./assets/
 # 모든 .py 파일을 /app 디렉토리로 복사합니다
 COPY *.py .
 COPY gambling_data.json .
