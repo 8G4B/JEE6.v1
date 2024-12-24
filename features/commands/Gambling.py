@@ -126,6 +126,9 @@ class DataManager:
         self.last_save = datetime.now()
         self._load_data()
         self._start_batch_save()
+        self.ranking_cache = None
+        self.last_ranking_update = None
+        self.ranking_cache_duration = 300  # 5분
 
     def _start_batch_save(self) -> None:
         def save_periodically() -> None:
@@ -211,6 +214,35 @@ class DataManager:
             key=lambda item: item[1],
             reverse=True
         )
+
+    async def get_cached_rankings(self, bot) -> List[Tuple[int, str, int]]:
+        current_time = datetime.now()
+        
+        if (self.ranking_cache is None or 
+            self.last_ranking_update is None or 
+            (current_time - self.last_ranking_update).total_seconds() > self.ranking_cache_duration):
+            
+            sorted_balances = self.get_sorted_balances()
+            cached_rankings = []
+            
+            user_ids = [user_id for user_id, _ in sorted_balances]
+            users = {user.id: user.name for user in bot.users if user.id in user_ids}
+            
+            for user_id, balance in sorted_balances:
+                # 캐슁된 유저 정보 사용
+                username = users.get(user_id)
+                if not username:
+                    try:
+                        user = await bot.fetch_user(user_id)
+                        username = user.name
+                    except:
+                        username = f"알 수 없음({user_id})"
+                cached_rankings.append((user_id, username, balance))
+            
+            self.ranking_cache = cached_rankings
+            self.last_ranking_update = current_time
+            
+        return self.ranking_cache
 
 class GamblingService:
     def __init__(self, data_manager: DataManager):
@@ -647,14 +679,13 @@ class Gambling(commands.Cog):
 
     @commands.command(name="도박.랭킹", description="랭킹")
     async def ranking(self, ctx):
-        with self.data_manager.global_lock:
-            sorted_balances = self.data_manager.get_sorted_balances()
-            top_3 = sorted_balances[:3]
+        async with ctx.typing():
+            rankings = await self.data_manager.get_cached_rankings(self.bot)
+            top_3 = rankings[:3]
 
             description_lines = []
-            for i, (user_id, balance) in enumerate(top_3):
-                user = await self.bot.fetch_user(user_id)
-                description_lines.append(f"{i+1}. {user.name}: {balance:,}원")
+            for i, (_, username, balance) in enumerate(top_3):
+                description_lines.append(f"{i+1}. {username}: {balance:,}원")
 
             embed = discord.Embed(
                 title="🏅 상위 3명 랭킹",
@@ -665,33 +696,10 @@ class Gambling(commands.Cog):
 
     @commands.command(name="도박.전체랭킹", description="전체 랭킹")
     async def all_ranking(self, ctx):
-        with self.data_manager.global_lock:
-            sorted_balances = self.data_manager.get_sorted_balances()
-            member_dict = {member.id: member.display_name for member in ctx.guild.members} if ctx.guild else {}
-
-            pages = []
-            page_size = 10
-            total_users = len(sorted_balances)
-
-            for page_num in range((total_users + page_size - 1) // page_size):
-                start_idx = page_num * page_size
-                end_idx = min(start_idx + page_size, total_users)
-                page_users = sorted_balances[start_idx:end_idx]
-                page_lines = []
-
-                for rank, (user_id, balance) in enumerate(page_users, start=start_idx + 1):
-                    username = member_dict.get(user_id)
-                    if not username:
-                        try:
-                            user = self.bot.get_user(user_id) or await self.bot.fetch_user(user_id)
-                            username = user.name
-                        except:
-                            username = f"알 수 없음({user_id})"
-                    page_lines.append(f"{rank}. {username}: {balance:,}원")
-
-                pages.append("\n".join(page_lines))
-
-            if not pages:
+        async with ctx.typing():
+            rankings = await self.data_manager.get_cached_rankings(self.bot)
+            
+            if not rankings:
                 embed = discord.Embed(
                     title="🏅 전체 랭킹",
                     description="랭킹 정보가 없습니다.",
@@ -699,6 +707,19 @@ class Gambling(commands.Cog):
                 )
                 await ctx.reply(embed=embed)
                 return
+
+            pages = []
+            page_size = 10
+            
+            # 페이지 미리 생성
+            for i in range(0, len(rankings), page_size):
+                page_users = rankings[i:i + page_size]
+                page_lines = []
+                
+                for rank, (_, username, balance) in enumerate(page_users, start=i + 1):
+                    page_lines.append(f"{rank}. {username}: {balance:,}원")
+                    
+                pages.append("\n".join(page_lines))
 
             current_page = 0
             embed = discord.Embed(
