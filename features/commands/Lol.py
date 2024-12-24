@@ -43,6 +43,8 @@ class Lol(commands.Cog):
             "CHALLENGER": discord.File("assets/rank/CHALLENGER.png", filename="CHALLENGER.png")
         }
 
+        self.champions_data = self._get_champion_data()
+
     def _create_error_embed(self, error_message, additional_info=None):
         description = str(error_message)
         if additional_info:
@@ -79,9 +81,9 @@ class Lol(commands.Cog):
         champions_response = requests.get(champions_url)
         return champions_response.json()
 
-    def _get_champion_name_kr(self, champion_id, champions_data):
+    def _get_champion_name_kr(self, champion_id):
         return next((champ_info['name'] 
-                    for champ_name, champ_info in champions_data['data'].items() 
+                    for champ_name, champ_info in self.champions_data['data'].items() 
                     if champ_name == champion_id), champion_id)
 
     @commands.command(name="롤.티어", aliases=['롤.랭크'], description="이번 시즌 티어")
@@ -161,7 +163,7 @@ class Lol(commands.Cog):
             if not match_ids:
                 raise ValueError("최근 게임 기록이 없습니다.")
 
-            champions_data = self._get_champion_data()
+            champions_data = self.champions_data
 
             embed = discord.Embed(
                 title=f"🇱 {original_game_name}#{tag_line}의 최근 5게임",
@@ -192,7 +194,7 @@ class Lol(commands.Cog):
                 participant = next(p for p in match_data['info']['participants'] if p['puuid'] == puuid)
                 
                 champion_id = participant['championName']
-                champion_name = self._get_champion_name_kr(champion_id, champions_data)
+                champion_name = self._get_champion_name_kr(champion_id)
                 
                 kills = participant['kills']
                 deaths = participant['deaths']
@@ -229,7 +231,7 @@ class Lol(commands.Cog):
                 
             rotation_data = rotation_response.json()
             
-            champions_data = self._get_champion_data()
+            champions_data = self.champions_data
             
             # 챔 ID를 이름으로 변환
             champion_names = []
