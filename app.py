@@ -4,15 +4,15 @@ from discord_token import TOKEN
 import asyncio
 import logging
 
-from commands.Greeting import Greeting
-from commands.Gambling import Gambling
-from commands.Time import Time
-from commands.Meal import Meal
-from commands.Information import Information
-from commands.Question import Question
-from commands.Lol import Lol
-from alarm.Anmauija import Anmauija
-from alarm.Jaseub import Jaseub
+from features.commands.Greeting import Greeting
+from features.commands.Gambling import Gambling
+from features.commands.Time import Time
+from features.commands.Meal import Meal
+from features.commands.Information import Information
+from features.commands.Question import Question
+from features.commands.Lol import Lol
+from features.alarm.Anmauija import Anmauija
+from features.alarm.Jaseub import Jaseub
 
 intents = discord.Intents.default()
 intents.message_content = True

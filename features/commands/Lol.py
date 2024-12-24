@@ -2,7 +2,7 @@ import discord
 from discord.ext import commands
 import requests
 import urllib.request
-from riot_api_key import RIOT_API_KEY
+from shared.riot_api_key import RIOT_API_KEY
 
 class Lol(commands.Cog):
     def __init__(self, bot):
