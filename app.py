@@ -10,6 +10,7 @@ from commands.Time import Time
 from commands.Meal import Meal
 from commands.Information import Information
 from commands.Question import Question
+from commands.Lol import Lol
 from alarm.Anmauija import Anmauija
 from alarm.Jaseub import Jaseub
 
@@ -33,6 +34,7 @@ async def setup():
     await bot.add_cog(Meal(bot))
     await bot.add_cog(Information(bot))
     await bot.add_cog(Question(bot))
+    await bot.add_cog(Lol(bot))
     await bot.add_cog(Anmauija(bot))
     await bot.add_cog(Jaseub(bot))
 
