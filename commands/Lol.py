@@ -40,19 +40,55 @@ class Lol(commands.Cog):
         if account_response.status_code != 200:
             raise ValueError(account_response.status_code)
 
-        return account_response.json()
+        account_data = account_response.json()
+        return account_data
 
-    @commands.command(name="롤.전적", description="소환사 이름을 입력하여 전적을 조회합니다")
+    @commands.command(name="롤.티어", description="이번 시즌 통계")
     async def lol_history(self, ctx, *, riot_id: str):
         try:
             account_data = self._get_account_info(riot_id)
+            
             puuid = account_data['puuid']
             original_game_name = account_data['gameName'] 
             tag_line = account_data['tagLine']
 
+            summoner_url = f"{self.base_url}/lol/summoner/v4/summoners/by-puuid/{puuid}"
+            summoner_response = requests.get(summoner_url, headers=self.headers)
+
+            if summoner_response.status_code != 200:
+                raise ValueError(summoner_response.status_code)
+
+            summoner_data = summoner_response.json()
+            summoner_id = summoner_data['id']  # summonerId
+
+            ranked_url = f"{self.base_url}/lol/league/v4/entries/by-summoner/{summoner_id}"
+            ranked_response = requests.get(ranked_url, headers=self.headers)
+
+            if ranked_response.status_code != 200:
+                raise ValueError(ranked_response.status_code)
+
+            ranked_data = ranked_response.json()
+            
+            if not ranked_data:
+                description = "랭크 정보가 없습니다."
+            else:
+                solo_rank = next((queue for queue in ranked_data if queue['queueType'] == 'RANKED_SOLO_5x5'), None)
+                
+                if solo_rank:
+                    tier = solo_rank['tier']
+                    rank = solo_rank['rank'] 
+                    lp = solo_rank['leaguePoints']
+                    wins = solo_rank['wins']
+                    losses = solo_rank['losses']
+                    win_rate = round((wins / (wins + losses)) * 100, 1)
+                    
+                    description = f"티어: {tier} {rank} {lp}LP\n{wins+losses}전 {wins}승 {losses}패 (승률 {win_rate}%)"
+                else:
+                    description = "솔로랭크 정보가 없습니다."
+
             embed = discord.Embed(
-                title=f"{original_game_name}#{tag_line}의 정보",
-                description=f"{original_game_name}#{tag_line}의 PUUID: {puuid}",
+                title=f"{original_game_name}#{tag_line}의 전적",
+                description=description,
                 color=discord.Color.dark_blue()
             )
 
