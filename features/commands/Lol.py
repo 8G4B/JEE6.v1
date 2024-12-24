@@ -57,7 +57,7 @@ class Lol(commands.Cog):
       
     def _get_account_info(self, riot_id: str):
         if '#' not in riot_id:
-            raise ValueError("!롤.전적 닉네임#태그")
+            raise ValueError("닉넴#태그 형식으로 입력하세요")
             
         game_name, tag_line = riot_id.split('#')
         
@@ -124,6 +124,74 @@ class Lol(commands.Cog):
             embed.set_thumbnail(url=f"attachment://{tier}.png")
 
             await ctx.reply(embed=embed, file=rank_image)
+
+        except Exception as e:
+            await ctx.reply(embed=self._create_error_embed(str(e)))
+            
+    @commands.command(name="롤.전적", description="최근 5게임 전적 조회")
+    async def lol_history(self, ctx, *, riot_id: str):
+        try:
+            account_data = self._get_account_info(riot_id)
+            puuid = account_data['puuid']
+            original_game_name = account_data['gameName']
+            tag_line = account_data['tagLine']
+
+            matches_url = f"https://asia.api.riotgames.com/lol/match/v5/matches/by-puuid/{puuid}/ids?start=0&count=5"
+            matches_response = requests.get(matches_url, headers=self.headers)
+            
+            if matches_response.status_code != 200:
+                raise ValueError(matches_response.status_code)
+                
+            match_ids = matches_response.json()
+            
+            if not match_ids:
+                raise ValueError("최근 게임 기록이 없습니다.")
+
+            # 챔프이름 한글로
+            ddragon_version_url = "https://ddragon.leagueoflegends.com/api/versions.json"
+            version_response = requests.get(ddragon_version_url)
+            latest_version = version_response.json()[0]
+            
+            champions_url = f"http://ddragon.leagueoflegends.com/cdn/{latest_version}/data/ko_KR/champion.json"
+            champions_response = requests.get(champions_url)
+            champions_data = champions_response.json()
+
+            embed = discord.Embed(
+                title=f"🇱 {original_game_name}#{tag_line}의 최근 5게임",
+                color=discord.Color.blue()
+            )
+
+            for match_id in match_ids:
+                match_url = f"https://asia.api.riotgames.com/lol/match/v5/matches/{match_id}"
+                match_response = requests.get(match_url, headers=self.headers)
+                
+                if match_response.status_code != 200:
+                    continue
+                    
+                match_data = match_response.json()
+                
+                participant = next(p for p in match_data['info']['participants'] if p['puuid'] == puuid)
+                
+                champion_id = participant['championName']
+                champion_name = next((champ_info['name'] for champ_name, champ_info in champions_data['data'].items() 
+                                   if champ_name == champion_id), champion_id)
+                
+                kills = participant['kills']
+                deaths = participant['deaths']
+                assists = participant['assists']
+                kda = "Perfect" if deaths == 0 else round((kills + assists) / deaths, 2)
+                win = participant['win']
+                
+                minutes = match_data['info']['gameDuration'] // 60
+                seconds = match_data['info']['gameDuration'] % 60
+                
+                embed.add_field(
+                    name=f"[{"승리" if win else "패배"}] - {champion_name}",
+                    value=f"- **{kills}/{deaths}/{assists}** ({kda})\n- {minutes}분 {seconds}초",
+                    inline=False
+                )
+
+            await ctx.reply(embed=embed)
 
         except Exception as e:
             await ctx.reply(embed=self._create_error_embed(str(e)))
