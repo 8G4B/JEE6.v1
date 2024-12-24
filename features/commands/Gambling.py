@@ -289,6 +289,8 @@ class Gambling(commands.Cog):
         self.blackjack_players: set = set()
         self.baccarat_players: set = set()
         self.indian_poker_players: set = set()
+        self.coin_players: set = set()
+        self.dice_players: set = set()
         self.data_manager = DataManager('gambling_data.json')
         self.gambling_service = GamblingService(self.data_manager)
         self.reset_jackpot.start()
@@ -368,6 +370,7 @@ class Gambling(commands.Cog):
 
     @commands.command(name="도박.동전", description="동전 던지기")
     async def coin(self, ctx, bet: str = None):
+        self.coin_players.add(ctx.author.id)
         if cooldown_embed := self._check_game_cooldown(ctx.author.id, "coin"):
             await ctx.reply(embed=cooldown_embed)
             return
@@ -420,8 +423,12 @@ class Gambling(commands.Cog):
             embed = GamblingEmbed.create_error_embed("30초 동안 응답이 없어 취소됐어요")
             await game_message.edit(embed=embed)
 
+        finally:
+            self.coin_players.remove(ctx.author.id)
+
     @commands.command(name="도박.주사위", description="주사위")
     async def dice(self, ctx, bet: str = None):
+        self.dice_players.add(ctx.author.id)
         if cooldown_embed := self._check_game_cooldown(ctx.author.id, "dice"):
             await ctx.reply(embed=cooldown_embed)
             return
@@ -474,6 +481,9 @@ class Gambling(commands.Cog):
         except asyncio.TimeoutError:
             embed = GamblingEmbed.create_error_embed("30초 동안 응답이 없어 취소됐어요")
             await game_message.edit(embed=embed)
+
+        finally:
+            self.dice_players.remove(ctx.author.id)
 
     @commands.command(name="도박.잭팟", description="잭팟")
     async def jackpot(self, ctx, bet: str = None):
@@ -1088,5 +1098,11 @@ class Gambling(commands.Cog):
             return False
         if ctx.author.id in self.indian_poker_players and ctx.command.name == "도박.인디언":
             await ctx.reply(embed=GamblingEmbed.create_error_embed("이미 인디언 포커 게임이 진행 중입니다."))
+            return False
+        if ctx.author.id in self.coin_players and ctx.command.name == "도박.동전":
+            await ctx.reply(embed=GamblingEmbed.create_error_embed("이미 동전 게임이 진행 중입니다."))
+            return False
+        if ctx.author.id in self.dice_players and ctx.command.name == "도박.주사위":
+            await ctx.reply(embed=GamblingEmbed.create_error_embed("이미 주사위 게임이 진행 중입니다."))
             return False
         return True
