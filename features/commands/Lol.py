@@ -161,6 +161,18 @@ class Lol(commands.Cog):
                 color=discord.Color.blue()
             )
 
+            game_mode_kr = {
+                'CLASSIC': '소환사의 협곡',
+                'ARAM': '칼바람 나락',
+                'URF': '우르프',
+                'ARURF': '무작위 우르프',
+                'ONEFORALL': '단일 챔피언',
+                'TUTORIAL': '튜토리얼',
+                'PRACTICETOOL': '연습',
+                'NEXUSBLITZ': '넥서스 돌격',
+                'ULTBOOK': '궁극기 주문서'
+            }
+
             for match_id in match_ids:
                 match_url = f"https://asia.api.riotgames.com/lol/match/v5/matches/{match_id}"
                 match_response = requests.get(match_url, headers=self.headers)
@@ -185,8 +197,11 @@ class Lol(commands.Cog):
                 minutes = match_data['info']['gameDuration'] // 60
                 seconds = match_data['info']['gameDuration'] % 60
                 
+                game_mode = match_data['info']['gameMode']
+                kr_mode = game_mode_kr.get(game_mode, game_mode)
+                
                 embed.add_field(
-                    name=f"[{"승리" if win else "패배"}] - {champion_name}",
+                    name=f"[{"승리" if win else "패배"}] - {champion_name}, {kr_mode}",
                     value=f"- **{kills}/{deaths}/{assists}** ({kda})\n- {minutes}분 {seconds}초",
                     inline=False
                 )
