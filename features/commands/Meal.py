@@ -11,6 +11,12 @@ SD_SCHUL_CODE = '7380292' # GSM
 
 NO_MEAL = "급식이 없습니다."
 
+MEAL_TIMES = [
+    ((lambda h, m: h < 7 or (h == 7 and m < 30)), "1", "🍳 아침"),
+    ((lambda h, m: h < 12 or (h == 12 and m < 30)), "2", "🍚 점심"), 
+    ((lambda h, m: h < 18 or (h == 18 and m < 30)), "3", "🍖 저녁")
+]
+
 class RequestMeal:
     params = {
         'key': MEAL_API_KEY,
@@ -72,6 +78,9 @@ class MealService:
     def __init__(self):
         self.meal_request = RequestMeal()
     
+    async def _get_menu_from_meal_info(self, meal_info: list, meal_code: str) -> str:
+        return next((meal["DDISH_NM"] for meal in meal_info if meal["MMEAL_SC_CODE"] == meal_code), NO_MEAL)
+    
     async def get_current_meal(self, now: datetime) -> tuple[str, str]:
         today = now.strftime("%Y%m%d")
         current_hour = now.hour
@@ -82,33 +91,27 @@ class MealService:
         if not meal_info:
             return None, None
             
-        if current_hour < 7 or (current_hour == 7 and current_minute < 30):
-            menu = next((meal["DDISH_NM"] for meal in meal_info if meal["MMEAL_SC_CODE"] == "1"), NO_MEAL)
-            title = "🍳 아침"
-        elif current_hour < 12 or (current_hour == 12 and current_minute < 30):
-            menu = next((meal["DDISH_NM"] for meal in meal_info if meal["MMEAL_SC_CODE"] == "2"), NO_MEAL)
-            title = "🍚 점심"
-        elif current_hour < 18 or (current_hour == 18 and current_minute < 30):
-            menu = next((meal["DDISH_NM"] for meal in meal_info if meal["MMEAL_SC_CODE"] == "3"), NO_MEAL)
-            title = "🍖 저녁"
+        for time_check, code, title in MEAL_TIMES:
+            if time_check(current_hour, current_minute):
+                menu = await self._get_menu_from_meal_info(meal_info, code)
+                return title, menu
+        
+        tomorrow = (now + timedelta(days=1)).strftime("%Y%m%d")
+        tomorrow_meal_info = await RequestMeal.get_meal_info(tomorrow)
+        
+        if tomorrow_meal_info:
+            menu = await self._get_menu_from_meal_info(tomorrow_meal_info, "1")
         else:
-            tomorrow = (now + timedelta(days=1)).strftime("%Y%m%d")
-            tomorrow_meal_info = await RequestMeal.get_meal_info(tomorrow)
-            if tomorrow_meal_info:
-                menu = next((meal["DDISH_NM"] for meal in tomorrow_meal_info if meal["MMEAL_SC_CODE"] == "1"), NO_MEAL)
-                title = "🍳 내일 아침"
-            else:
-                menu = NO_MEAL
-                title = "🍳 내일 아침"
-                
-        return title, menu
+            menu = NO_MEAL
+            
+        return "🍳 내일 아침", menu
         
     async def get_meal_by_type(self, date: str, meal_code: str, title: str) -> tuple[str, str]:
         meal_info = await RequestMeal.get_meal_info(date)
         if not meal_info:
             return None, None
             
-        menu = next((meal["DDISH_NM"] for meal in meal_info if meal["MMEAL_SC_CODE"] == meal_code), NO_MEAL)
+        menu = await self._get_menu_from_meal_info(meal_info, meal_code)
         return title, menu
 
 class Meal(commands.Cog):
@@ -124,7 +127,7 @@ class Meal(commands.Cog):
         
         await ctx.reply(embed=embed)
 
-    @commands.command(name='급식', description='급식 조회')
+    @commands.command(name='급식', aliases=['밥'], description='급식 조회')
     async def meal(self, ctx):
         title, menu = await self.meal_service.get_current_meal(datetime.now())
         embed = (MealEmbed.create_meal_embed(title, menu) if title and menu 
