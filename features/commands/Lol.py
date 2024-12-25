@@ -87,11 +87,10 @@ class LolEmbed:
         
         for match in matches:
             embed.add_field(
-                name=match['name'], 
-                value=match['value'], 
+                name=match['name'],
+                value=match['value'],
                 inline=False
             )
-            embed.set_thumbnail(url=f"attachment://{match['champion_en']}.png")
         
         return embed
 
@@ -237,8 +236,7 @@ class LolService:
             
             formatted_matches.append({
                 'name': f"[{"승리" if win else "패배"}] - {champion_name}, {kr_mode}",
-                'value': f"- **{kills}/{deaths}/{assists}** ({kda})\n- {minutes}분 {seconds}초",
-                'champion_en': champion_id
+                'value': f"- **{kills}/{deaths}/{assists}** ({kda})\n- {minutes}분 {seconds}초"
             })
             
         return formatted_matches
@@ -309,13 +307,7 @@ class Lol(commands.Cog):
             title = f"🇱 {account_data['gameName']}#{account_data['tagLine']}의 최근 5게임"
             embed = LolEmbed.create_history_embed(title, matches)
             
-            files = [
-                discord.File(f"assets/champion/square/{match['champion_en']}.png", 
-                            filename=f"{match['champion_en']}.png")
-                for match in matches
-            ]
-            
-            await ctx.reply(embed=embed, files=files)
+            await ctx.reply(embed=embed)
             
         except Exception as e:
             await ctx.reply(embed=LolEmbed.create_error_embed(str(e)))
