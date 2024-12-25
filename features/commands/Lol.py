@@ -57,52 +57,37 @@ class RequestLol:
 
 class LolEmbed:
     @staticmethod
-    def create_tier_embed(game_name: str, tag_line: str, tier_info: dict, tier: str) -> discord.Embed:
-        if not tier_info:
-            description = "솔로랭크 정보가 없습니다."
-        else:
-            wins = tier_info['wins']
-            losses = tier_info['losses']
-            win_rate = round((wins / (wins + losses)) * 100, 1)
-            description = f"## {tier_info['tier']} {tier_info['rank']} {tier_info['leaguePoints']}LP\n {wins+losses}전 {wins}승 {losses}패 (승률 {win_rate}%)"
-            
+    def create_tier_embed(title: str, description: str, tier: str) -> discord.Embed:
         embed = discord.Embed(
-            title=f"🇱 이번 시즌 {game_name}#{tag_line}의 티어",
+            title=title,
             description=description,
             color=discord.Color.dark_blue()
         )
-        
         embed.set_thumbnail(url=f"attachment://{tier}.png")
         return embed
-        
+
     @staticmethod
-    def create_history_embed(game_name: str, tag_line: str, matches: List[dict]) -> discord.Embed:
+    def create_history_embed(title: str, matches: List[dict]) -> discord.Embed:
         embed = discord.Embed(
-            title=f"🇱 {game_name}#{tag_line}의 최근 5게임",
+            title=title,
             color=discord.Color.blue()
         )
         
         for match in matches:
-            name = match['name']
-            value = match['value']
-            embed.add_field(name=name, value=value, inline=False)
+            embed.add_field(name=match['name'], value=match['value'], inline=False)
             
         return embed
-        
+
     @staticmethod
-    def create_rotation_embed(champion_names: List[str]) -> discord.Embed:
+    def create_rotation_embed(title: str, description: str) -> discord.Embed:
         return discord.Embed(
-            title="🇱 이번 주 로테이션",
-            description=", ".join(champion_names),
+            title=title,
+            description=description,
             color=discord.Color.blue()
         )
-        
+
     @staticmethod
-    def create_error_embed(error_message: str, additional_info: str = None) -> discord.Embed:
-        description = str(error_message)
-        if additional_info:
-            description += " " + str(additional_info)
-            
+    def create_error_embed(description: str) -> discord.Embed:
         return discord.Embed(
             title="❗ 오류",
             description=description,
@@ -266,12 +251,16 @@ class Lol(commands.Cog):
             account_data = await self.lol_service.get_account_info(self.session, riot_id)
             tier_info, tier = await self.lol_service.get_tier_info(self.session, account_data['puuid'])
             
-            embed = LolEmbed.create_tier_embed(
-                account_data['gameName'],
-                account_data['tagLine'],
-                tier_info,
-                tier
-            )
+            if not tier_info:
+                description = "솔로랭크 정보가 없습니다."
+            else:
+                wins = tier_info['wins']
+                losses = tier_info['losses']
+                win_rate = round((wins / (wins + losses)) * 100, 1)
+                description = f"## {tier_info['tier']} {tier_info['rank']} {tier_info['leaguePoints']}LP\n {wins+losses}전 {wins}승 {losses}패 (승률 {win_rate}%)"
+
+            title = f"🇱 이번 시즌 {account_data['gameName']}#{account_data['tagLine']}의 티어"
+            embed = LolEmbed.create_tier_embed(title, description, tier)
             
             rank_image = discord.File(f"assets/rank/{tier}.png", filename=f"{tier}.png")
             await ctx.reply(embed=embed, file=rank_image)
@@ -285,11 +274,8 @@ class Lol(commands.Cog):
             account_data = await self.lol_service.get_account_info(self.session, riot_id)
             matches = await self.lol_service.get_match_history(self.session, account_data['puuid'])
             
-            embed = LolEmbed.create_history_embed(
-                account_data['gameName'],
-                account_data['tagLine'],
-                matches
-            )
+            title = f"🇱 {account_data['gameName']}#{account_data['tagLine']}의 최근 5게임"
+            embed = LolEmbed.create_history_embed(title, matches)
             
             await ctx.reply(embed=embed)
             
@@ -300,7 +286,9 @@ class Lol(commands.Cog):
     async def lol_rotation(self, ctx):
         try:
             champion_names = await self.lol_service.get_rotation(self.session)
-            embed = LolEmbed.create_rotation_embed(champion_names)
+            title = "🇱 이번 주 로테이션"
+            description = ", ".join(champion_names)
+            embed = LolEmbed.create_rotation_embed(title, description)
             await ctx.reply(embed=embed)
             
         except Exception as e:
