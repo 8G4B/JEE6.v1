@@ -86,8 +86,13 @@ class LolEmbed:
         )
         
         for match in matches:
-            embed.add_field(name=match['name'], value=match['value'], inline=False)
-            
+            embed.add_field(
+                name=match['name'], 
+                value=match['value'], 
+                inline=False
+            )
+            embed.set_thumbnail(url=f"attachment://{match['champion_en']}.png")
+        
         return embed
 
     @staticmethod
@@ -232,7 +237,8 @@ class LolService:
             
             formatted_matches.append({
                 'name': f"[{"승리" if win else "패배"}] - {champion_name}, {kr_mode}",
-                'value': f"- **{kills}/{deaths}/{assists}** ({kda})\n- {minutes}분 {seconds}초"
+                'value': f"- **{kills}/{deaths}/{assists}** ({kda})\n- {minutes}분 {seconds}초",
+                'champion_en': champion_id
             })
             
         return formatted_matches
@@ -248,10 +254,10 @@ class LolService:
         for champ_id in rotation_data['freeChampionIds']:
             for champ_name, champ_info in self.champions_data['data'].items():
                 if int(champ_info['key']) == champ_id:
-                    # 한글 이름과 영문 키(파일명용)를 함께 저장
+                    # 한글 이름과 영문 key(파일명용)를 같이 저장
                     champion_info.append({
                         'kr_name': champ_info['name'],
-                        'en_name': champ_name  # 영문 이름(키)
+                        'en_name': champ_name  
                     })
                     break
                 
@@ -303,7 +309,13 @@ class Lol(commands.Cog):
             title = f"🇱 {account_data['gameName']}#{account_data['tagLine']}의 최근 5게임"
             embed = LolEmbed.create_history_embed(title, matches)
             
-            await ctx.reply(embed=embed)
+            files = [
+                discord.File(f"assets/champion/square/{match['champion_en']}.png", 
+                            filename=f"{match['champion_en']}.png")
+                for match in matches
+            ]
+            
+            await ctx.reply(embed=embed, files=files)
             
         except Exception as e:
             await ctx.reply(embed=LolEmbed.create_error_embed(str(e)))
