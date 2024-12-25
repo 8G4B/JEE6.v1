@@ -7,6 +7,7 @@ import aiohttp
 import asyncio
 from typing import Dict, List
 import time
+import os
 
 class RequestLol:
     def __init__(self):
@@ -19,6 +20,7 @@ class RequestLol:
             "Accept-Charset": "application/x-www-form-urlencoded; charset=UTF-8",
             "Origin": "https://developer.riotgames.com"
         }
+        self.download_champion_images()
         
     @staticmethod
     def download_rank_images():
@@ -39,10 +41,13 @@ class RequestLol:
         for rank, url in rank_urls.items():
             urllib.request.urlretrieve(url, f"assets/rank/{rank}.png")
             
-    def download_champion_images():
+    def download_champion_images(self):
         champions_url = 'https://ddragon.leagueoflegends.com/cdn/14.24.1/data/ko_KR/champion.json'
         champions_response = requests.get(champions_url)
         champions_data = champions_response.json()
+        
+        os.makedirs('assets/champion/square', exist_ok=True)
+        
         for champion in champions_data['data']:
             urllib.request.urlretrieve(f'https://ddragon.leagueoflegends.com/cdn/14.24.1/img/champion/{champion}.png', f'assets/champion/square/{champion}.png')
             
@@ -86,12 +91,22 @@ class LolEmbed:
         return embed
 
     @staticmethod
-    def create_rotation_embed(title: str, description: str) -> discord.Embed:
-        return discord.Embed(
+    def create_rotation_embed(title: str, champion_names: List[str]) -> discord.Embed:
+        embed = discord.Embed(
             title=title,
-            description=description,
             color=discord.Color.blue()
         )
+        
+        description = ""
+        for i, name in enumerate(champion_names):
+            description += f"`{name}`"
+            if i < len(champion_names) - 1:
+                description += " "
+            if (i + 1) % 5 == 0:  # 5개마다 줄바꿈
+                description += "\n"
+        
+        embed.description = description
+        return embed
 
     @staticmethod
     def create_error_embed(description: str) -> discord.Embed:
@@ -229,14 +244,18 @@ class LolService:
                 raise ValueError(response.status)
             rotation_data = await response.json()
             
-        champion_names = []
+        champion_info = []
         for champ_id in rotation_data['freeChampionIds']:
             for champ_name, champ_info in self.champions_data['data'].items():
                 if int(champ_info['key']) == champ_id:
-                    champion_names.append(champ_info['name'])
+                    # 한글 이름과 영문 키(파일명용)를 함께 저장
+                    champion_info.append({
+                        'kr_name': champ_info['name'],
+                        'en_name': champ_name  # 영문 이름(키)
+                    })
                     break
-                    
-        return champion_names
+                
+        return champion_info
 
 class Lol(commands.Cog):
     def __init__(self, bot):
@@ -292,10 +311,11 @@ class Lol(commands.Cog):
     @commands.command(name="롤.로테이션", description="현재 무료 로테이션 챔피언 목록을 보여줍니다")
     async def lol_rotation(self, ctx):
         try:
-            champion_names = await self.lol_service.get_rotation(self.session)
+            champion_info = await self.lol_service.get_rotation(self.session)
             title = "🇱 이번 주 로테이션"
-            description = ", ".join(champion_names)
-            embed = LolEmbed.create_rotation_embed(title, description)
+            
+            champion_names = [champ['kr_name'] for champ in champion_info]
+            embed = LolEmbed.create_rotation_embed(title, champion_names)
             await ctx.reply(embed=embed)
             
         except Exception as e:
