@@ -39,6 +39,13 @@ class RequestLol:
         for rank, url in rank_urls.items():
             urllib.request.urlretrieve(url, f"assets/rank/{rank}.png")
             
+    def download_champion_images():
+        champions_url = 'https://ddragon.leagueoflegends.com/cdn/14.24.1/data/ko_KR/champion.json'
+        champions_response = requests.get(champions_url)
+        champions_data = champions_response.json()
+        for champion in champions_data['data']:
+            urllib.request.urlretrieve(f'https://ddragon.leagueoflegends.com/cdn/14.24.1/img/champion/{champion}.png', f'assets/champion/square/{champion}.png')
+            
     @staticmethod
     def get_champion_data():
         ddragon_version_url = "https://ddragon.leagueoflegends.com/api/versions.json"
