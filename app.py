@@ -11,9 +11,9 @@ from features.commands.Meal import Meal
 from features.commands.Information import Information
 from features.commands.Question import Question
 from features.commands.Lol import Lol
+from features.commands.Valo import Valo
 from features.alarm.Anmauija import Anmauija
 from features.alarm.Jaseub import Jaseub
-
 intents = discord.Intents.default()
 intents.message_content = True
 intents.members = False
@@ -37,6 +37,7 @@ async def setup():
     await bot.add_cog(Lol(bot))
     await bot.add_cog(Anmauija(bot))
     await bot.add_cog(Jaseub(bot))
+    await bot.add_cog(Valo(bot))
 
 @bot.event
 async def on_ready():
