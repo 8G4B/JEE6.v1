@@ -48,12 +48,12 @@ class GamblingConfig:
     ]
 
     GAME_MULTIPLIER_RANGES = {
-        'coin': (0.6, 1.7),
+        'coin': (1.0, 1.2),
         'dice': (4.6, 5.7),
         'blackjack': (1.2, 1.5),
         'baccarat': (1.2, 1.5),
-        'indian_poker': (0.5, 1.5)
-    }
+        'indian_poker': (1.0, 1.2)
+    }   
 
     WORK_REWARD_RANGE = (100, 2000)
 
@@ -117,7 +117,7 @@ class GamblingEmbed:
 
 class DataManager:
     def __init__(self, data_file: str):
-        self.data_file = data_file
+        self.data_file = data_file  
         self.balances: Dict[int, int] = {}
         self.jackpot: int = 0
         self.locks: Dict[int, threading.RLock] = {}
