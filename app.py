@@ -14,6 +14,7 @@ from features.commands.Lol import Lol
 from features.commands.Valo import Valo
 from features.alarm.Anmauija import Anmauija
 from features.alarm.Jaseub import Jaseub
+from features.commands.Timeout import Timeout
 intents = discord.Intents.default()
 intents.message_content = True
 intents.members = False
@@ -38,6 +39,7 @@ async def setup():
     await bot.add_cog(Anmauija(bot))
     await bot.add_cog(Jaseub(bot))
     await bot.add_cog(Valo(bot))
+    await bot.add_cog(Timeout(bot))
 
 @bot.event
 async def on_ready():
