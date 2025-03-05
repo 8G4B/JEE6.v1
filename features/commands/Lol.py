@@ -20,37 +20,7 @@ class RequestLol:
             "Accept-Charset": "application/x-www-form-urlencoded; charset=UTF-8",
             "Origin": "https://developer.riotgames.com"
         }
-        self.download_champion_images()
         
-    @staticmethod
-    def download_rank_images():
-        rank_urls = {
-            "UNRANKED": "https://static.wikia.nocookie.net/leagueoflegends/images/1/13/Season_2023_-_Unranked.png/revision/latest?cb=20231007211937",
-            "IRON": "https://static.wikia.nocookie.net/leagueoflegends/images/f/f8/Season_2023_-_Iron.png/revision/latest?cb=20231007195831",
-            "BRONZE": "https://static.wikia.nocookie.net/leagueoflegends/images/c/cb/Season_2023_-_Bronze.png/revision/latest?cb=20231007195824",
-            "SILVER": "https://static.wikia.nocookie.net/leagueoflegends/images/c/c4/Season_2023_-_Silver.png/revision/latest?cb=20231007195834",
-            "GOLD": "https://static.wikia.nocookie.net/leagueoflegends/images/7/78/Season_2023_-_Gold.png/revision/latest?cb=20231007195829",
-            "PLATINUM": "https://static.wikia.nocookie.net/leagueoflegends/images/b/bd/Season_2023_-_Platinum.png/revision/latest?cb=20231007195833",
-            "EMERALD": "https://static.wikia.nocookie.net/leagueoflegends/images/4/4b/Season_2023_-_Emerald.png/revision/latest?cb=20231007195827",
-            "DIAMOND": "https://static.wikia.nocookie.net/leagueoflegends/images/3/37/Season_2023_-_Diamond.png/revision/latest?cb=20231007195826",
-            "MASTER": "https://static.wikia.nocookie.net/leagueoflegends/images/d/d5/Season_2023_-_Master.png/revision/latest?cb=20231007195832",
-            "GRANDMASTER": "https://static.wikia.nocookie.net/leagueoflegends/images/6/64/Season_2023_-_Grandmaster.png/revision/latest?cb=20231007195830",
-            "CHALLENGER": "https://static.wikia.nocookie.net/leagueoflegends/images/1/14/Season_2023_-_Challenger.png/revision/latest?cb=20231007195825"
-        }
-        
-        for rank, url in rank_urls.items():
-            urllib.request.urlretrieve(url, f"assets/rank/{rank}.png")
-            
-    def download_champion_images(self):
-        champions_url = 'https://ddragon.leagueoflegends.com/cdn/14.24.1/data/ko_KR/champion.json'
-        champions_response = requests.get(champions_url)
-        champions_data = champions_response.json()
-        
-        os.makedirs('assets/champion/square', exist_ok=True)
-        
-        for champion in champions_data['data']:
-            urllib.request.urlretrieve(f'https://ddragon.leagueoflegends.com/cdn/14.24.1/img/champion/{champion}.png', f'assets/champion/square/{champion}.png')
-            
     @staticmethod
     def get_champion_data():
         ddragon_version_url = "https://ddragon.leagueoflegends.com/api/versions.json"
@@ -66,6 +36,10 @@ class RequestLol:
         return next((champ_info['name']
                     for champ_name, champ_info in champions_data['data'].items()
                     if champ_name == champion_id), champion_id)
+
+    @staticmethod
+    def get_champion_image_path(champion_id: str) -> str:
+        return f"assets/champion/square/{champion_id}.png"
 
 class LolEmbed:
     @staticmethod
@@ -266,7 +240,6 @@ class Lol(commands.Cog):
         self.bot = bot
         self.session = None
         self.lol_service = LolService()
-        RequestLol.download_rank_images()
         
     async def cog_load(self):
         self.session = aiohttp.ClientSession()
@@ -292,7 +265,7 @@ class Lol(commands.Cog):
             title = f"🇱 이번 시즌 {account_data['gameName']}#{account_data['tagLine']}의 티어"
             embed = LolEmbed.create_tier_embed(title, description, tier)
             
-            rank_image = discord.File(f"assets/rank/{tier}.png", filename=f"{tier}.png")
+            rank_image = discord.File(self.request.get_champion_image_path(tier), filename=f"{tier}.png")
             await ctx.reply(embed=embed, file=rank_image)
             
         except Exception as e:
