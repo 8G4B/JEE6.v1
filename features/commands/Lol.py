@@ -265,7 +265,8 @@ class Lol(commands.Cog):
             title = f"🇱 이번 시즌 {account_data['gameName']}#{account_data['tagLine']}의 티어"
             embed = LolEmbed.create_tier_embed(title, description, tier)
             
-            rank_image = discord.File(self.request.get_champion_image_path(tier), filename=f"{tier}.png")
+            rank_image_path = f"assets/rank/{tier}.png"
+            rank_image = discord.File(rank_image_path, filename=f"{tier}.png")
             await ctx.reply(embed=embed, file=rank_image)
             
         except Exception as e:
