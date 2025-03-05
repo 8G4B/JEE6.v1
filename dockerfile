@@ -7,9 +7,9 @@ COPY requirements.txt .
 # app.py 파일을 /app 디렉토리로 복사합니다
 COPY app.py .
 # 각 디렉토리를 /app 하위 디렉토리로 복사합니다
-COPY commands/ ./commands/
-COPY alarm/ ./alarm/
+COPY features/ ./features/
 COPY assets/ ./assets/
+COPY shared/ ./shared/
 # 모든 .py 파일을 /app 디렉토리로 복사합니다
 COPY *.py .
 COPY gambling_data.json .

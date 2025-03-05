@@ -1,6 +1,8 @@
 import discord
 from discord.ext import commands
+import ssl
 import urllib.request
+ssl._create_default_https_context = ssl._create_unverified_context
 class Information(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
