@@ -34,10 +34,10 @@ async def setup():
     await bot.add_cog(Meal(bot))
     await bot.add_cog(Information(bot))
     await bot.add_cog(Question(bot))
-    await bot.add_cog(Lol(bot))
+    # await bot.add_cog(Lol(bot))
     await bot.add_cog(Anmauija(bot))
     await bot.add_cog(Jaseub(bot))
-    await bot.add_cog(Valo(bot))
+    # await bot.add_cog(Valo(bot))
 
 @bot.event
 async def on_ready():
