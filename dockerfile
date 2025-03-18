@@ -22,9 +22,8 @@ RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 # 8000 포트를 외부에 노출합니다
 EXPOSE 8000
 
-RUN mkdir -p /app/logs && \
-    touch /app/logs/discord.log && \
-    chown -R root:root /app
+RUN touch /app/discord.log && \
+    chmod 777 /app/discord.log
 
 USER root
 # 컨테이너가 실행될 때 실행할 명령어를 설정합니다
