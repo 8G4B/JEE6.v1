@@ -14,7 +14,6 @@ from features.commands.Lol import Lol
 from features.commands.Valo import Valo
 from features.alarm.Anmauija import Anmauija
 from features.alarm.Jaseub import Jaseub
-from features.commands.Timeout import Timeout
 from features.commands.Justice import Justice
 from features.commands.Clean import Clean
 
@@ -42,7 +41,6 @@ async def setup():
     await bot.add_cog(Anmauija(bot))
     await bot.add_cog(Jaseub(bot))
     await bot.add_cog(Valo(bot))
-    await bot.add_cog(Timeout(bot))
     await bot.add_cog(Justice(bot))
     await bot.add_cog(Clean(bot))
 
