@@ -2,37 +2,54 @@ import discord
 from discord.ext import commands
 import datetime
 import logging
-import json
-import os
+from shared.database import DatabaseSession, JusticeRecord, TimeoutHistory
 
 logger = logging.getLogger(__name__)
 
 class Justice(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.counts_file = 'counts.json'
-        self._load_counts()
-
-    def _load_counts(self):
-        if os.path.exists(self.counts_file):
-            with open(self.counts_file, 'r') as f:
-                self.counts = json.load(f)
-        else:
-            self.counts = {}
-
-    def _save_counts(self):
-        with open(self.counts_file, 'w') as f:
-            json.dump(self.counts, f, indent=4)
 
     async def get_user_count(self, user_id: str, server_id: str) -> int:
-        server_counts = self.counts.get(server_id, {})
-        return server_counts.get(user_id, 0)
+        async with DatabaseSession() as session:
+            record = await session.query(JusticeRecord).filter(
+                JusticeRecord.user_id == int(user_id),
+                JusticeRecord.server_id == int(server_id)
+            ).first()
+            return record.count if record else 0
 
     async def set_user_count(self, user_id: str, server_id: str, count: int):
-        if server_id not in self.counts:
-            self.counts[server_id] = {}
-        self.counts[server_id][user_id] = count
-        self._save_counts()
+        async with DatabaseSession() as session:
+            record = await session.query(JusticeRecord).filter(
+                JusticeRecord.user_id == int(user_id),
+                JusticeRecord.server_id == int(server_id)
+            ).first()
+            
+            if record:
+                record.count = count
+                record.last_timeout = datetime.datetime.now()
+            else:
+                record = JusticeRecord(
+                    user_id=int(user_id),
+                    server_id=int(server_id),
+                    count=count,
+                    last_timeout=datetime.datetime.now()
+                )
+                session.add(record)
+            
+            await session.commit()
+
+    async def add_timeout_history(self, user_id: str, server_id: str, moderator_id: str, reason: str, duration: datetime.timedelta):
+        async with DatabaseSession() as session:
+            history = TimeoutHistory(
+                user_id=int(user_id),
+                server_id=int(server_id),
+                moderator_id=int(moderator_id),
+                reason=reason,
+                duration=duration
+            )
+            session.add(history)
+            await session.commit()
 
     @commands.command(name='심판', aliases=['judge', 'j', 'J', 'JUDGE', '타임아웃', 'ㅓ'])
     @commands.has_permissions(moderate_members=True)
@@ -54,6 +71,7 @@ class Justice(commands.Cog):
         
         try:
             await member.timeout(timeout_duration, reason=reason)
+            await self.add_timeout_history(user_id, server_id, str(ctx.author.id), reason, timeout_duration)
             
             try:
                 dm_embed = discord.Embed(

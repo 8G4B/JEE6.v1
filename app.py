@@ -3,6 +3,7 @@ from discord.ext import commands
 from shared.discord_token import TOKEN
 import asyncio
 import logging
+from shared.database import init_db, test_connection
 
 from features.commands.Greeting import Greeting
 from features.commands.Gambling import Gambling
@@ -49,6 +50,13 @@ async def on_ready():
     print(f'{bot.user.name} connected')
 
 async def main():
+    if not test_connection():
+        print("데이터베이스 연결 실패!")
+        return
+    
+    init_db()
+    print("데이터베이스 초기화 완료!")
+    
     await setup()
     await bot.start(TOKEN)
 
