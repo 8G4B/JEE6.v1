@@ -47,7 +47,10 @@ async def main():
         print("데이터베이스 연결 실패!")
         return
     
-    init_db()
+    if not await init_db():
+        print("데이터베이스 초기화 실패!")
+        return
+    
     print("데이터베이스 초기화 완료!")
     
     await setup()

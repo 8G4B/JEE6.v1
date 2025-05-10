@@ -163,4 +163,26 @@ async def add_timeout_history(user_id: str, server_id: str, moderator_id: str, r
             connection.close()
     return False
 
-asyncio.create_task(create_tables()) 
+async def init_db():
+    try:
+        await create_tables()
+        logger.info("Database initialization completed successfully")
+        return True
+    except Exception as e:
+        logger.error(f"Database initialization failed: {e}")
+        return False
+
+def test_connection():
+    try:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        connection = loop.run_until_complete(get_connection())
+        if connection:
+            connection.close()
+            logger.info("Database connection test successful!")
+            return True
+    except Exception as e:
+        logger.error(f"Database connection test failed: {e}")
+    finally:
+        loop.close()
+    return False 
