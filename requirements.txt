@@ -4,6 +4,5 @@ requests
 aiohttp
 openai
 riotwatcher
-aiomysql
+mysql-connector-python
 SQLAlchemy
-pymysql
