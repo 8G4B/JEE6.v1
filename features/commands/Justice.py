@@ -2,7 +2,7 @@ import discord
 from discord.ext import commands
 import datetime
 import logging
-from shared.database import DatabaseSession, JusticeRecord, TimeoutHistory
+from shared.database import get_connection
 
 logger = logging.getLogger(__name__)
 
@@ -11,45 +11,64 @@ class Justice(commands.Cog):
         self.bot = bot
 
     async def get_user_count(self, user_id: str, server_id: str) -> int:
-        async with DatabaseSession() as session:
-            record = await session.query(JusticeRecord).filter(
-                JusticeRecord.user_id == int(user_id),
-                JusticeRecord.server_id == int(server_id)
-            ).first()
-            return record.count if record else 0
+        connection = await get_connection()
+        if connection:
+            try:
+                cursor = connection.cursor(dictionary=True)
+                sql = "SELECT count FROM justice_records WHERE user_id = %s AND server_id = %s"
+                cursor.execute(sql, (int(user_id), int(server_id)))
+                result = cursor.fetchone()
+                cursor.close()
+                if result:
+                    return result['count']
+                return 0
+            except Exception as e:
+                logger.error(f"get_user_count({user_id}, {server_id}) FAIL: {e}")
+                return 0
+            finally:
+                connection.close()
+        return 0
 
     async def set_user_count(self, user_id: str, server_id: str, count: int):
-        async with DatabaseSession() as session:
-            record = await session.query(JusticeRecord).filter(
-                JusticeRecord.user_id == int(user_id),
-                JusticeRecord.server_id == int(server_id)
-            ).first()
-            
-            if record:
-                record.count = count
-                record.last_timeout = datetime.datetime.now()
-            else:
-                record = JusticeRecord(
-                    user_id=int(user_id),
-                    server_id=int(server_id),
-                    count=count,
-                    last_timeout=datetime.datetime.now()
-                )
-                session.add(record)
-            
-            await session.commit()
+        connection = await get_connection()
+        if connection:
+            try:
+                with connection.cursor() as cursor:
+                    sql = """
+                    INSERT INTO justice_records (user_id, server_id, count, last_timeout) 
+                    VALUES (%s, %s, %s, NOW())
+                    ON DUPLICATE KEY UPDATE count = %s, last_timeout = NOW()
+                    """
+                    cursor.execute(sql, (int(user_id), int(server_id), count, count))
+                connection.commit()
+                logger.info(f"set_user_count({user_id}, {server_id}, {count}) OKAY")
+                return True
+            except Exception as e:
+                logger.error(f"set_user_count({user_id}, {server_id}, {count}) FAIL: {e}")
+            finally:
+                connection.close()
+        return False
 
     async def add_timeout_history(self, user_id: str, server_id: str, moderator_id: str, reason: str, duration: datetime.timedelta):
-        async with DatabaseSession() as session:
-            history = TimeoutHistory(
-                user_id=int(user_id),
-                server_id=int(server_id),
-                moderator_id=int(moderator_id),
-                reason=reason,
-                duration=duration
-            )
-            session.add(history)
-            await session.commit()
+        connection = await get_connection()
+        if connection:
+            try:
+                with connection.cursor() as cursor:
+                    duration_seconds = int(duration.total_seconds())
+                    sql = """
+                    INSERT INTO timeout_history 
+                    (user_id, server_id, moderator_id, reason, duration) 
+                    VALUES (%s, %s, %s, %s, %s)
+                    """
+                    cursor.execute(sql, (int(user_id), int(server_id), int(moderator_id), reason, duration_seconds))
+                connection.commit()
+                logger.info(f"add_timeout_history({user_id}, {server_id}, {moderator_id}) OKAY")
+                return True
+            except Exception as e:
+                logger.error(f"add_timeout_history FAIL: {e}")
+            finally:
+                connection.close()
+        return False
 
     @commands.command(name='심판', aliases=['judge', 'j', 'J', 'JUDGE', '타임아웃', 'ㅓ'])
     @commands.has_permissions(moderate_members=True)

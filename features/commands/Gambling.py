@@ -9,7 +9,12 @@ import threading
 import asyncio
 import time
 from typing import Optional, Tuple, List, Dict, Callable, Any
-from shared.database import DatabaseSession, UserBalance, Jackpot, Cooldown
+from shared.database import (
+    get_user_balance, set_user_balance,
+    get_jackpot, set_jackpot,
+    get_cooldown, set_cooldown,
+    get_sorted_balances
+)
 
 class GamblingConfig:
     MIN_BET = 100
@@ -121,92 +126,35 @@ class GamblingService:
         pass
 
     async def get_balance(self, user_id: int) -> int:
-        async with DatabaseSession() as session:
-            user = await session.query(UserBalance).filter(UserBalance.user_id == user_id).first()
-            return user.balance if user else 0
+        return await get_user_balance(user_id)
 
     async def set_balance(self, user_id: int, amount: int) -> None:
-        async with DatabaseSession() as session:
-            user = await session.query(UserBalance).filter(UserBalance.user_id == user_id).first()
-            if user:
-                user.balance = amount
-            else:
-                user = UserBalance(user_id=user_id, balance=amount)
-                session.add(user)
-            await session.commit()
+        await set_user_balance(user_id, amount)
 
     async def add_balance(self, user_id: int, amount: int) -> None:
-        async with DatabaseSession() as session:
-            user = await session.query(UserBalance).filter(UserBalance.user_id == user_id).first()
-            if user:
-                user.balance += amount
-            else:
-                user = UserBalance(user_id=user_id, balance=amount)
-                session.add(user)
-            await session.commit()
+        current_balance = await self.get_balance(user_id)
+        await self.set_balance(user_id, current_balance + amount)
 
     async def subtract_balance(self, user_id: int, amount: int) -> None:
-        async with DatabaseSession() as session:
-            user = await session.query(UserBalance).filter(UserBalance.user_id == user_id).first()
-            if user:
-                user.balance -= amount
-                await session.commit()
+        current_balance = await self.get_balance(user_id)
+        await self.set_balance(user_id, current_balance - amount)
 
     async def get_jackpot(self) -> int:
-        async with DatabaseSession() as session:
-            jackpot = await session.query(Jackpot).first()
-            return jackpot.amount if jackpot else GamblingConfig.INITIAL_JACKPOT
+        return await get_jackpot()
 
     async def set_jackpot(self, amount: int) -> None:
-        async with DatabaseSession() as session:
-            jackpot = await session.query(Jackpot).first()
-            if jackpot:
-                jackpot.amount = amount
-            else:
-                jackpot = Jackpot(amount=amount)
-                session.add(jackpot)
-            await session.commit()
+        await set_jackpot(amount)
 
     async def add_jackpot(self, amount: int) -> None:
-        async with DatabaseSession() as session:
-            jackpot = await session.query(Jackpot).first()
-            if jackpot:
-                jackpot.amount += amount
-            else:
-                jackpot = Jackpot(amount=GamblingConfig.INITIAL_JACKPOT + amount)
-                session.add(jackpot)
-            await session.commit()
+        current_jackpot = await self.get_jackpot()
+        await self.set_jackpot(current_jackpot + amount)
 
     async def subtract_jackpot(self, amount: int) -> None:
-        async with DatabaseSession() as session:
-            jackpot = await session.query(Jackpot).first()
-            if jackpot:
-                jackpot.amount -= amount
-                await session.commit()
+        current_jackpot = await self.get_jackpot()
+        await self.set_jackpot(current_jackpot - amount)
 
     async def get_sorted_balances(self) -> List[Tuple[int, int]]:
-        async with DatabaseSession() as session:
-            users = await session.query(UserBalance).order_by(UserBalance.balance.desc()).all()
-            return [(user.user_id, user.balance) for user in users]
-
-    async def get_cached_rankings(self, bot) -> List[Tuple[int, str, int]]:
-        sorted_balances = await self.get_sorted_balances()
-        rankings = []
-        
-        user_ids = [user_id for user_id, _ in sorted_balances]
-        users = {user.id: user.name for user in bot.users if user.id in user_ids}
-        
-        for user_id, balance in sorted_balances:
-            username = users.get(user_id)
-            if not username:
-                try:
-                    user = await bot.fetch_user(user_id)
-                    username = user.name
-                except:
-                    username = f"알 수 없음({user_id})"
-            rankings.append((user_id, username, balance))
-        
-        return rankings
+        return await get_sorted_balances()
 
     def calculate_gift_tax(self, amount: int) -> int:
         for threshold, rate in GamblingConfig.GIFT_TAX_BRACKETS:
