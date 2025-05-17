@@ -43,7 +43,7 @@ async def on_ready():
     print(f'{bot.user.name} connected')
 
 async def main():
-    if not test_connection():
+    if not await test_connection():
         print("데이터베이스 연결 실패!")
         return
     

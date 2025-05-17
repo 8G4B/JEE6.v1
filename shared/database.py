@@ -307,17 +307,15 @@ async def init_db():
         logger.error(f"Database initialization failed: {e}")
         return False
 
-def test_connection():
+async def test_connection():
     try:
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        connection = loop.run_until_complete(get_connection())
+        connection = await get_connection()
         if connection:
+            with connection.cursor() as cursor:
+                cursor.execute("SELECT 1")
             connection.close()
             logger.info("Database connection test successful!")
             return True
     except Exception as e:
         logger.error(f"Database connection test failed: {e}")
-    finally:
-        loop.close()
     return False 
