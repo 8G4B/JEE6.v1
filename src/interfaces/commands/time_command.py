@@ -1,7 +1,8 @@
 from discord.ext import commands
-from src.services.time_service import TimeService
+from src.interfaces.commands.base_command import BaseCommand
 
-class TimeCommands(commands.Cog):
-    def __init__(self, bot):
-        self.bot = bot
-        self.time_service = TimeService()
+class TimeCommands(BaseCommand):
+    @commands.command(name='time')
+    async def get_time(self, ctx):
+        current_time = self.container.time_service().get_current_time()
+        await ctx.send(f"현재 시간: {current_time}")
