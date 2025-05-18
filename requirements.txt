@@ -4,3 +4,6 @@ requests
 aiohttp
 openai
 riotwatcher
+aiomysql
+SQLAlchemy
+pymysql

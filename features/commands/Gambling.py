@@ -9,6 +9,7 @@ import threading
 import asyncio
 import time
 from typing import Optional, Tuple, List, Dict, Callable, Any
+from shared.database import DatabaseSession, UserBalance, Jackpot, Cooldown
 
 class GamblingConfig:
     MIN_BET = 100
@@ -48,12 +49,12 @@ class GamblingConfig:
     ]
 
     GAME_MULTIPLIER_RANGES = {
-        'coin': (0.6, 1.7),
+        'coin': (1.0, 1.2),
         'dice': (4.6, 5.7),
         'blackjack': (1.2, 1.5),
         'baccarat': (1.2, 1.5),
-        'indian_poker': (0.5, 1.5)
-    }
+        'indian_poker': (1.0, 1.2)
+    }   
 
     WORK_REWARD_RANGE = (100, 2000)
 
@@ -115,153 +116,97 @@ class GamblingEmbed:
             color=color
         )
 
-class DataManager:
-    def __init__(self, data_file: str):
-        self.data_file = data_file
-        self.balances: Dict[int, int] = {}
-        self.jackpot: int = 0
-        self.locks: Dict[int, threading.RLock] = {}
-        self.global_lock = threading.RLock()
-        self.dirty: bool = False
-        self.last_save = datetime.now()
-        self._load_data()
-        self._start_batch_save()
-        self.ranking_cache = None
-        self.last_ranking_update = None
-        self.ranking_cache_duration = 300  # 5분
+class GamblingService:
+    def __init__(self):
+        pass
 
-    def _start_batch_save(self) -> None:
-        def save_periodically() -> None:
-            while True:
-                time.sleep(60)
-                self._batch_save()
+    async def get_balance(self, user_id: int) -> int:
+        async with DatabaseSession() as session:
+            user = await session.query(UserBalance).filter(UserBalance.user_id == user_id).first()
+            return user.balance if user else 0
 
-        save_thread = threading.Thread(target=save_periodically, daemon=True)
-        save_thread.start()
+    async def set_balance(self, user_id: int, amount: int) -> None:
+        async with DatabaseSession() as session:
+            user = await session.query(UserBalance).filter(UserBalance.user_id == user_id).first()
+            if user:
+                user.balance = amount
+            else:
+                user = UserBalance(user_id=user_id, balance=amount)
+                session.add(user)
+            await session.commit()
 
-    def _batch_save(self) -> None:
-        with self.global_lock:
-            if not self.dirty:
-                return
+    async def add_balance(self, user_id: int, amount: int) -> None:
+        async with DatabaseSession() as session:
+            user = await session.query(UserBalance).filter(UserBalance.user_id == user_id).first()
+            if user:
+                user.balance += amount
+            else:
+                user = UserBalance(user_id=user_id, balance=amount)
+                session.add(user)
+            await session.commit()
 
-            try:
-                data = {
-                    'balances': self.balances,
-                    'jackpot': self.jackpot
-                }
-                temp_file = f"{self.data_file}.tmp"
-                with open(temp_file, 'w') as f:
-                    json.dump(data, f)
-                os.replace(temp_file, self.data_file)
-                self.dirty = False
-                self.last_save = datetime.now()
-            except Exception as e:
-                print(f"Batch save error: {e}")
+    async def subtract_balance(self, user_id: int, amount: int) -> None:
+        async with DatabaseSession() as session:
+            user = await session.query(UserBalance).filter(UserBalance.user_id == user_id).first()
+            if user:
+                user.balance -= amount
+                await session.commit()
 
-    def _load_data(self) -> None:
-        try:
-            if os.path.exists(self.data_file):
-                with open(self.data_file, 'r') as f:
-                    data = json.load(f)
-                    self.balances = {int(k): v for k, v in data.get('balances', {}).items()}
-                    self.jackpot = data.get('jackpot', 0)
-        except Exception as e:
-            print(f"Load error: {e}")
+    async def get_jackpot(self) -> int:
+        async with DatabaseSession() as session:
+            jackpot = await session.query(Jackpot).first()
+            return jackpot.amount if jackpot else GamblingConfig.INITIAL_JACKPOT
 
-    def _save_data(self) -> None:
-        self.dirty = True
-        if (datetime.now() - self.last_save).total_seconds() > 300:
-            self._batch_save()
+    async def set_jackpot(self, amount: int) -> None:
+        async with DatabaseSession() as session:
+            jackpot = await session.query(Jackpot).first()
+            if jackpot:
+                jackpot.amount = amount
+            else:
+                jackpot = Jackpot(amount=amount)
+                session.add(jackpot)
+            await session.commit()
 
-    def _get_lock(self, user_id: int) -> threading.RLock:
-        if user_id not in self.locks:
-            self.locks[user_id] = threading.RLock()
-        return self.locks[user_id]
+    async def add_jackpot(self, amount: int) -> None:
+        async with DatabaseSession() as session:
+            jackpot = await session.query(Jackpot).first()
+            if jackpot:
+                jackpot.amount += amount
+            else:
+                jackpot = Jackpot(amount=GamblingConfig.INITIAL_JACKPOT + amount)
+                session.add(jackpot)
+            await session.commit()
 
-    def get_balance(self, user_id: int) -> int:
-        return self.balances.get(user_id, 0)
+    async def subtract_jackpot(self, amount: int) -> None:
+        async with DatabaseSession() as session:
+            jackpot = await session.query(Jackpot).first()
+            if jackpot:
+                jackpot.amount -= amount
+                await session.commit()
 
-    def set_balance(self, user_id: int, amount: int) -> None:
-        self.balances[user_id] = amount
-        self._save_data()
-
-    def add_balance(self, user_id: int, amount: int) -> None:
-        current_balance = self.get_balance(user_id)
-        self.set_balance(user_id, current_balance + amount)
-
-    def subtract_balance(self, user_id: int, amount: int) -> None:
-        current_balance = self.get_balance(user_id)
-        self.set_balance(user_id, current_balance - amount)
-
-    def get_jackpot(self) -> int:
-        return self.jackpot
-
-    def set_jackpot(self, amount: int) -> None:
-        self.jackpot = amount
-        self._save_data()
-
-    def add_jackpot(self, amount: int) -> None:
-        self.jackpot += amount
-        self._save_data()
-
-    def subtract_jackpot(self, amount: int) -> None:
-        self.jackpot -= amount
-        self._save_data()
-
-    def get_sorted_balances(self) -> List[Tuple[int, int]]:
-        return sorted(
-            self.balances.items(),
-            key=lambda item: item[1],
-            reverse=True
-        )
+    async def get_sorted_balances(self) -> List[Tuple[int, int]]:
+        async with DatabaseSession() as session:
+            users = await session.query(UserBalance).order_by(UserBalance.balance.desc()).all()
+            return [(user.user_id, user.balance) for user in users]
 
     async def get_cached_rankings(self, bot) -> List[Tuple[int, str, int]]:
-        current_time = datetime.now()
+        sorted_balances = await self.get_sorted_balances()
+        rankings = []
         
-        if (self.ranking_cache is None or 
-            self.last_ranking_update is None or 
-            (current_time - self.last_ranking_update).total_seconds() > self.ranking_cache_duration):
-            
-            sorted_balances = self.get_sorted_balances()
-            cached_rankings = []
-            
-            user_ids = [user_id for user_id, _ in sorted_balances]
-            users = {user.id: user.name for user in bot.users if user.id in user_ids}
-            
-            for user_id, balance in sorted_balances:
-                # 캐슁된 유저 정보 사용
-                username = users.get(user_id)
-                if not username:
-                    try:
-                        user = await bot.fetch_user(user_id)
-                        username = user.name
-                    except:
-                        username = f"알 수 없음({user_id})"
-                cached_rankings.append((user_id, username, balance))
-            
-            self.ranking_cache = cached_rankings
-            self.last_ranking_update = current_time
-            
-        return self.ranking_cache
-
-class GamblingService:
-    def __init__(self, data_manager: DataManager):
-        self.data_manager = data_manager
-
-    def calculate_tax(self, income: int, game_type: Optional[str] = None) -> int:
-        if income <= 0:
-            return 0
-
-        if game_type in ["coin", "dice", "blackjack", "baccarat", "indian_poker"]:
-            for threshold, rate in GamblingConfig.SECURITIES_TRANSACTION_TAX_BRACKETS:
-                if income > threshold:
-                    return int(income * rate)
-            return 0
-
-        for threshold, rate in GamblingConfig.INCOME_TAX_BRACKETS:
-            if income > threshold:
-                return int(income * rate)
-        return 0
+        user_ids = [user_id for user_id, _ in sorted_balances]
+        users = {user.id: user.name for user in bot.users if user.id in user_ids}
+        
+        for user_id, balance in sorted_balances:
+            username = users.get(user_id)
+            if not username:
+                try:
+                    user = await bot.fetch_user(user_id)
+                    username = user.name
+                except:
+                    username = f"알 수 없음({user_id})"
+            rankings.append((user_id, username, balance))
+        
+        return rankings
 
     def calculate_gift_tax(self, amount: int) -> int:
         for threshold, rate in GamblingConfig.GIFT_TAX_BRACKETS:
@@ -270,52 +215,13 @@ class GamblingService:
         return 0
 
     def validate_bet(self, bet: Optional[int], user_id: Optional[int] = None) -> Optional[discord.Embed]:
-        if isinstance(bet, str) and bet == "올인" and user_id is not None:
-            bet = self.data_manager.get_balance(user_id)
-
-        if (bet is None) or (bet < GamblingConfig.MIN_BET):
-            return GamblingEmbed.create_error_embed("100원 이상 베팅하세요")
-
-        if bet >= GamblingConfig.MAX_BET:
-            return GamblingEmbed.create_error_embed("100조원 이상 베팅할 수 없습니다")
-
+        if bet is None:
+            return GamblingEmbed.create_error_embed("베팅 금액을 입력해주세요.")
+        if bet < GamblingConfig.MIN_BET:
+            return GamblingEmbed.create_error_embed(f"최소 {GamblingConfig.MIN_BET:,}원 이상 베팅해주세요.")
+        if bet > GamblingConfig.MAX_BET:
+            return GamblingEmbed.create_error_embed(f"최대 {GamblingConfig.MAX_BET:,}원까지 베팅할 수 있어요.")
         return None
-
-    def get_card_value(self, card: str) -> int:
-        if card in ['J', 'Q', 'K']:
-            return 10
-        elif card == 'A':
-            return 11
-        return int(card)
-
-    def calculate_hand_value(self, hand: List[str]) -> int:
-        value = 0
-        aces = 0
-
-        for card in hand:
-            if card == 'A':
-                aces += 1
-            else:
-                value += self.get_card_value(card)
-
-        for _ in range(aces):
-            if value + 11 <= 21:
-                value += 11
-            else:
-                value += 1
-
-        return value
-
-    def calculate_baccarat_value(self, hand: List[str]) -> int:
-        value = 0
-        for card in hand:
-            if card in ['J', 'Q', 'K', '10']:
-                continue
-            elif card == 'A':
-                value += 1
-            else:
-                value += int(card)
-        return value % 10
 
 class GamblingManager:
     def __init__(self):
@@ -342,8 +248,7 @@ class Gambling(commands.Cog):
         self.bot = bot
         self.cooldowns: Dict[str, datetime] = {}
         self.game_manager = GamblingManager()
-        self.data_manager = DataManager('gambling_data.json')
-        self.gambling_service = GamblingService(self.data_manager)
+        self.gambling_service = GamblingService()
         self.blackjack_players = set()
         self.baccarat_players = set()
         self.indian_poker_players = set()
@@ -377,7 +282,7 @@ class Gambling(commands.Cog):
         now = datetime.now()
         for hour, minute in GamblingConfig.RESET_TIMES:
             if now.hour == hour and now.minute == minute:
-                self.data_manager.set_jackpot(GamblingConfig.INITIAL_JACKPOT)
+                await self.gambling_service.set_jackpot(GamblingConfig.INITIAL_JACKPOT)
                 return discord.Embed(
                     title="🎰 잭팟 리셋",
                     description="잭팟이 100만원으로 리셋되었습니다.",
@@ -393,7 +298,7 @@ class Gambling(commands.Cog):
         bet: int,
         game_type: str
     ) -> discord.Embed:
-        lock = self.data_manager._get_lock(author_id)
+        lock = self.gambling_service._get_lock(author_id)
         if not lock.acquire(timeout=5):
             return GamblingEmbed.create_error_embed("서버 이슈")
 
@@ -404,11 +309,11 @@ class Gambling(commands.Cog):
                 winnings = int(bet * multiplier)
                 tax = self.gambling_service.calculate_tax(winnings, game_type)
                 winnings_after_tax = winnings - tax
-                self.data_manager.add_balance(author_id, winnings_after_tax)
+                await self.gambling_service.add_balance(author_id, winnings_after_tax)
             else:
                 winnings = -bet
                 tax = None
-                self.data_manager.subtract_balance(author_id, bet)
+                await self.gambling_service.subtract_balance(author_id, bet)
 
             return GamblingEmbed.create_game_embed(
                 author_name=author_name,
@@ -417,7 +322,7 @@ class Gambling(commands.Cog):
                 result=result,
                 bet=bet,
                 winnings=winnings_after_tax if is_correct else winnings,
-                balance=self.data_manager.get_balance(author_id),
+                balance=await self.gambling_service.get_balance(author_id),
                 game_type=game_type,
                 tax=tax
             )
@@ -436,7 +341,7 @@ class Gambling(commands.Cog):
             return
 
         try:
-            bet = int(bet) if bet != "올인" else self.data_manager.get_balance(ctx.author.id)
+            bet = int(bet) if bet != "올인" else await self.gambling_service.get_balance(ctx.author.id)
         except (ValueError, TypeError):
             bet = None
 
@@ -445,7 +350,7 @@ class Gambling(commands.Cog):
             self.game_manager.end_game(ctx.author.id)
             return
 
-        if bet > self.data_manager.get_balance(ctx.author.id):
+        if bet > await self.gambling_service.get_balance(ctx.author.id):
             await ctx.reply(embed=GamblingEmbed.create_error_embed("돈이 부족해..."))
             self.game_manager.end_game(ctx.author.id)
             return
@@ -500,7 +405,7 @@ class Gambling(commands.Cog):
             return
 
         try:
-            bet = int(bet) if bet != "올인" else self.data_manager.get_balance(ctx.author.id)
+            bet = int(bet) if bet != "올인" else await self.gambling_service.get_balance(ctx.author.id)
         except (ValueError, TypeError):
             bet = None
 
@@ -509,7 +414,7 @@ class Gambling(commands.Cog):
             self.game_manager.end_game(ctx.author.id)
             return
 
-        if bet > self.data_manager.get_balance(ctx.author.id):
+        if bet > await self.gambling_service.get_balance(ctx.author.id):
             await ctx.reply(embed=GamblingEmbed.create_error_embed("돈이 부족해..."))
             self.game_manager.end_game(ctx.author.id)
             return
@@ -570,7 +475,7 @@ class Gambling(commands.Cog):
             return
 
         try:
-            bet = int(bet) if bet != "올인" else self.data_manager.get_balance(ctx.author.id)
+            bet = int(bet) if bet != "올인" else await self.gambling_service.get_balance(ctx.author.id)
         except (ValueError, TypeError):
             bet = None
 
@@ -584,8 +489,8 @@ class Gambling(commands.Cog):
             self.game_manager.end_game(ctx.author.id)
             return
 
-        with self.data_manager._get_lock(ctx.author.id):
-            current_balance = self.data_manager.get_balance(ctx.author.id)
+        with self.gambling_service._get_lock(ctx.author.id):
+            current_balance = await self.gambling_service.get_balance(ctx.author.id)
             min_bet = current_balance // 100
 
             if bet > current_balance:
@@ -599,23 +504,23 @@ class Gambling(commands.Cog):
                 self.game_manager.end_game(ctx.author.id)
                 return
 
-            self.data_manager.subtract_balance(ctx.author.id, bet)
-            self.data_manager.add_jackpot(bet)
+            await self.gambling_service.subtract_balance(ctx.author.id, bet)
+            await self.gambling_service.add_jackpot(bet)
 
             if secrets.randbelow(100) <= 1:  # 1% 확률
-                winnings = self.data_manager.get_jackpot() // 10
+                winnings = await self.gambling_service.get_jackpot() // 10
                 tax = self.gambling_service.calculate_tax(winnings)
                 winnings_after_tax = winnings - tax
-                self.data_manager.add_balance(ctx.author.id, winnings_after_tax)
-                self.data_manager.subtract_jackpot(winnings)
+                await self.gambling_service.add_balance(ctx.author.id, winnings_after_tax)
+                await self.gambling_service.subtract_jackpot(winnings)
                 self.cooldowns[f"jackpot_win_{ctx.author.id}"] = datetime.now()
                 
                 embed = discord.Embed(
                     title=f"🎉 {ctx.author.name} 당첨",
                     description=(
-                        f"- 현재 잭팟: {self.data_manager.get_jackpot():,}원(-{winnings:,})\n"
+                        f"- 현재 잭팟: {await self.gambling_service.get_jackpot():,}원(-{winnings:,})\n"
                         f"## 수익: {winnings_after_tax:,}원(세금: {tax:,}원)\n"
-                        f"- 재산: {self.data_manager.get_balance(ctx.author.id):,}원(+{winnings_after_tax:,})"
+                        f"- 재산: {await self.gambling_service.get_balance(ctx.author.id):,}원(+{winnings_after_tax:,})"
                     ),
                     color=discord.Color.gold()
                 )
@@ -623,9 +528,9 @@ class Gambling(commands.Cog):
                 embed = discord.Embed(
                     title=f"🎰 {ctx.author.name} 잭팟 실패ㅋ",
                     description=(
-                        f"- 현재 잭팟: {self.data_manager.get_jackpot():,}원\n"
+                        f"- 현재 잭팟: {await self.gambling_service.get_jackpot():,}원\n"
                         f"## 수익: -{bet:,}원\n"
-                        f"- 재산: {self.data_manager.get_balance(ctx.author.id):,}원"
+                        f"- 재산: {await self.gambling_service.get_balance(ctx.author.id):,}원"
                     ),
                     color=discord.Color.red()
                 )
@@ -639,7 +544,7 @@ class Gambling(commands.Cog):
             await ctx.reply(embed=GamblingEmbed.create_error_embed("이미 다른 게임이 진행 중입니다."))
             return
 
-        with self.data_manager._get_lock(ctx.author.id):
+        with self.gambling_service._get_lock(ctx.author.id):
             current_time = datetime.now()
             last_used = self.cooldowns.get(ctx.author.id)
 
@@ -652,12 +557,12 @@ class Gambling(commands.Cog):
                 )
             else:
                 amount = random.randint(*GamblingConfig.WORK_REWARD_RANGE)
-                self.data_manager.add_balance(ctx.author.id, amount)
+                await self.gambling_service.add_balance(ctx.author.id, amount)
                 embed = discord.Embed(
                     title=f"☭ {ctx.author.name} 노동",
                     description=(
                         f"정당한 노동을 통해 {amount:,}원을 벌었다.\n"
-                        f"- 재산: {self.data_manager.get_balance(ctx.author.id):,}원(+{amount:,})"
+                        f"- 재산: {await self.gambling_service.get_balance(ctx.author.id):,}원(+{amount:,})"
                     ),
                     color=discord.Color.green()
                 )
@@ -668,8 +573,8 @@ class Gambling(commands.Cog):
 
     @commands.command(name="도박.지갑", aliases=['도박.잔액', '도박.직바'], description="잔액 확인")
     async def balance(self, ctx):
-        with self.data_manager._get_lock(ctx.author.id):
-            balance = self.data_manager.get_balance(ctx.author.id)
+        with self.gambling_service._get_lock(ctx.author.id):
+            balance = await self.gambling_service.get_balance(ctx.author.id)
             embed = discord.Embed(
                 title=f"💰 {ctx.author.name}의 지갑",
                 description=f"현재 잔액: {balance:,}원",
@@ -680,7 +585,7 @@ class Gambling(commands.Cog):
     @commands.command(name="도박.랭킹", description="랭킹")
     async def ranking(self, ctx):
         async with ctx.typing():
-            rankings = await self.data_manager.get_cached_rankings(self.bot)
+            rankings = await self.gambling_service.get_cached_rankings(self.bot)
             top_3 = rankings[:3]
 
             description_lines = []
@@ -697,7 +602,7 @@ class Gambling(commands.Cog):
     @commands.command(name="도박.전체랭킹", description="전체 랭킹")
     async def all_ranking(self, ctx):
         async with ctx.typing():
-            rankings = await self.data_manager.get_cached_rankings(self.bot)
+            rankings = await self.gambling_service.get_cached_rankings(self.bot)
             
             if not rankings:
                 embed = discord.Embed(
@@ -769,7 +674,7 @@ class Gambling(commands.Cog):
             return
 
         try:
-            amount = int(amount) if amount != "올인" else self.data_manager.get_balance(ctx.author.id)
+            amount = int(amount) if amount != "올인" else await self.gambling_service.get_balance(ctx.author.id)
         except ValueError:
             await ctx.reply(embed=GamblingEmbed.create_error_embed("올바른 금액을 입력하세요"))
             return
@@ -782,8 +687,8 @@ class Gambling(commands.Cog):
             await ctx.reply(embed=GamblingEmbed.create_error_embed("100조원 이상 송금할 수 없습니다"))
             return
 
-        with self.data_manager._get_lock(ctx.author.id), self.data_manager._get_lock(recipient.id):
-            sender_balance = self.data_manager.get_balance(ctx.author.id)
+        with self.gambling_service._get_lock(ctx.author.id), self.gambling_service._get_lock(recipient.id):
+            sender_balance = await self.gambling_service.get_balance(ctx.author.id)
 
             if amount > sender_balance:
                 await ctx.reply(embed=GamblingEmbed.create_error_embed("돈이 부족해..."))
@@ -792,16 +697,16 @@ class Gambling(commands.Cog):
             tax = self.gambling_service.calculate_gift_tax(amount)
             amount_after_tax = amount - tax
 
-            self.data_manager.subtract_balance(ctx.author.id, amount)
-            self.data_manager.add_balance(recipient.id, amount_after_tax)
-            self.data_manager.add_jackpot(tax)
+            await self.gambling_service.subtract_balance(ctx.author.id, amount)
+            await self.gambling_service.add_balance(recipient.id, amount_after_tax)
+            await self.gambling_service.add_jackpot(tax)
 
             embed = discord.Embed(
                 title="💸 송금 완료",
                 description=(
                     f"{ctx.author.name} → {recipient.name}\n"
                     f"## {amount:,}원 송금(세금: {tax:,}원)\n"
-                    f"- 잔액: {self.data_manager.get_balance(ctx.author.id):,}원"
+                    f"- 잔액: {await self.gambling_service.get_balance(ctx.author.id):,}원"
                 ),
                 color=discord.Color.green()
             )
@@ -815,7 +720,7 @@ class Gambling(commands.Cog):
             return
 
         try:
-            bet = int(bet) if bet != "올인" else self.data_manager.get_balance(ctx.author.id)
+            bet = int(bet) if bet != "올인" else await self.gambling_service.get_balance(ctx.author.id)
         except (ValueError, TypeError):
             bet = None
 
@@ -823,7 +728,7 @@ class Gambling(commands.Cog):
             await ctx.reply(embed=error_embed)
             return
 
-        if bet > self.data_manager.get_balance(ctx.author.id):
+        if bet > await self.gambling_service.get_balance(ctx.author.id):
             await ctx.reply(embed=GamblingEmbed.create_error_embed("돈이 부족해..."))
             return
 
@@ -865,8 +770,8 @@ class Gambling(commands.Cog):
                         player_value = self.gambling_service.calculate_hand_value(player_hand)
 
                         if player_value > 21:
-                            with self.data_manager._get_lock(ctx.author.id):
-                                self.data_manager.subtract_balance(ctx.author.id, bet)
+                            with self.gambling_service._get_lock(ctx.author.id):
+                                await self.gambling_service.subtract_balance(ctx.author.id, bet)
 
                             embed = discord.Embed(
                                 title=f"🃏 {ctx.author.name} 버스트!",
@@ -874,7 +779,7 @@ class Gambling(commands.Cog):
                                     f"{ctx.author.name}의 패: {' '.join(player_hand)} (합계: {player_value})\n"
                                     f"JEE6의 패: {' '.join(dealer_hand)} (합계: {dealer_value})\n"
                                     f"## 수익: {bet:,}원 × -1 = -{bet:,}원\n"
-                                    f"- 재산: {self.data_manager.get_balance(ctx.author.id):,}원"
+                                    f"- 재산: {await self.gambling_service.get_balance(ctx.author.id):,}원"
                                 ),
                                 color=discord.Color.red()
                             )
@@ -897,13 +802,13 @@ class Gambling(commands.Cog):
                             dealer_hand.append(cards.pop())
                             dealer_value = self.gambling_service.calculate_hand_value(dealer_hand)
 
-                        with self.data_manager._get_lock(ctx.author.id):
+                        with self.gambling_service._get_lock(ctx.author.id):
                             if dealer_value > 21 or player_value > dealer_value:
                                 multiplier = 2.0 if player_value == 21 else random.uniform(*GamblingConfig.GAME_MULTIPLIER_RANGES["blackjack"])
                                 winnings = int(bet * multiplier)
                                 tax = self.gambling_service.calculate_tax(winnings, "blackjack")
                                 winnings_after_tax = winnings - tax
-                                self.data_manager.add_balance(ctx.author.id, winnings_after_tax)
+                                await self.gambling_service.add_balance(ctx.author.id, winnings_after_tax)
 
                                 embed = discord.Embed(
                                     title=f"🃏 {ctx.author.name} 승리",
@@ -911,19 +816,19 @@ class Gambling(commands.Cog):
                                         f"{ctx.author.name}의 패: {' '.join(player_hand)} (합계: {player_value})\n"
                                         f"JEE6의 패: {' '.join(dealer_hand)} (합계: {dealer_value})\n"
                                         f"## 수익: {bet:,}원 × {multiplier:.2f} = {winnings:,}원(세금: {tax:,}원)\n"
-                                        f"- 재산: {self.data_manager.get_balance(ctx.author.id):,}원"
+                                        f"- 재산: {await self.gambling_service.get_balance(ctx.author.id):,}원"
                                     ),
                                     color=discord.Color.green()
                                 )
                             else:
-                                self.data_manager.subtract_balance(ctx.author.id, bet)
+                                await self.gambling_service.subtract_balance(ctx.author.id, bet)
                                 embed = discord.Embed(
                                     title=f"🃏 {ctx.author.name} {'패배' if player_value < dealer_value else '무승부'}",
                                     description=(
                                         f"{ctx.author.name}의 패: {' '.join(player_hand)} (합계: {player_value})\n"
                                         f"JEE6의 패: {' '.join(dealer_hand)} (합계: {dealer_value})\n"
                                         f"## 수익: {bet:,}원 × -1 = -{bet:,}원\n"
-                                        f"- 재산: {self.data_manager.get_balance(ctx.author.id):,}원"
+                                        f"- 재산: {await self.gambling_service.get_balance(ctx.author.id):,}원"
                                     ),
                                     color=discord.Color.red()
                                 )
@@ -932,11 +837,11 @@ class Gambling(commands.Cog):
                             return
 
                 except asyncio.TimeoutError:
-                    with self.data_manager._get_lock(ctx.author.id):
-                        self.data_manager.subtract_balance(ctx.author.id, bet)
+                    with self.gambling_service._get_lock(ctx.author.id):
+                        await self.gambling_service.subtract_balance(ctx.author.id, bet)
                         embed = discord.Embed(
                             title="⏳️ 시간 초과",
-                            description=f"30초 동안 응답이 없어 베팅금 {bet:,}원을 잃었습니다.\n- 재산: {self.data_manager.get_balance(ctx.author.id):,}원",
+                            description=f"30초 동안 응답이 없어 베팅금 {bet:,}원을 잃었습니다.\n- 재산: {await self.gambling_service.get_balance(ctx.author.id):,}원",
                             color=discord.Color.red()
                         )
                     await game_message.edit(embed=embed)
@@ -952,7 +857,7 @@ class Gambling(commands.Cog):
             return
 
         try:
-            bet = int(bet) if bet != "올인" else self.data_manager.get_balance(ctx.author.id)
+            bet = int(bet) if bet != "올인" else await self.gambling_service.get_balance(ctx.author.id)
         except (ValueError, TypeError):
             bet = None
 
@@ -960,7 +865,7 @@ class Gambling(commands.Cog):
             await ctx.reply(embed=error_embed)
             return
 
-        if bet > self.data_manager.get_balance(ctx.author.id):
+        if bet > await self.gambling_service.get_balance(ctx.author.id):
             await ctx.reply(embed=GamblingEmbed.create_error_embed("돈이 부족해..."))
             return
 
@@ -1013,13 +918,13 @@ class Gambling(commands.Cog):
                 else:
                     result = "Tie"
 
-                with self.data_manager._get_lock(ctx.author.id):
+                with self.gambling_service._get_lock(ctx.author.id):
                     if guess == result:
                         multiplier = 8 if result == "Tie" else random.uniform(*GamblingConfig.GAME_MULTIPLIER_RANGES["baccarat"])
                         winnings = int(bet * multiplier)
                         tax = self.gambling_service.calculate_tax(winnings, "baccarat")
                         winnings_after_tax = winnings - tax
-                        self.data_manager.add_balance(ctx.author.id, winnings_after_tax - bet)
+                        await self.gambling_service.add_balance(ctx.author.id, winnings_after_tax - bet)
 
                         embed = discord.Embed(
                             title=f"🃏 {ctx.author.name} 맞음 ㄹㅈㄷ",
@@ -1027,19 +932,19 @@ class Gambling(commands.Cog):
                                 f"{ctx.author.name}: {' '.join(player_hand)} (합계: {player_value})\n"
                                 f"JEE6: {' '.join(banker_hand)} (합계: {banker_value})\n"
                                 f"## 수익: {bet:,}원 × {multiplier:.2f} = {winnings:,}원(세금: {tax:,}원)\n"
-                                f"- 재산: {self.data_manager.get_balance(ctx.author.id):,}원"
+                                f"- 재산: {await self.gambling_service.get_balance(ctx.author.id):,}원"
                             ),
                             color=discord.Color.green()
                         )
                     else:
-                        self.data_manager.subtract_balance(ctx.author.id, bet)
+                        await self.gambling_service.subtract_balance(ctx.author.id, bet)
                         embed = discord.Embed(
                             title=f"🃏 {ctx.author.name} 틀림ㅋ",
                             description=(
                                 f"{ctx.author.name}: {' '.join(player_hand)} (합계: {player_value})\n"
                                 f"JEE6: {' '.join(banker_hand)} (합계: {banker_value})\n"
                                 f"## 수익: {bet:,}원 × -1 = -{bet:,}원\n"
-                                f"- 재산: {self.data_manager.get_balance(ctx.author.id):,}원"
+                                f"- 재산: {await self.gambling_service.get_balance(ctx.author.id):,}원"
                             ),
                             color=discord.Color.red()
                         )
@@ -1047,11 +952,11 @@ class Gambling(commands.Cog):
                     await game_message.edit(embed=embed)
 
             except asyncio.TimeoutError:
-                with self.data_manager._get_lock(ctx.author.id):
-                    self.data_manager.subtract_balance(ctx.author.id, bet)
+                with self.gambling_service._get_lock(ctx.author.id):
+                    await self.gambling_service.subtract_balance(ctx.author.id, bet)
                     embed = discord.Embed(
                         title="⏳️ 시간 초과",
-                        description=f"30초 동안 응답이 없어 베팅금 {bet:,}원을 잃었습니다.\n- 재산: {self.data_manager.get_balance(ctx.author.id):,}원",
+                        description=f"30초 동안 응답이 없어 베팅금 {bet:,}원을 잃었습니다.\n- 재산: {await self.gambling_service.get_balance(ctx.author.id):,}원",
                         color=discord.Color.red()
                     )
                 await game_message.edit(embed=embed)
@@ -1066,7 +971,7 @@ class Gambling(commands.Cog):
             return
 
         try:
-            bet = int(bet) if bet != "올인" else self.data_manager.get_balance(ctx.author.id)
+            bet = int(bet) if bet != "올인" else await self.gambling_service.get_balance(ctx.author.id)
         except (ValueError, TypeError):
             bet = None
 
@@ -1074,7 +979,7 @@ class Gambling(commands.Cog):
             await ctx.reply(embed=error_embed)
             return
 
-        if bet > self.data_manager.get_balance(ctx.author.id):
+        if bet > await self.gambling_service.get_balance(ctx.author.id):
             await ctx.reply(embed=GamblingEmbed.create_error_embed("돈이 부족해..."))
             return
 
@@ -1103,17 +1008,17 @@ class Gambling(commands.Cog):
             try:
                 reaction, user = await self.bot.wait_for('reaction_add', timeout=30.0, check=check)
 
-                with self.data_manager._get_lock(ctx.author.id):
+                with self.gambling_service._get_lock(ctx.author.id):
                     if str(reaction.emoji) == "💀":  # 다이
                         loss = bet // 2
-                        self.data_manager.subtract_balance(ctx.author.id, loss)
+                        await self.gambling_service.subtract_balance(ctx.author.id, loss)
                         embed = discord.Embed(
                             title=f"🃏 {ctx.author.name} Die",
                             description=(
                                 f"{ctx.author.name}의 카드: {player_card}\n"
                                 f"JEE6의 카드: {banker_card}\n"
                                 f"## 수익: {bet:,}원 × -0.5 = -{loss:,}원\n"
-                                f"- 재산: {self.data_manager.get_balance(ctx.author.id):,}원"
+                                f"- 재산: {await self.gambling_service.get_balance(ctx.author.id):,}원"
                             ),
                             color=discord.Color.red()
                         )
@@ -1123,26 +1028,26 @@ class Gambling(commands.Cog):
                             winnings = int(bet * multiplier)
                             tax = self.gambling_service.calculate_tax(winnings, "indian_poker")
                             winnings_after_tax = winnings - tax
-                            self.data_manager.add_balance(ctx.author.id, winnings_after_tax)
+                            await self.gambling_service.add_balance(ctx.author.id, winnings_after_tax)
                             embed = discord.Embed(
                                 title=f"🃏 {ctx.author.name} 승리",
                                 description=(
                                     f"{ctx.author.name}의 카드: {player_card}\n"
                                     f"JEE6의 카드: {banker_card}\n"
                                     f"## 수익: {bet:,}원 × {multiplier:.2f} = {winnings:,}원(세금: {tax:,}원)\n"
-                                    f"- 재산: {self.data_manager.get_balance(ctx.author.id):,}원"
+                                    f"- 재산: {await self.gambling_service.get_balance(ctx.author.id):,}원"
                                 ),
                                 color=discord.Color.green()
                             )
                         else:
-                            self.data_manager.subtract_balance(ctx.author.id, bet)
+                            await self.gambling_service.subtract_balance(ctx.author.id, bet)
                             embed = discord.Embed(
                                 title=f"🃏 {ctx.author.name} 패배",
                                 description=(
                                     f"{ctx.author.name}의 카드: {player_card}\n"
                                     f"JEE6의 카드: {banker_card}\n"
                                     f"## 수익: {bet:,}원 × -1 = -{bet:,}원\n"
-                                    f"- 재산: {self.data_manager.get_balance(ctx.author.id):,}원"
+                                    f"- 재산: {await self.gambling_service.get_balance(ctx.author.id):,}원"
                                 ),
                                 color=discord.Color.red()
                             )
@@ -1150,11 +1055,11 @@ class Gambling(commands.Cog):
                     await game_message.edit(embed=embed)
 
             except asyncio.TimeoutError:
-                with self.data_manager._get_lock(ctx.author.id):
-                    self.data_manager.subtract_balance(ctx.author.id, bet)
+                with self.gambling_service._get_lock(ctx.author.id):
+                    await self.gambling_service.subtract_balance(ctx.author.id, bet)
                     embed = discord.Embed(
                         title="⏳️ 시간 초과",
-                        description=f"30초 동안 응답이 없어 베팅금 {bet:,}원을 잃었습니다.\n- 재산: {self.data_manager.get_balance(ctx.author.id):,}원",
+                        description=f"30초 동안 응답이 없어 베팅금 {bet:,}원을 잃었습니다.\n- 재산: {await self.gambling_service.get_balance(ctx.author.id):,}원",
                         color=discord.Color.red()
                     )
                 await game_message.edit(embed=embed)
