@@ -1,7 +1,14 @@
-python-dotenv
-discord.py
+discord.py==2.3.2
+sqlalchemy==2.0.25
+dependency-injector==4.41.0
+python-dotenv==1.0.0
+alembic==1.13.1
+pytest==7.4.4
+pytest-asyncio==0.23.3
+aiohttp==3.9.1
+python-dateutil==2.8.2
+pytz==2023.3.post1
 requests
-aiohttp
 openai
 riotwatcher
 mysql-connector-python
