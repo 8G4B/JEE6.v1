@@ -34,8 +34,8 @@ async def get_connection():
                     database=DB_NAME,
                     charset=DB_CHARSET,
                     collation='utf8mb4_general_ci',
-                    connect_timeout=30,  
-                    connection_timeout=30,  
+                    connect_timeout=30,
+                    connection_timeout=30,
                 )
             )
             logger.info(f"{DB_USER}@{DB_HOST}:{DB_PORT}/{DB_NAME} 연결 성공")
@@ -44,7 +44,7 @@ async def get_connection():
             retry_count += 1
             if retry_count < max_retries:
                 logger.warning(f"{DB_USER}@{DB_HOST}:{DB_PORT}/{DB_NAME} 연결 실패 (시도 {retry_count}/{max_retries}): {e}")
-                await asyncio.sleep(2)  
+                await asyncio.sleep(2)
             else:
                 logger.error(f"{DB_USER}@{DB_HOST}:{DB_PORT}/{DB_NAME} 연결 실패 (최대 시도 횟수 초과): {e}")
                 return None
@@ -325,9 +325,10 @@ async def test_connection():
         if connection:
             with connection.cursor() as cursor:
                 cursor.execute("SELECT 1")
+                cursor.fetchall()  
             connection.close()
-            logger.info("Database connection test successful!")
+            logger.info("데이터베이스 연결 테스트 성공!")
             return True
     except Exception as e:
-        logger.error(f"Database connection test failed: {e}")
+        logger.error(f"데이터베이스 연결 테스트 실패: {e}")
     return False 
