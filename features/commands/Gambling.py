@@ -123,7 +123,14 @@ class GamblingEmbed:
 
 class GamblingService:
     def __init__(self):
-        pass
+        self._locks = {}
+        self._lock_lock = asyncio.Lock()
+
+    async def _get_lock(self, user_id: int) -> asyncio.Lock:
+        async with self._lock_lock:
+            if user_id not in self._locks:
+                self._locks[user_id] = asyncio.Lock()
+            return self._locks[user_id]
 
     async def get_balance(self, user_id: int) -> int:
         return await get_user_balance(user_id)
@@ -246,8 +253,8 @@ class Gambling(commands.Cog):
         bet: int,
         game_type: str
     ) -> discord.Embed:
-        lock = self.gambling_service._get_lock(author_id)
-        if not lock.acquire(timeout=5):
+        lock = await self.gambling_service._get_lock(author_id)
+        if not await lock.acquire(timeout=5):
             return GamblingEmbed.create_error_embed("서버 이슈")
 
         try:
@@ -275,7 +282,7 @@ class Gambling(commands.Cog):
                 tax=tax
             )
         finally:
-            lock.release()
+            await lock.release()
 
     @commands.command(name="도박.동전", description="동전 던지기")
     async def coin(self, ctx, bet: str = None):
@@ -437,7 +444,7 @@ class Gambling(commands.Cog):
             self.game_manager.end_game(ctx.author.id)
             return
 
-        with self.gambling_service._get_lock(ctx.author.id):
+        with await self.gambling_service._get_lock(ctx.author.id):
             current_balance = await self.gambling_service.get_balance(ctx.author.id)
             min_bet = current_balance // 100
 
@@ -492,7 +499,7 @@ class Gambling(commands.Cog):
             await ctx.reply(embed=GamblingEmbed.create_error_embed("이미 다른 게임이 진행 중입니다."))
             return
 
-        with self.gambling_service._get_lock(ctx.author.id):
+        with await self.gambling_service._get_lock(ctx.author.id):
             current_time = datetime.now()
             last_used = self.cooldowns.get(ctx.author.id)
 
@@ -521,7 +528,7 @@ class Gambling(commands.Cog):
 
     @commands.command(name="도박.지갑", aliases=['도박.잔액', '도박.직바'], description="잔액 확인")
     async def balance(self, ctx):
-        with self.gambling_service._get_lock(ctx.author.id):
+        with await self.gambling_service._get_lock(ctx.author.id):
             balance = await self.gambling_service.get_balance(ctx.author.id)
             embed = discord.Embed(
                 title=f"💰 {ctx.author.name}의 지갑",
@@ -635,7 +642,7 @@ class Gambling(commands.Cog):
             await ctx.reply(embed=GamblingEmbed.create_error_embed("100조원 이상 송금할 수 없습니다"))
             return
 
-        with self.gambling_service._get_lock(ctx.author.id), self.gambling_service._get_lock(recipient.id):
+        with await self.gambling_service._get_lock(ctx.author.id), await self.gambling_service._get_lock(recipient.id):
             sender_balance = await self.gambling_service.get_balance(ctx.author.id)
 
             if amount > sender_balance:
@@ -718,7 +725,7 @@ class Gambling(commands.Cog):
                         player_value = self.gambling_service.calculate_hand_value(player_hand)
 
                         if player_value > 21:
-                            with self.gambling_service._get_lock(ctx.author.id):
+                            with await self.gambling_service._get_lock(ctx.author.id):
                                 await self.gambling_service.subtract_balance(ctx.author.id, bet)
 
                             embed = discord.Embed(
@@ -750,7 +757,7 @@ class Gambling(commands.Cog):
                             dealer_hand.append(cards.pop())
                             dealer_value = self.gambling_service.calculate_hand_value(dealer_hand)
 
-                        with self.gambling_service._get_lock(ctx.author.id):
+                        with await self.gambling_service._get_lock(ctx.author.id):
                             if dealer_value > 21 or player_value > dealer_value:
                                 multiplier = 2.0 if player_value == 21 else random.uniform(*GamblingConfig.GAME_MULTIPLIER_RANGES["blackjack"])
                                 winnings = int(bet * multiplier)
@@ -785,7 +792,7 @@ class Gambling(commands.Cog):
                             return
 
                 except asyncio.TimeoutError:
-                    with self.gambling_service._get_lock(ctx.author.id):
+                    with await self.gambling_service._get_lock(ctx.author.id):
                         await self.gambling_service.subtract_balance(ctx.author.id, bet)
                         embed = discord.Embed(
                             title="⏳️ 시간 초과",
@@ -866,7 +873,7 @@ class Gambling(commands.Cog):
                 else:
                     result = "Tie"
 
-                with self.gambling_service._get_lock(ctx.author.id):
+                with await self.gambling_service._get_lock(ctx.author.id):
                     if guess == result:
                         multiplier = 8 if result == "Tie" else random.uniform(*GamblingConfig.GAME_MULTIPLIER_RANGES["baccarat"])
                         winnings = int(bet * multiplier)
@@ -900,7 +907,7 @@ class Gambling(commands.Cog):
                     await game_message.edit(embed=embed)
 
             except asyncio.TimeoutError:
-                with self.gambling_service._get_lock(ctx.author.id):
+                with await self.gambling_service._get_lock(ctx.author.id):
                     await self.gambling_service.subtract_balance(ctx.author.id, bet)
                     embed = discord.Embed(
                         title="⏳️ 시간 초과",
@@ -956,7 +963,7 @@ class Gambling(commands.Cog):
             try:
                 reaction, user = await self.bot.wait_for('reaction_add', timeout=30.0, check=check)
 
-                with self.gambling_service._get_lock(ctx.author.id):
+                with await self.gambling_service._get_lock(ctx.author.id):
                     if str(reaction.emoji) == "💀":  # 다이
                         loss = bet // 2
                         await self.gambling_service.subtract_balance(ctx.author.id, loss)
@@ -1003,7 +1010,7 @@ class Gambling(commands.Cog):
                     await game_message.edit(embed=embed)
 
             except asyncio.TimeoutError:
-                with self.gambling_service._get_lock(ctx.author.id):
+                with await self.gambling_service._get_lock(ctx.author.id):
                     await self.gambling_service.subtract_balance(ctx.author.id, bet)
                     embed = discord.Embed(
                         title="⏳️ 시간 초과",
