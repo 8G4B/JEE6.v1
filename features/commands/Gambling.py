@@ -126,6 +126,9 @@ class GamblingService:
     def __init__(self):
         self._locks = {}
         self._lock_lock = asyncio.Lock()
+        self._rankings_cache = None
+        self._last_rankings_update = None
+        self._rankings_cache_ttl = 300  
 
     async def _get_lock(self, user_id: int) -> asyncio.Lock:
         async with self._lock_lock:
@@ -178,6 +181,31 @@ class GamblingService:
         if bet > GamblingConfig.MAX_BET:
             return GamblingEmbed.create_error_embed(f"최대 {GamblingConfig.MAX_BET:,}원까지 베팅할 수 있어요.")
         return None
+
+    async def get_cached_rankings(self, bot) -> List[Tuple[int, str, int]]:
+        current_time = time.time()
+        
+        if (self._rankings_cache is not None and 
+            self._last_rankings_update is not None and 
+            current_time - self._last_rankings_update < self._rankings_cache_ttl):
+            return self._rankings_cache
+
+        sorted_balances = await self.get_sorted_balances()
+        rankings = []
+        
+        for user_id, balance in sorted_balances:
+            try:
+                user = await bot.fetch_user(user_id)
+                username = user.name if user else "Unknown User"
+                rankings.append((user_id, username, balance))
+            except Exception as e:
+                logger.error(f"Error fetching user {user_id}: {e}")
+                continue
+
+        self._rankings_cache = rankings
+        self._last_rankings_update = current_time
+        
+        return rankings
 
 class GamblingManager:
     def __init__(self):
