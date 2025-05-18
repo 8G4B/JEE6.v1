@@ -15,9 +15,12 @@ from features.commands.Valo import Valo
 from features.alarm.Anmauija import Anmauija
 from features.alarm.Jaseub import Jaseub
 from features.commands.Timeout import Timeout
+from features.commands.Justice import Justice
+from features.commands.Clean import Clean
+
 intents = discord.Intents.default()
 intents.message_content = True
-intents.members = False
+intents.members = True
 
 bot = commands.Bot(command_prefix="!", intents=intents)    
 
@@ -40,6 +43,8 @@ async def setup():
     await bot.add_cog(Jaseub(bot))
     await bot.add_cog(Valo(bot))
     await bot.add_cog(Timeout(bot))
+    await bot.add_cog(Justice(bot))
+    await bot.add_cog(Clean(bot))
 
 @bot.event
 async def on_ready():
