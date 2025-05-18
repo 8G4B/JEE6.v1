@@ -4,3 +4,5 @@ discord.log
 *.log
 .sh
 run.sh
+
+.venv/
