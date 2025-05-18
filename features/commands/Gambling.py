@@ -254,35 +254,34 @@ class Gambling(commands.Cog):
         game_type: str
     ) -> discord.Embed:
         lock = await self.gambling_service._get_lock(author_id)
-        if not await lock.acquire(timeout=5):
-            return GamblingEmbed.create_error_embed("서버 이슈")
-
         try:
-            is_correct = (guess == result)
-            if is_correct:
-                multiplier = random.uniform(*GamblingConfig.GAME_MULTIPLIER_RANGES[game_type])
-                winnings = int(bet * multiplier)
-                tax = self.gambling_service.calculate_tax(winnings, game_type)
-                winnings_after_tax = winnings - tax
-                await self.gambling_service.add_balance(author_id, winnings_after_tax)
-            else:
-                winnings = -bet
-                tax = None
-                await self.gambling_service.subtract_balance(author_id, bet)
+            async with lock:
+                is_correct = (guess == result)
+                if is_correct:
+                    multiplier = random.uniform(*GamblingConfig.GAME_MULTIPLIER_RANGES[game_type])
+                    winnings = int(bet * multiplier)
+                    tax = self.gambling_service.calculate_tax(winnings, game_type)
+                    winnings_after_tax = winnings - tax
+                    await self.gambling_service.add_balance(author_id, winnings_after_tax)
+                else:
+                    winnings = -bet
+                    tax = None
+                    await self.gambling_service.subtract_balance(author_id, bet)
 
-            return GamblingEmbed.create_game_embed(
-                author_name=author_name,
-                is_correct=is_correct,
-                guess=guess,
-                result=result,
-                bet=bet,
-                winnings=winnings_after_tax if is_correct else winnings,
-                balance=await self.gambling_service.get_balance(author_id),
-                game_type=game_type,
-                tax=tax
-            )
-        finally:
-            await lock.release()
+                return GamblingEmbed.create_game_embed(
+                    author_name=author_name,
+                    is_correct=is_correct,
+                    guess=guess,
+                    result=result,
+                    bet=bet,
+                    winnings=winnings_after_tax if is_correct else winnings,
+                    balance=await self.gambling_service.get_balance(author_id),
+                    game_type=game_type,
+                    tax=tax
+                )
+        except Exception as e:
+            logger.error(f"Error in _play_game: {e}")
+            return GamblingEmbed.create_error_embed("게임 진행 중 오류가 발생했습니다.")
 
     @commands.command(name="도박.동전", description="동전 던지기")
     async def coin(self, ctx, bet: str = None):
@@ -444,7 +443,8 @@ class Gambling(commands.Cog):
             self.game_manager.end_game(ctx.author.id)
             return
 
-        with await self.gambling_service._get_lock(ctx.author.id):
+        lock = await self.gambling_service._get_lock(ctx.author.id)
+        async with lock:
             current_balance = await self.gambling_service.get_balance(ctx.author.id)
             min_bet = current_balance // 100
 
@@ -499,7 +499,8 @@ class Gambling(commands.Cog):
             await ctx.reply(embed=GamblingEmbed.create_error_embed("이미 다른 게임이 진행 중입니다."))
             return
 
-        with await self.gambling_service._get_lock(ctx.author.id):
+        lock = await self.gambling_service._get_lock(ctx.author.id)
+        async with lock:
             current_time = datetime.now()
             last_used = self.cooldowns.get(ctx.author.id)
 
@@ -528,7 +529,8 @@ class Gambling(commands.Cog):
 
     @commands.command(name="도박.지갑", aliases=['도박.잔액', '도박.직바'], description="잔액 확인")
     async def balance(self, ctx):
-        with await self.gambling_service._get_lock(ctx.author.id):
+        lock = await self.gambling_service._get_lock(ctx.author.id)
+        async with lock:
             balance = await self.gambling_service.get_balance(ctx.author.id)
             embed = discord.Embed(
                 title=f"💰 {ctx.author.name}의 지갑",
@@ -642,31 +644,35 @@ class Gambling(commands.Cog):
             await ctx.reply(embed=GamblingEmbed.create_error_embed("100조원 이상 송금할 수 없습니다"))
             return
 
-        with await self.gambling_service._get_lock(ctx.author.id), await self.gambling_service._get_lock(recipient.id):
-            sender_balance = await self.gambling_service.get_balance(ctx.author.id)
+        sender_lock = await self.gambling_service._get_lock(ctx.author.id)
+        recipient_lock = await self.gambling_service._get_lock(recipient.id)
+        
+        async with sender_lock:
+            async with recipient_lock:
+                sender_balance = await self.gambling_service.get_balance(ctx.author.id)
 
-            if amount > sender_balance:
-                await ctx.reply(embed=GamblingEmbed.create_error_embed("돈이 부족해..."))
-                return
+                if amount > sender_balance:
+                    await ctx.reply(embed=GamblingEmbed.create_error_embed("돈이 부족해..."))
+                    return
 
-            tax = self.gambling_service.calculate_gift_tax(amount)
-            amount_after_tax = amount - tax
+                tax = self.gambling_service.calculate_gift_tax(amount)
+                amount_after_tax = amount - tax
 
-            await self.gambling_service.subtract_balance(ctx.author.id, amount)
-            await self.gambling_service.add_balance(recipient.id, amount_after_tax)
-            await self.gambling_service.add_jackpot(tax)
+                await self.gambling_service.subtract_balance(ctx.author.id, amount)
+                await self.gambling_service.add_balance(recipient.id, amount_after_tax)
+                await self.gambling_service.add_jackpot(tax)
 
-            embed = discord.Embed(
-                title="💸 송금 완료",
-                description=(
-                    f"{ctx.author.name} → {recipient.name}\n"
-                    f"## {amount:,}원 송금(세금: {tax:,}원)\n"
-                    f"- 잔액: {await self.gambling_service.get_balance(ctx.author.id):,}원"
-                ),
-                color=discord.Color.green()
-            )
+                embed = discord.Embed(
+                    title="💸 송금 완료",
+                    description=(
+                        f"{ctx.author.name} → {recipient.name}\n"
+                        f"## {amount:,}원 송금(세금: {tax:,}원)\n"
+                        f"- 잔액: {await self.gambling_service.get_balance(ctx.author.id):,}원"
+                    ),
+                    color=discord.Color.green()
+                )
 
-            await ctx.reply(embed=embed)
+                await ctx.reply(embed=embed)
 
     @commands.command(name="도박.블랙잭", description="블랙잭")
     async def blackjack(self, ctx, bet: str = None):
