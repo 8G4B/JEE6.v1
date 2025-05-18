@@ -17,26 +17,37 @@ DB_NAME = os.getenv('DB_NAME')
 DB_CHARSET = 'utf8mb4'
 
 async def get_connection():
-    try:
-        loop = asyncio.get_event_loop()
-        connection = await loop.run_in_executor(
-            None,
-            partial(
-                mysql.connector.connect,
-                host=DB_HOST,
-                port=DB_PORT,
-                user=DB_USER,
-                password=DB_PASSWORD,
-                database=DB_NAME,
-                charset=DB_CHARSET,
-                collation='utf8mb4_general_ci'
+    max_retries = 3
+    retry_count = 0
+    
+    while retry_count < max_retries:
+        try:
+            loop = asyncio.get_event_loop()
+            connection = await loop.run_in_executor(
+                None,
+                partial(
+                    mysql.connector.connect,
+                    host=DB_HOST,
+                    port=DB_PORT,
+                    user=DB_USER,
+                    password=DB_PASSWORD,
+                    database=DB_NAME,
+                    charset=DB_CHARSET,
+                    collation='utf8mb4_general_ci',
+                    connect_timeout=30,  
+                    connection_timeout=30,  
+                )
             )
-        )
-        logger.info(f"{DB_USER}@{DB_HOST}:{DB_PORT}/{DB_NAME} 연결 성공")
-        return connection
-    except Error as e:
-        logger.error(f"{DB_USER}@{DB_HOST}:{DB_PORT}/{DB_NAME} 연결 실패: {e}")
-        return None
+            logger.info(f"{DB_USER}@{DB_HOST}:{DB_PORT}/{DB_NAME} 연결 성공")
+            return connection
+        except Error as e:
+            retry_count += 1
+            if retry_count < max_retries:
+                logger.warning(f"{DB_USER}@{DB_HOST}:{DB_PORT}/{DB_NAME} 연결 실패 (시도 {retry_count}/{max_retries}): {e}")
+                await asyncio.sleep(2)  
+            else:
+                logger.error(f"{DB_USER}@{DB_HOST}:{DB_PORT}/{DB_NAME} 연결 실패 (최대 시도 횟수 초과): {e}")
+                return None
 
 async def create_tables():
     connection = await get_connection()
