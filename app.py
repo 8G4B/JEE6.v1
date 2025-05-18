@@ -51,7 +51,6 @@ async def on_ready():
     logger.info(f'{bot.user.name} 봇 연결 완료')
 
 async def main():
-    logger.info("봇 시작")
     try:
         logger.info("데이터베이스 연결 테스트")
         if not await test_connection():

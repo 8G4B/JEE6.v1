@@ -28,13 +28,14 @@ async def get_connection():
                 user=DB_USER,
                 password=DB_PASSWORD,
                 database=DB_NAME,
-                charset=DB_CHARSET
+                charset=DB_CHARSET,
+                collation='utf8mb4_general_ci'
             )
         )
-        logger.info(f"{DB_USER}@{DB_HOST}:{DB_PORT}/{DB_NAME} connection OKAY")
+        logger.info(f"{DB_USER}@{DB_HOST}:{DB_PORT}/{DB_NAME} 연결 성공")
         return connection
     except Error as e:
-        logger.error(f"{DB_USER}@{DB_HOST}:{DB_PORT}/{DB_NAME} connection FAIL: {e}")
+        logger.error(f"{DB_USER}@{DB_HOST}:{DB_PORT}/{DB_NAME} 연결 실패: {e}")
         return None
 
 async def create_tables():
