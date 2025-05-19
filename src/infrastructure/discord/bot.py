@@ -4,6 +4,7 @@ from src.infrastructure.di.container import Container
 from src.interfaces.commands.time_command import TimeCommands
 from src.interfaces.commands.channel_command import ChannelCommands
 from src.interfaces.commands.justice_command import JusticeCommands
+from src.interfaces.commands.information_command import InformationCommands
 
 class Bot(commands.Bot):
     def __init__(self, container: Container):
@@ -24,6 +25,7 @@ class Bot(commands.Bot):
         await self.add_cog(TimeCommands(self, self.container))
         await self.add_cog(ChannelCommands(self, self.container))
         await self.add_cog(JusticeCommands(self, self.container))
+        await self.add_cog(InformationCommands(self, self.container))
 
     async def on_ready(self):
         print(f'Logged in as {self.user.name} (ID: {self.user.id})')
