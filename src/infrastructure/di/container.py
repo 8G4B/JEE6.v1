@@ -21,8 +21,7 @@ class Container(containers.DeclarativeContainer):
     )
     
     justice_repository = providers.Factory(
-        JusticeRepository,
-        get_connection=None  
+        JusticeRepository
     )
     
     time_service = providers.Factory(TimeService)
