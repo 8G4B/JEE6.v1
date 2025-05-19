@@ -7,6 +7,7 @@ logger = logging.getLogger(__name__)
 
 def get_connection():
     try:
+        logger.debug(f"Attempting to connect to MySQL - Host: {BaseConfig.DB_HOST}, User: {BaseConfig.DB_USER}, DB: {BaseConfig.DB_NAME}")
         connection = mysql.connector.connect(
             host=BaseConfig.DB_HOST,
             user=BaseConfig.DB_USER,
@@ -15,6 +16,10 @@ def get_connection():
             charset='utf8mb4',
             collation='utf8mb4_unicode_ci'
         )
+        if connection.is_connected():
+            logger.debug("Successfully connected to MySQL database")
+            db_info = connection.get_server_info()
+            logger.debug(f"MySQL server version: {db_info}")
         return connection
     except Error as e:
         logger.error(f"Error connecting to MySQL: {e}")
