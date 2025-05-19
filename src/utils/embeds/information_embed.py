@@ -1,5 +1,6 @@
 import discord
 
+
 class InformationEmbed:
     @staticmethod
     def create_info_embed(latency: int, db_status: str) -> discord.Embed:
@@ -14,6 +15,6 @@ class InformationEmbed:
                 f"- 핑: {latency}ms\n"
                 f"- DB: {db_status}"
             ),
-            color=discord.Color.yellow()
+            color=discord.Color.yellow(),
         )
-        return embed 
+        return embed

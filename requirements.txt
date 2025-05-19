@@ -12,3 +12,5 @@ mysql-connector-python==8.2.0
 requests
 openai
 riotwatcher
+flake8
+black

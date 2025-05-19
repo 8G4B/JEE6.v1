@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 
 logger = logging.getLogger(__name__)
 
+
 class ChannelService:
     def __init__(self, periodic_clean_repository=None, db: Session = None):
         self.periodic_clean_repository = periodic_clean_repository
@@ -14,18 +15,20 @@ class ChannelService:
         self,
         guild: discord.Guild,
         channel_to_clean: discord.TextChannel,
-        channel_name: Optional[str] = None
+        channel_name: Optional[str] = None,
     ) -> Tuple[bool, str, Optional[discord.TextChannel]]:
         try:
             if channel_name:
-                found_channel = discord.utils.get(guild.text_channels, name=channel_name)
+                found_channel = discord.utils.get(
+                    guild.text_channels, name=channel_name
+                )
                 if not found_channel:
                     return False, f"'{channel_name}' 이런 채널 없는데요", None
                 channel_to_clean = found_channel
 
             old_channel_id = channel_to_clean.id
             channel_name = channel_to_clean.name
-            
+
             category = channel_to_clean.category
             position = channel_to_clean.position
             topic = channel_to_clean.topic
@@ -43,9 +46,9 @@ class ChannelService:
                 nsfw=nsfw,
                 overwrites=overwrites,
                 position=position,
-                reason="채널 청소"
+                reason="채널 청소",
             )
-            
+
             if self.periodic_clean_repository and self.db:
                 try:
                     self.periodic_clean_repository.update_channel_id(
@@ -64,7 +67,9 @@ class ChannelService:
 
     def enable_periodic_clean(self, guild_id, channel_id, interval_seconds):
         if self.periodic_clean_repository and self.db:
-            return self.periodic_clean_repository.enable(self.db, guild_id, channel_id, interval_seconds)
+            return self.periodic_clean_repository.enable(
+                self.db, guild_id, channel_id, interval_seconds
+            )
 
     def disable_periodic_clean(self, guild_id, channel_id):
         if self.periodic_clean_repository and self.db:
@@ -73,4 +78,4 @@ class ChannelService:
     def get_all_enabled_periodic_cleans(self):
         if self.periodic_clean_repository and self.db:
             return self.periodic_clean_repository.get_all_enabled(self.db)
-        return [] 
+        return []

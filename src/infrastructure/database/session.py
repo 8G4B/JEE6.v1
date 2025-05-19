@@ -16,11 +16,10 @@ DATABASE_URL = (
 )
 
 engine = create_engine(
-    DATABASE_URL,
-    pool_pre_ping=True,
-    connect_args={"collation": config['collation']}
+    DATABASE_URL, pool_pre_ping=True, connect_args={"collation": config["collation"]}
 )
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
 
 @contextmanager
 def get_db_session() -> Generator[Session, None, None]:
@@ -35,23 +34,27 @@ def get_db_session() -> Generator[Session, None, None]:
     finally:
         session.close()
 
+
 def create_tables():
     Base.metadata.create_all(bind=engine)
     update_schema()
 
+
 def update_schema():
     try:
         inspector = inspect(engine)
-        if 'periodic_clean' in inspector.get_table_names():
-            columns = [col['name'] for col in inspector.get_columns('periodic_clean')]
-            if 'channel_name' not in columns:
+        if "periodic_clean" in inspector.get_table_names():
+            columns = [col["name"] for col in inspector.get_columns("periodic_clean")]
+            if "channel_name" not in columns:
                 logger.info("periodic_clean 테이블에 channel_name 컬럼 추가 중...")
                 with engine.connect() as conn:
-                    conn.execute(text(
-                        "ALTER TABLE periodic_clean "
-                        "ADD COLUMN channel_name VARCHAR(100) NOT NULL DEFAULT '', "
-                        "ADD INDEX idx_channel_name (channel_name)"
-                    ))
+                    conn.execute(
+                        text(
+                            "ALTER TABLE periodic_clean "
+                            "ADD COLUMN channel_name VARCHAR(100) NOT NULL DEFAULT '', "
+                            "ADD INDEX idx_channel_name (channel_name)"
+                        )
+                    )
                     conn.commit()
                 logger.info("channel_name 컬럼 추가 완료")
     except Exception as e:

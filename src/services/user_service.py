@@ -2,6 +2,7 @@ from typing import List, Tuple
 from sqlalchemy.orm import Session
 from src.repositories.user_balance_repository import UserBalanceRepository
 
+
 class UserService:
     def __init__(self, user_repository: UserBalanceRepository):
         self.user_repository = user_repository
@@ -28,4 +29,4 @@ class UserService:
         if current_balance < amount:
             return False
         new_balance = current_balance - amount
-        return self.set_user_balance(db, user_id, new_balance) 
+        return self.set_user_balance(db, user_id, new_balance)

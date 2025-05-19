@@ -7,10 +7,10 @@ from src.infrastructure.database.connection import init_db, test_connection
 from src.infrastructure.database.session import create_tables
 
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
+
 
 async def main():
     try:
@@ -18,23 +18,24 @@ async def main():
         if not test_connection():
             logger.error("데이터베이스 연결 실패")
             return
-        
+
         logger.info("데이터베이스 초기화 중...")
         init_db()
-        
+
         logger.info("컨테이너 초기화 중...")
-        create_tables() 
+        create_tables()
         container = Container()
-        
+
         logger.info("봇 인스턴스 생성 중...")
         bot = Bot(container)
-        
+
         logger.info("봇 시작...")
         await bot.start(BaseConfig.DISCORD_TOKEN)
-        
+
     except Exception as e:
         logger.error(f"Error during startup: {e}", exc_info=True)
         raise
+
 
 if __name__ == "__main__":
     try:

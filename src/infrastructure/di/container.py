@@ -20,84 +20,51 @@ from src.interfaces.commands.gambling_command import GamblingCommands
 from src.interfaces.commands.gambling_games import GamblingGames
 from src.interfaces.commands.gambling_card_games import GamblingCardGames
 
+
 class Container(containers.DeclarativeContainer):
     config = providers.Singleton(BaseConfig)
     bot = providers.Dependency()
-    
-    user_repository = providers.Factory(
-        UserBalanceRepository,
-        model=UserBalance
-    )
-    
-    justice_repository = providers.Factory(
-        JusticeRepository
-    )
-    
+
+    user_repository = providers.Factory(UserBalanceRepository, model=UserBalance)
+
+    justice_repository = providers.Factory(JusticeRepository)
+
     time_service = providers.Factory(TimeService)
     channel_service = providers.Factory(ChannelService)
     justice_service = providers.Factory(
-        JusticeService,
-        justice_repository=justice_repository
+        JusticeService, justice_repository=justice_repository
     )
-    user_service = providers.Factory(
-        UserService,
-        user_repository=user_repository
-    )
+    user_service = providers.Factory(UserService, user_repository=user_repository)
     periodic_clean_repository = providers.Factory(
-        PeriodicCleanRepository,
-        model=PeriodicClean
+        PeriodicCleanRepository, model=PeriodicClean
     )
 
     channel_command = providers.Factory(
-        ChannelCommands,
-        bot=bot,
-        container=providers.Self()
+        ChannelCommands, bot=bot, container=providers.Self()
     )
-    
+
     timeout_command = providers.Factory(
-        TimeCommands,
-        bot=bot,
-        container=providers.Self()
+        TimeCommands, bot=bot, container=providers.Self()
     )
-    
+
     information_command = providers.Factory(
-        InformationCommands,
-        bot=bot,
-        container=providers.Self()
+        InformationCommands, bot=bot, container=providers.Self()
     )
-    
-    meal_command = providers.Factory(
-        MealCommands,
-        bot=bot,
-        container=providers.Self()
-    )
-    
-    lol_command = providers.Factory(
-        LolCommands,
-        bot=bot,
-        container=providers.Self()
-    )
-    
-    valo_command = providers.Factory(
-        ValoCommands,
-        bot=bot,
-        container=providers.Self()
-    )
-    
+
+    meal_command = providers.Factory(MealCommands, bot=bot, container=providers.Self())
+
+    lol_command = providers.Factory(LolCommands, bot=bot, container=providers.Self())
+
+    valo_command = providers.Factory(ValoCommands, bot=bot, container=providers.Self())
+
     gambling_command = providers.Factory(
-        GamblingCommands,
-        bot=bot,
-        container=providers.Self()
+        GamblingCommands, bot=bot, container=providers.Self()
     )
-    
+
     gambling_games = providers.Factory(
-        GamblingGames,
-        bot=bot,
-        container=providers.Self()
+        GamblingGames, bot=bot, container=providers.Self()
     )
-    
+
     gambling_card_games = providers.Factory(
-        GamblingCardGames,
-        bot=bot,
-        container=providers.Self()
+        GamblingCardGames, bot=bot, container=providers.Self()
     )

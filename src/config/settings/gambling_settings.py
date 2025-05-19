@@ -8,11 +8,7 @@ JACKPOT_WIN_COOLDOWN = 1800
 GAME_COOLDOWN = 5
 WORK_COOLDOWN = 60
 
-RESET_TIMES = [
-    (7, 30),
-    (12, 30),
-    (18, 30)
-]
+RESET_TIMES = [(7, 30), (12, 30), (18, 30)]
 
 WORK_REWARD_RANGE = (100, 2000)
 
@@ -25,13 +21,13 @@ INCOME_TAX_BRACKETS = [
     (50_000_000_000_000, 0.24),
     (14_000_000_000_000, 0.15),
     (5_000_000_000_000, 0.06),
-    (0, 0)
+    (0, 0),
 ]
 
 SECURITIES_TRANSACTION_TAX_BRACKETS = [
     (30_000_000_000_000, 0.02),
     (10_000_000_000_000, 0.01),
-    (0, 0.005)
+    (0, 0.005),
 ]
 
 GIFT_TAX_BRACKETS = [
@@ -39,13 +35,13 @@ GIFT_TAX_BRACKETS = [
     (10_000_000_000_000, 0.125),
     (5_000_000_000_000, 0.10),
     (1_000_000_000_000, 0.075),
-    (0, 0.05)
+    (0, 0.05),
 ]
 
 GAME_MULTIPLIER_RANGES = {
-    'coin': (1.0, 1.2),
-    'dice': (4.6, 5.7),
-    'blackjack': (1.2, 1.5),
-    'baccarat': (1.2, 1.5),
-    'indian_poker': (1.0, 1.2)
+    "coin": (1.0, 1.2),
+    "dice": (4.6, 5.7),
+    "blackjack": (1.2, 1.5),
+    "baccarat": (1.2, 1.5),
+    "indian_poker": (1.0, 1.2),
 }

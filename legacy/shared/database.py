@@ -9,17 +9,18 @@ from typing import Optional, List, Tuple
 
 logger = logging.getLogger(__name__)
 
-DB_HOST = os.getenv('DB_HOST')
-DB_PORT = int(os.getenv('DB_PORT', '3306'))
-DB_USER = os.getenv('DB_USER', 'root')
-DB_PASSWORD = os.getenv('DB_PASSWORD')
-DB_NAME = os.getenv('DB_NAME')
-DB_CHARSET = 'utf8mb4'
+DB_HOST = os.getenv("DB_HOST")
+DB_PORT = int(os.getenv("DB_PORT", "3306"))
+DB_USER = os.getenv("DB_USER", "root")
+DB_PASSWORD = os.getenv("DB_PASSWORD")
+DB_NAME = os.getenv("DB_NAME")
+DB_CHARSET = "utf8mb4"
+
 
 async def get_connection():
     max_retries = 3
     retry_count = 0
-    
+
     while retry_count < max_retries:
         try:
             loop = asyncio.get_event_loop()
@@ -33,28 +34,34 @@ async def get_connection():
                     password=DB_PASSWORD,
                     database=DB_NAME,
                     charset=DB_CHARSET,
-                    collation='utf8mb4_general_ci',
+                    collation="utf8mb4_general_ci",
                     connect_timeout=30,
                     connection_timeout=30,
-                )
+                ),
             )
             logger.info(f"{DB_USER}@{DB_HOST}:{DB_PORT}/{DB_NAME} 연결 성공")
             return connection
         except Error as e:
             retry_count += 1
             if retry_count < max_retries:
-                logger.warning(f"{DB_USER}@{DB_HOST}:{DB_PORT}/{DB_NAME} 연결 실패 (시도 {retry_count}/{max_retries}): {e}")
+                logger.warning(
+                    f"{DB_USER}@{DB_HOST}:{DB_PORT}/{DB_NAME} 연결 실패 (시도 {retry_count}/{max_retries}): {e}"
+                )
                 await asyncio.sleep(2)
             else:
-                logger.error(f"{DB_USER}@{DB_HOST}:{DB_PORT}/{DB_NAME} 연결 실패 (최대 시도 횟수 초과): {e}")
+                logger.error(
+                    f"{DB_USER}@{DB_HOST}:{DB_PORT}/{DB_NAME} 연결 실패 (최대 시도 횟수 초과): {e}"
+                )
                 return None
+
 
 async def create_tables():
     connection = await get_connection()
     if connection:
         try:
             with connection.cursor() as cursor:
-                cursor.execute('''
+                cursor.execute(
+                    """
                 CREATE TABLE IF NOT EXISTS user_balance (
                     user_id BIGINT PRIMARY KEY,
                     balance BIGINT DEFAULT 0,
@@ -62,27 +69,33 @@ async def create_tables():
                     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
                 )
-                ''')
+                """
+                )
 
-                cursor.execute('''
+                cursor.execute(
+                    """
                 CREATE TABLE IF NOT EXISTS jackpot (
                     id INT AUTO_INCREMENT PRIMARY KEY,
                     amount BIGINT DEFAULT 1000000,
                     last_reset DATETIME,
                     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
                 )
-                ''')
+                """
+                )
 
-                cursor.execute('''
+                cursor.execute(
+                    """
                 CREATE TABLE IF NOT EXISTS cooldowns (
                     user_id BIGINT,
                     game_type VARCHAR(50),
                     last_played DATETIME,
                     PRIMARY KEY (user_id, game_type)
                 )
-                ''')
+                """
+                )
 
-                cursor.execute('''
+                cursor.execute(
+                    """
                 CREATE TABLE IF NOT EXISTS justice_records (
                     id INT AUTO_INCREMENT PRIMARY KEY,
                     user_id BIGINT,
@@ -93,9 +106,11 @@ async def create_tables():
                     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
                     UNIQUE KEY unique_user_server (user_id, server_id)
                 )
-                ''')
+                """
+                )
 
-                cursor.execute('''
+                cursor.execute(
+                    """
                 CREATE TABLE IF NOT EXISTS timeout_history (
                     id INT AUTO_INCREMENT PRIMARY KEY,
                     user_id BIGINT,
@@ -105,7 +120,8 @@ async def create_tables():
                     duration INT,  # Store duration in seconds
                     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
                 )
-                ''')
+                """
+                )
 
             connection.commit()
             logger.info("create_tables OKAY")
@@ -115,6 +131,7 @@ async def create_tables():
             connection.close()
     else:
         logger.error("DB 연결이 안됐는데 CREATE TABLE이 되겠노")
+
 
 async def get_user_count(user_id: str, server_id: str) -> int:
     connection = await get_connection()
@@ -126,7 +143,7 @@ async def get_user_count(user_id: str, server_id: str) -> int:
             result = cursor.fetchone()
             cursor.close()
             if result:
-                return result['count']
+                return result["count"]
             return 0
         except Exception as e:
             logger.error(f"get_user_count({user_id}, {server_id}) FAIL: {e}")
@@ -134,6 +151,7 @@ async def get_user_count(user_id: str, server_id: str) -> int:
         finally:
             connection.close()
     return 0
+
 
 async def set_user_count(user_id: str, server_id: str, count: int) -> bool:
     connection = await get_connection()
@@ -155,7 +173,10 @@ async def set_user_count(user_id: str, server_id: str, count: int) -> bool:
             connection.close()
     return False
 
-async def add_timeout_history(user_id: str, server_id: str, moderator_id: str, reason: str, duration: timedelta) -> bool:
+
+async def add_timeout_history(
+    user_id: str, server_id: str, moderator_id: str, reason: str, duration: timedelta
+) -> bool:
     connection = await get_connection()
     if connection:
         try:
@@ -166,15 +187,20 @@ async def add_timeout_history(user_id: str, server_id: str, moderator_id: str, r
                 (user_id, server_id, moderator_id, reason, duration) 
                 VALUES (%s, %s, %s, %s, %s)
                 """
-                cursor.execute(sql, (user_id, server_id, moderator_id, reason, duration_seconds))
+                cursor.execute(
+                    sql, (user_id, server_id, moderator_id, reason, duration_seconds)
+                )
             connection.commit()
-            logger.info(f"add_timeout_history({user_id}, {server_id}, {moderator_id}) OKAY")
+            logger.info(
+                f"add_timeout_history({user_id}, {server_id}, {moderator_id}) OKAY"
+            )
             return True
         except Exception as e:
             logger.error(f"add_timeout_history FAIL: {e}")
         finally:
             connection.close()
     return False
+
 
 async def get_user_balance(user_id: int) -> int:
     connection = await get_connection()
@@ -186,7 +212,7 @@ async def get_user_balance(user_id: int) -> int:
             result = cursor.fetchone()
             cursor.close()
             if result:
-                return result['balance']
+                return result["balance"]
             return 0
         except Exception as e:
             logger.error(f"get_user_balance({user_id}) FAIL: {e}")
@@ -194,6 +220,7 @@ async def get_user_balance(user_id: int) -> int:
         finally:
             connection.close()
     return 0
+
 
 async def set_user_balance(user_id: int, amount: int) -> bool:
     connection = await get_connection()
@@ -215,6 +242,7 @@ async def set_user_balance(user_id: int, amount: int) -> bool:
             connection.close()
     return False
 
+
 async def get_jackpot() -> int:
     connection = await get_connection()
     if connection:
@@ -225,14 +253,15 @@ async def get_jackpot() -> int:
             result = cursor.fetchone()
             cursor.close()
             if result:
-                return result['amount']
-            return 1000000  
+                return result["amount"]
+            return 1000000
         except Exception as e:
             logger.error(f"get_jackpot FAIL: {e}")
             return 1000000
         finally:
             connection.close()
     return 1000000
+
 
 async def set_jackpot(amount: int) -> bool:
     connection = await get_connection()
@@ -254,6 +283,7 @@ async def set_jackpot(amount: int) -> bool:
             connection.close()
     return False
 
+
 async def get_cooldown(user_id: int, game_type: str) -> Optional[datetime]:
     connection = await get_connection()
     if connection:
@@ -264,7 +294,7 @@ async def get_cooldown(user_id: int, game_type: str) -> Optional[datetime]:
             result = cursor.fetchone()
             cursor.close()
             if result:
-                return result['last_played']
+                return result["last_played"]
             return None
         except Exception as e:
             logger.error(f"get_cooldown({user_id}, {game_type}) FAIL: {e}")
@@ -272,6 +302,7 @@ async def get_cooldown(user_id: int, game_type: str) -> Optional[datetime]:
         finally:
             connection.close()
     return None
+
 
 async def set_cooldown(user_id: int, game_type: str) -> bool:
     connection = await get_connection()
@@ -293,6 +324,7 @@ async def set_cooldown(user_id: int, game_type: str) -> bool:
             connection.close()
     return False
 
+
 async def get_sorted_balances() -> List[Tuple[int, int]]:
     connection = await get_connection()
     if connection:
@@ -310,6 +342,7 @@ async def get_sorted_balances() -> List[Tuple[int, int]]:
             connection.close()
     return []
 
+
 async def init_db():
     try:
         await create_tables()
@@ -319,16 +352,17 @@ async def init_db():
         logger.error(f"Database initialization failed: {e}")
         return False
 
+
 async def test_connection():
     try:
         connection = await get_connection()
         if connection:
             with connection.cursor() as cursor:
                 cursor.execute("SELECT 1")
-                cursor.fetchall()  
+                cursor.fetchall()
             connection.close()
             logger.info("데이터베이스 연결 테스트 성공!")
             return True
     except Exception as e:
         logger.error(f"데이터베이스 연결 테스트 실패: {e}")
-    return False 
+    return False
