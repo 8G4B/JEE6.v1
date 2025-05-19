@@ -10,14 +10,13 @@ from src.domain.models.user_balance import UserBalance
 from src.config.settings.base import BaseConfig
 from src.repositories.periodic_clean_repository import PeriodicCleanRepository
 from src.domain.models.periodic_clean import PeriodicClean
-from src.infrastructure.database.session import get_db_session
 from src.interfaces.commands.base_command import BaseCommand
 from src.interfaces.commands.channel_command import ChannelCommands
 from src.interfaces.commands.time_command import TimeCommands
-from src.interfaces.commands.information_command import InformationCommand
-from src.interfaces.commands.meal_command import MealCommand
-from src.interfaces.commands.lol_command import LoLCommand
-from src.interfaces.commands.valo_command import ValoCommand
+from src.interfaces.commands.information_command import InformationCommands
+from src.interfaces.commands.meal_command import MealCommands
+from src.interfaces.commands.lol_command import LolCommands
+from src.interfaces.commands.valo_command import ValoCommands
 from src.interfaces.commands.gambling_command import GamblingCommands
 from src.interfaces.commands.gambling_games import GamblingGames
 from src.interfaces.commands.gambling_card_games import GamblingCardGames
@@ -61,22 +60,22 @@ class Container(containers.DeclarativeContainer):
     )
     
     information_command = providers.Factory(
-        InformationCommand,
+        InformationCommands,
         bot=bot
     )
     
     meal_command = providers.Factory(
-        MealCommand,
+        MealCommands,
         bot=bot
     )
     
     lol_command = providers.Factory(
-        LoLCommand,
+        LolCommands,
         bot=bot
     )
     
     valo_command = providers.Factory(
-        ValoCommand,
+        ValoCommands,
         bot=bot
     )
     
