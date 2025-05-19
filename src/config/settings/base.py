@@ -12,7 +12,7 @@ class BaseConfig:
     DB_PASSWORD = os.getenv('DB_PASSWORD', '')
     DB_NAME = os.getenv('DB_NAME', 'jee6_bot')
     
-    DATABASE_URL = f"mysql+mysqlconnector://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+    DATABASE_URL = f"mysql+mysqlconnector://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}?charset=utf8mb4"
     
     RIOT_API_KEY = os.getenv('RIOT_API_KEY')
     GPT_API_KEY = os.getenv('GPT_API_KEY')
