@@ -12,8 +12,6 @@ from src.config.settings.base import BaseConfig
 class Container(containers.DeclarativeContainer):
     config = providers.Singleton(BaseConfig)
     
-    db_connection = providers.Factory(get_connection)
-    
     user_repository = providers.Factory(
         UserBalanceRepository,
         model=UserBalance
@@ -21,7 +19,7 @@ class Container(containers.DeclarativeContainer):
     
     justice_repository = providers.Factory(
         JusticeRepository,
-        get_connection=db_connection
+        get_connection=None  
     )
     
     time_service = providers.Factory(TimeService)

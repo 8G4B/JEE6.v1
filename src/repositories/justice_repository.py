@@ -1,16 +1,31 @@
 import logging
-from typing import Optional, Callable
+from typing import Optional
 from datetime import datetime, timedelta
-from mysql.connector import MySQLConnection
+from mysql.connector import MySQLConnection, connect
 from src.domain.models.justice_record import JusticeRecord
 from src.domain.models.timeout_history import TimeoutHistory
+from src.config.settings.base import BaseConfig
 
 logger = logging.getLogger(__name__)
 
 class JusticeRepository:
-    def __init__(self, get_connection: Callable[[], Optional[MySQLConnection]]):
-        logger.debug(f"Initializing JusticeRepository with get_connection type: {type(get_connection)}")
-        self._get_connection = get_connection
+    def __init__(self, get_connection):
+        logger.debug(f"Initializing JusticeRepository")
+        self.db_config = {
+            'host': BaseConfig.DB_HOST,
+            'user': BaseConfig.DB_USER,
+            'password': BaseConfig.DB_PASSWORD,
+            'database': BaseConfig.DB_NAME,
+            'charset': 'utf8mb4',
+            'collation': 'utf8mb4_unicode_ci'
+        }
+
+    def _get_connection(self) -> Optional[MySQLConnection]:
+        try:
+            return connect(**self.db_config)
+        except Exception as e:
+            logger.error(f"Failed to create database connection: {e}")
+            return None
 
     async def get_user_count(self, user_id: int, server_id: int) -> int:
         try:
