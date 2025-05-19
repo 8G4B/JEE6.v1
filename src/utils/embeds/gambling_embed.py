@@ -1,4 +1,5 @@
 import discord
+from typing import Optional
 
 class GamblingEmbed:
     @staticmethod
@@ -63,36 +64,38 @@ class GamblingEmbed:
         is_correct: bool,
         guess: str,
         result: str,
-        bet: int = None,
-        winnings: int = None,
-        balance: int = None,
-        game_type: str = None,
-        tax: int = None
+        bet: Optional[int] = None,
+        winnings: Optional[int] = None,
+        balance: Optional[int] = None,
+        game_type: Optional[str] = None,
+        tax: Optional[int] = None
     ) -> discord.Embed:
-        title = f"{'🪙' if game_type == 'coin' else '🎲' if game_type == 'dice' else '🎮'} "
-        title += f"{author_name} {'성공' if is_correct else '실패'}"
-        
-        description = [
-            f"- 선택: {guess}",
-            f"- 결과: {result}",
-            f"- 베팅: {bet:,}원"
+        title = f"{'🪙' if game_type == 'coin' else '🎲' if game_type == 'dice' else '🎰'} {author_name} {'맞음 ㄹㅈㄷ' if is_correct else '틀림ㅋ'}"
+        color = discord.Color.green() if is_correct else discord.Color.red()
+
+        description_parts = [
+            f"- 예측: {guess}",
+            f"- 결과: {result}"
         ]
-        
-        if is_correct:
-            if tax:
-                description.append(f"## 수익: {winnings:,}원(세금: {tax:,}원)")
+
+        if bet is not None and winnings is not None and balance is not None:
+            if is_correct:
+                total_winnings = winnings + (tax or 0)
+                multiplier = total_winnings / bet
+                description_parts.extend([
+                    f"## 수익: {bet:,}원 × {multiplier:.2f} = {winnings:,}원(세금: {tax:,}원)" if tax else f"## 수익: {bet:,}원 × {multiplier:.2f} = {winnings:,}원",
+                    f"- 재산: {balance:,}원(+{winnings:,})"
+                ])
             else:
-                description.append(f"## 수익: {winnings:,}원")
-        else:
-            description.append(f"## 수익: {winnings:,}원")
-            
-        if balance is not None:
-            description.append(f"- 재산: {balance:,}원")
-        
+                description_parts.extend([
+                    f"## 수익: {bet:,}원 × -1 = {winnings:,}원",
+                    f"- 재산: {balance:,}원({winnings:,})"
+                ])
+
         return discord.Embed(
             title=title,
-            description="\n".join(description),
-            color=discord.Color.green() if is_correct else discord.Color.red()
+            description="\n".join(description_parts),
+            color=color
         )
     
     @staticmethod
@@ -100,10 +103,7 @@ class GamblingEmbed:
         minutes = remaining_seconds // 60
         seconds = remaining_seconds % 60
         
-        if minutes > 0:
-            time_str = f"{minutes}분 {seconds}초"
-        else:
-            time_str = f"{seconds}초"
+        time_str = f"{minutes}분 {seconds}초" if minutes > 0 else f"{seconds}초"
             
         return discord.Embed(
             title="⏱️ 쿨타임",
