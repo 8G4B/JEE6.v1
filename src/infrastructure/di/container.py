@@ -11,9 +11,20 @@ from src.config.settings.base import BaseConfig
 from src.repositories.periodic_clean_repository import PeriodicCleanRepository
 from src.domain.models.periodic_clean import PeriodicClean
 from src.infrastructure.database.session import get_db_session
+from src.interfaces.commands.base_command import BaseCommand
+from src.interfaces.commands.channel_command import ChannelCommand
+from src.interfaces.commands.timeout_command import TimeoutCommand
+from src.interfaces.commands.information_command import InformationCommand
+from src.interfaces.commands.meal_command import MealCommand
+from src.interfaces.commands.lol_command import LoLCommand
+from src.interfaces.commands.valo_command import ValoCommand
+from src.interfaces.commands.gambling_command import GamblingCommands
+from src.interfaces.commands.gambling_games import GamblingGames
+from src.interfaces.commands.gambling_card_games import GamblingCardGames
 
 class Container(containers.DeclarativeContainer):
     config = providers.Singleton(BaseConfig)
+    bot = providers.Dependency()
     
     user_repository = providers.Factory(
         UserBalanceRepository,
@@ -37,4 +48,49 @@ class Container(containers.DeclarativeContainer):
     periodic_clean_repository = providers.Factory(
         PeriodicCleanRepository,
         model=PeriodicClean
+    )
+
+    channel_command = providers.Factory(
+        ChannelCommand,
+        bot=bot
+    )
+    
+    timeout_command = providers.Factory(
+        TimeoutCommand,
+        bot=bot
+    )
+    
+    information_command = providers.Factory(
+        InformationCommand,
+        bot=bot
+    )
+    
+    meal_command = providers.Factory(
+        MealCommand,
+        bot=bot
+    )
+    
+    lol_command = providers.Factory(
+        LoLCommand,
+        bot=bot
+    )
+    
+    valo_command = providers.Factory(
+        ValoCommand,
+        bot=bot
+    )
+    
+    gambling_command = providers.Factory(
+        GamblingCommands,
+        bot=bot
+    )
+    
+    gambling_games = providers.Factory(
+        GamblingGames,
+        bot=bot
+    )
+    
+    gambling_card_games = providers.Factory(
+        GamblingCardGames,
+        bot=bot
     )

@@ -1,12 +1,14 @@
-from datetime import datetime
-from sqlalchemy import Column, BigInteger, DateTime
-from src.domain.models.base import BaseModel
+from sqlalchemy import Column, BigInteger, Integer
+from src.domain.models.base import Base
 
-class UserBalance(BaseModel):
-    __tablename__ = 'user_balance'
-
+class UserBalance(Base):
+    __tablename__ = 'user_balances'
+    
     user_id = Column(BigInteger, primary_key=True)
-    balance = Column(BigInteger, default=0)
-    last_work_time = Column(DateTime, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow) 
+    server_id = Column(BigInteger, primary_key=True)
+    balance = Column(Integer, default=0, nullable=False)
+    
+    def __init__(self, user_id: int, server_id: int, balance: int = 0):
+        self.user_id = user_id
+        self.server_id = server_id
+        self.balance = balance 
