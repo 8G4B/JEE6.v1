@@ -1,19 +1,20 @@
 import logging
-from typing import Optional
+from typing import Optional, Callable
 from datetime import datetime, timedelta
+from mysql.connector import MySQLConnection
 from src.domain.models.justice_record import JusticeRecord
 from src.domain.models.timeout_history import TimeoutHistory
 
 logger = logging.getLogger(__name__)
 
 class JusticeRepository:
-    def __init__(self, get_connection):
+    def __init__(self, get_connection: Callable[[], Optional[MySQLConnection]]):
         logger.debug(f"Initializing JusticeRepository with get_connection type: {type(get_connection)}")
         self._get_connection = get_connection
 
     async def get_user_count(self, user_id: int, server_id: int) -> int:
         try:
-            logger.debug(f"Getting connection for get_user_count - get_connection type: {type(self._get_connection)}")
+            logger.debug(f"Getting connection for get_user_count")
             connection = self._get_connection()
             logger.debug(f"Connection result type: {type(connection)}")
             
@@ -37,7 +38,7 @@ class JusticeRepository:
 
     async def set_user_count(self, user_id: int, server_id: int, count: int) -> bool:
         try:
-            logger.debug(f"Getting connection for set_user_count - get_connection type: {type(self._get_connection)}")
+            logger.debug(f"Getting connection for set_user_count")
             connection = self._get_connection()
             logger.debug(f"Connection result type: {type(connection)}")
             
@@ -66,7 +67,7 @@ class JusticeRepository:
 
     async def add_timeout_history(self, history: TimeoutHistory) -> bool:
         try:
-            logger.debug(f"Getting connection for add_timeout_history - get_connection type: {type(self._get_connection)}")
+            logger.debug(f"Getting connection for add_timeout_history")
             connection = self._get_connection()
             logger.debug(f"Connection result type: {type(connection)}")
             
