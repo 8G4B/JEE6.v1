@@ -2,10 +2,10 @@ from datetime import timedelta
 from dotenv import load_dotenv
 import os
 
+BASE_URL = "https://open.neis.go.kr/hub/mealServiceDietInfo"
+
 load_dotenv()
 MEAL_API_KEY = os.getenv('MEAL_API_KEY')
-
-MEAL_API_KEY = 'your_api_key'
 
 ATPT_OFCDC_SC_CODE = 'F10'
 SD_SCHUL_CODE = '7380292'
