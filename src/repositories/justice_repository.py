@@ -8,11 +8,11 @@ logger = logging.getLogger(__name__)
 
 class JusticeRepository:
     def __init__(self, get_connection):
-        self.get_connection = get_connection
+        self._get_connection = get_connection
 
     async def get_user_count(self, user_id: int, server_id: int) -> int:
         try:
-            connection = self.get_connection()
+            connection = self._get_connection()
             if not connection:
                 return 0
                 
@@ -30,7 +30,7 @@ class JusticeRepository:
 
     async def set_user_count(self, user_id: int, server_id: int, count: int) -> bool:
         try:
-            connection = self.get_connection()
+            connection = self._get_connection()
             if not connection:
                 return False
                 
@@ -53,7 +53,7 @@ class JusticeRepository:
 
     async def add_timeout_history(self, history: TimeoutHistory) -> bool:
         try:
-            connection = self.get_connection()
+            connection = self._get_connection()
             if not connection:
                 return False
                 
