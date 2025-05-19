@@ -10,10 +10,10 @@ class ChannelEmbed:
         )
 
     @staticmethod
-    def create_clean_success_embed() -> discord.Embed:
+    def create_clean_success_embed(message: str = "채널이 성공적으로 청소되었습니다.") -> discord.Embed:
         return discord.Embed(
             title="✅ 청소 완료",
-            description="채널이 성공적으로 청소되었습니다.",
+            description=message,
             color=discord.Color.green()
         )
 
