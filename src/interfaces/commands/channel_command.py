@@ -6,6 +6,7 @@ from src.interfaces.commands.base_command import BaseCommand
 from src.utils.embeds.channel_embed import ChannelEmbed
 from sqlalchemy.orm import Session
 from src.infrastructure.database.session import get_db_session
+from sqlalchemy import text
 
 logger = logging.getLogger(__name__)
 
@@ -75,10 +76,8 @@ class ChannelCommands(BaseCommand):
             db.close()
 
     def _update_channel_names(self, db, repo):
-        """비어있는 channel_name 필드를 업데이트합니다."""
         try:
-            # SQL 직접 실행
-            result = db.execute("SELECT guild_id, channel_id FROM periodic_clean WHERE channel_name = '' OR channel_name IS NULL")
+            result = db.execute(text("SELECT guild_id, channel_id FROM periodic_clean WHERE channel_name = '' OR channel_name IS NULL"))
             records = result.fetchall()
             
             updated = 0
@@ -92,9 +91,8 @@ class ChannelCommands(BaseCommand):
                 if not channel:
                     continue
                     
-                # 채널 이름 업데이트
                 db.execute(
-                    "UPDATE periodic_clean SET channel_name = :name WHERE guild_id = :guild_id AND channel_id = :channel_id",
+                    text("UPDATE periodic_clean SET channel_name = :name WHERE guild_id = :guild_id AND channel_id = :channel_id"),
                     {"name": channel.name, "guild_id": guild_id, "channel_id": channel_id}
                 )
                 updated += 1
