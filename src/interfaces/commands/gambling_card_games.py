@@ -2,7 +2,6 @@ import discord
 from discord.ext import commands
 import logging
 import random
-import secrets
 import asyncio
 
 from src.interfaces.commands.base_command import BaseCommand
@@ -15,8 +14,6 @@ from src.config.settings.gambling_settings import (
 logger = logging.getLogger(__name__)
 
 class GamblingCardGames(BaseCommand):
-    """도박 카드 게임 명령어 처리 클래스"""
-    
     def __init__(self, bot, container):
         super().__init__(bot, container)
         self.gambling_service = GamblingService()

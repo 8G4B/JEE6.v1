@@ -1,4 +1,4 @@
-from typing import Optional, List, Tuple
+from typing import List, Tuple
 from sqlalchemy.orm import Session
 from src.repositories.user_balance_repository import UserBalanceRepository
 

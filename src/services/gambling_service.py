@@ -1,9 +1,7 @@
 import logging
-import random
 import time
-import secrets
 import asyncio
-from typing import Dict, List, Tuple, Optional, Any, Set
+from typing import Dict, List, Tuple, Optional
 from datetime import datetime, timedelta
 from functools import lru_cache
 
@@ -21,7 +19,6 @@ from src.config.settings.gambling_settings import (
 logger = logging.getLogger(__name__)
 
 class GamblingManager:
-    
     def __init__(self):
         self.active_games: Dict[int, str] = {}
         self.lock = asyncio.Lock()
