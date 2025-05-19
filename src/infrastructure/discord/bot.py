@@ -2,6 +2,7 @@ import discord
 from discord.ext import commands
 from src.infrastructure.di.container import Container
 from src.interfaces.commands.time_command import TimeCommands
+from src.interfaces.commands.channel_command import ChannelCommands
 
 class Bot(commands.Bot):
     def __init__(self, container: Container):
@@ -16,9 +17,11 @@ class Bot(commands.Bot):
         )
         
         self.container = container
+        self.remove_command('help')  
 
     async def setup_hook(self) -> None:
         await self.add_cog(TimeCommands(self, self.container))
+        await self.add_cog(ChannelCommands(self, self.container))
 
     async def on_ready(self):
         print(f'Logged in as {self.user.name} (ID: {self.user.id})')
