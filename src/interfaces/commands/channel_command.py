@@ -1,52 +1,14 @@
 from discord.ext import commands
-import logging
-import re
 import asyncio
 from src.interfaces.commands.base import BaseCommand
 from src.utils.embeds.channel_embed import ChannelEmbed
 from src.infrastructure.database.session import get_db_session
 from sqlalchemy import text
+from src.utils.time.timeParser import parse_time_string
+from src.utils.time.formatSeconds import format_seconds
+import logging
 
 logger = logging.getLogger(__name__)
-
-TIME_UNITS = {
-    "초": 1,
-    "s": 1,
-    "sec": 1,
-    "분": 60,
-    "m": 60,
-    "min": 60,
-    "시간": 3600,
-    "h": 3600,
-    "hr": 3600,
-    "일": 86400,
-    "d": 86400,
-    "day": 86400,
-}
-
-
-def parse_time_string(time_str):
-    match = re.match(r"(\d+)\s*([a-zA-Z가-힣]+)", time_str)
-    if not match:
-        return None
-    value, unit = match.groups()
-    value = int(value)
-    unit = unit.lower()
-    for k, v in TIME_UNITS.items():
-        if unit.startswith(k):
-            return value * v
-    return None
-
-
-def format_seconds(seconds):
-    if seconds % 86400 == 0:
-        return f"{seconds // 86400}일"
-    elif seconds % 3600 == 0:
-        return f"{seconds // 3600}시간"
-    elif seconds % 60 == 0:
-        return f"{seconds // 60}분"
-    else:
-        return f"{seconds}초"
 
 
 class ChannelCommands(BaseCommand):
@@ -124,17 +86,11 @@ class ChannelCommands(BaseCommand):
 
             if updated > 0:
                 db.commit()
-                logger.info(
-                    f"{updated}개의 레코드에 channel_name 필드가 업데이트되었습니다."
-                )
         except Exception as e:
             logger.error(f"channel_name 업데이트 중 오류: {e}")
 
     def _start_periodic_clean_task(self, guild, channel, seconds):
         key = (guild.id, channel.id)
-        logger.info(
-            f"주기적 청소 등록: guild_id={guild.id}, channel_id={channel.id}, channel_name={channel.name}, seconds={seconds}"
-        )
         if key in self.periodic_tasks:
             logger.info(f"이미 메모리에 등록된 태스크 존재: {key}")
             return
@@ -162,7 +118,6 @@ class ChannelCommands(BaseCommand):
                             task = self.periodic_tasks.pop(old_key)
                             self.periodic_tasks[new_key] = task
                             old_key = new_key
-                            logger.info(f"태스크 키 업데이트: {old_key} -> {new_key}")
                     else:
                         error_embed = ChannelEmbed.create_error_embed(message)
                         await current_channel.send(embed=error_embed)
@@ -174,7 +129,6 @@ class ChannelCommands(BaseCommand):
 
         task = asyncio.create_task(periodic_clean())
         self.periodic_tasks[key] = task
-        logger.info(f"주기적 청소 태스크 시작: {key}")
 
     @commands.command(
         name="청소",
@@ -204,16 +158,15 @@ class ChannelCommands(BaseCommand):
         tokens = shlex.split(arg)
         i = 0
         while i < len(tokens):
-            if tokens[i] == "-n" and i + 1 < len(tokens):
+            if (tokens[i] in ("-n", "--name")) and i + 1 < len(tokens):
                 channel_name = tokens[i + 1]
                 i += 2
-            elif tokens[i] == "-c" and i + 1 < len(tokens):
+            elif (tokens[i] in ("-c", "--cycle")) and i + 1 < len(tokens):
                 seconds = parse_time_string(tokens[i + 1])
                 i += 2
             else:
                 i += 1
 
-        # Handle simple format without flags
         if not channel_name and not seconds:
             parts = arg.split()
             if len(parts) >= 1:
@@ -224,7 +177,6 @@ class ChannelCommands(BaseCommand):
         return channel_name, seconds
 
     async def _setup_periodic_clean(self, ctx, channel_name, seconds):
-        """Set up periodic channel cleaning."""
         channel = ctx.channel
 
         if channel_name:
@@ -245,12 +197,8 @@ class ChannelCommands(BaseCommand):
         try:
             with get_db_session() as db:
                 repo = self.container.periodic_clean_repository(db=db)
-                logger.info(
-                    f"주기적 청소 DB 등록: guild_id={ctx.guild.id}, channel_id={channel.id}, channel_name={channel.name}, seconds={seconds}"
-                )
                 repo.enable(ctx.guild.id, channel.id, channel.name, seconds)
         except Exception as e:
-            logger.error(f"주기적 청소 DB 등록 중 오류: {e}")
             await ctx.send(
                 embed=ChannelEmbed.create_error_embed(
                     f"주기적 청소 등록 중 오류가 발생했습니다: {e}"
@@ -265,7 +213,6 @@ class ChannelCommands(BaseCommand):
         await ctx.send(embed=embed)
 
     async def clean_channel_once(self, ctx, channel_name=None):
-        logger.info(f"clean_channel_once({ctx.guild.name}, {ctx.author.name})")
         channel_service = self.container.channel_service()
         start_embed = ChannelEmbed.create_clean_start_embed(
             channel_name or ctx.channel.name
@@ -282,7 +229,7 @@ class ChannelCommands(BaseCommand):
             await ctx.send(embed=error_embed)
 
     @commands.command(
-        name="청소중지",
+        name="청소.중지",
         aliases=["clean.stop", "청소멈춰", "청소끄기", "청소.중지", "청소 중지"],
         description="주기적 채널 청소를 중단합니다.",
     )
@@ -302,10 +249,6 @@ class ChannelCommands(BaseCommand):
             if found:
                 channel = found
 
-        logger.info(
-            f"주기적 청소 중지 요청: guild_id={guild_id}, channel_name={channel_name_to_search}"
-        )
-
         try:
             with get_db_session() as db:
                 repo = self.container.periodic_clean_repository(db=db)
@@ -313,9 +256,6 @@ class ChannelCommands(BaseCommand):
                 records = repo.find_by_channel_name(guild_id, channel_name_to_search)
 
                 if not records:
-                    logger.info(
-                        f"DB에 '{channel_name_to_search}' 채널의 주기적 청소 기록이 없습니다."
-                    )
                     await ctx.send(
                         embed=ChannelEmbed.create_error_embed(
                             f"'{channel_name_to_search}' 채널에 등록된 주기적 청소가 없습니다."
@@ -323,12 +263,12 @@ class ChannelCommands(BaseCommand):
                     )
                     return
 
-                disabled_records = repo.disable_by_name(
-                    guild_id, channel_name_to_search
-                )
-                logger.info(
-                    f"DB에서 {len(disabled_records)}개의 주기적 청소 기록을 비활성화했습니다."
-                )
+                # disabled_records = repo.disable_by_name(
+                #     guild_id, channel_name_to_search
+                # )
+                # logger.info(
+                #     f"DB에서 {len(disabled_records)}개 비활"
+                # )
 
                 cancelled_tasks = 0
                 for record in records:
@@ -338,7 +278,6 @@ class ChannelCommands(BaseCommand):
                         task.cancel()
                         del self.periodic_tasks[task_key]
                         cancelled_tasks += 1
-                        logger.info(f"메모리에서 태스크 취소: {task_key}")
 
                 await ctx.send(
                     embed=ChannelEmbed.create_clean_success_embed(
@@ -346,7 +285,6 @@ class ChannelCommands(BaseCommand):
                     )
                 )
         except Exception as e:
-            logger.error(f"주기적 청소 중지 중 오류: {e}")
             await ctx.send(
                 embed=ChannelEmbed.create_error_embed(
                     f"주기적 청소 중지 중 오류가 발생했습니다: {e}"

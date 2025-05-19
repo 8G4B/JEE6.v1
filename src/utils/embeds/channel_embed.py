@@ -8,6 +8,7 @@ class ChannelEmbed:
             title="🧹 채널 청소",
             description=f"채널 '{channel_name}'을(를) 삭제하고 다시 생성합니다.",
             color=discord.Color.blue(),
+            timestamp=discord.utils.utcnow(),
         )
 
     @staticmethod
@@ -15,11 +16,17 @@ class ChannelEmbed:
         message: str = "채널이 성공적으로 청소되었습니다.",
     ) -> discord.Embed:
         return discord.Embed(
-            title="✅ 청소 완료", description=message, color=discord.Color.green()
+            title="✅ 청소 완료",
+            description=message,
+            color=discord.Color.green(),
+            timestamp=discord.utils.utcnow(),
         )
 
     @staticmethod
     def create_error_embed(error_message: str) -> discord.Embed:
         return discord.Embed(
-            title="❌ 오류", description=error_message, color=discord.Color.red()
+            title="❌ 오류",
+            description=error_message,
+            color=discord.Color.red(),
+            timestamp=discord.utils.utcnow(),
         )
