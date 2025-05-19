@@ -10,6 +10,7 @@ from src.domain.models.user_balance import UserBalance
 from src.config.settings.base import BaseConfig
 from src.repositories.periodic_clean_repository import PeriodicCleanRepository
 from src.domain.models.periodic_clean import PeriodicClean
+from src.infrastructure.database.session import get_db_session
 
 class Container(containers.DeclarativeContainer):
     config = providers.Singleton(BaseConfig)
@@ -36,5 +37,6 @@ class Container(containers.DeclarativeContainer):
     )
     periodic_clean_repository = providers.Factory(
         PeriodicCleanRepository,
-        model=PeriodicClean
+        model=PeriodicClean,
+        db=get_db_session()
     )
