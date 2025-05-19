@@ -16,13 +16,13 @@ class CooldownRepository(RawRepositoryBase):
             with get_db_session() as session:
                 cooldown = session.query(self.model).filter_by(
                     user_id=user_id,
-                    action_type=action_type
+                    game_type=action_type
                 ).first()
                 
                 if not cooldown:
                     return None
                     
-                return cooldown.last_used
+                return cooldown.last_played
         except Exception as e:
             logger.error(f"쿨다운 조회 중 오류: {e}")
             return None
@@ -32,7 +32,7 @@ class CooldownRepository(RawRepositoryBase):
             with get_db_session() as session:
                 cooldown = session.query(self.model).filter_by(
                     user_id=user_id,
-                    action_type=action_type
+                    game_type=action_type
                 ).first()
                 
                 now = datetime.utcnow()
@@ -41,7 +41,7 @@ class CooldownRepository(RawRepositoryBase):
                     cooldown = Cooldown(user_id=user_id, action_type=action_type, last_used=now)
                     session.add(cooldown)
                 else:
-                    cooldown.last_used = now
+                    cooldown.last_played = now
                     
                 session.commit()
         except Exception as e:
@@ -52,7 +52,7 @@ class CooldownRepository(RawRepositoryBase):
             with get_db_session() as session:
                 cooldown = session.query(self.model).filter_by(
                     user_id=user_id,
-                    action_type=action_type
+                    game_type=action_type
                 ).first()
                 
                 if cooldown:
