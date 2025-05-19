@@ -31,7 +31,6 @@ def init_db():
         if connection:
             cursor = connection.cursor()
             
-            # Create justice_records table
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS justice_records (
                     user_id BIGINT NOT NULL,
@@ -42,9 +41,9 @@ def init_db():
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
             """)
             
-            # Create timeout_history table
+            cursor.execute("DROP TABLE IF EXISTS timeout_history")
             cursor.execute("""
-                CREATE TABLE IF NOT EXISTS timeout_history (
+                CREATE TABLE timeout_history (
                     id BIGINT AUTO_INCREMENT PRIMARY KEY,
                     user_id BIGINT NOT NULL,
                     server_id BIGINT NOT NULL,
