@@ -7,7 +7,11 @@ DATABASE_URL = (
     f"@{BaseConfig.DB_HOST}/{BaseConfig.DB_NAME}?charset=utf8mb4"
 )
 
-engine = create_engine(DATABASE_URL, pool_pre_ping=True)
+engine = create_engine(
+    DATABASE_URL,
+    pool_pre_ping=True,
+    connect_args={"collation": "utf8mb4_unicode_ci"}
+)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 def get_db_session():
