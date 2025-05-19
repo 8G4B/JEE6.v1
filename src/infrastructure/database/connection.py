@@ -1,13 +1,51 @@
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.exc import SQLAlchemyError
+from contextlib import contextmanager
+import logging
 from src.config.settings.base import BaseConfig
 
-engine = create_engine(BaseConfig.DATABASE_URL)
+logger = logging.getLogger(__name__)
+
+engine = create_engine(
+    BaseConfig.DATABASE_URL,
+    pool_size=5,
+    max_overflow=10,
+    pool_timeout=30,
+    pool_recycle=1800,  
+    pool_pre_ping=True
+)
+
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-def get_db():
+@contextmanager
+def get_db() -> Session:
+
     db = SessionLocal()
     try:
         yield db
+    except SQLAlchemyError as e:
+        logger.error(f"Database error: {e}")
+        db.rollback()
+        raise
     finally:
         db.close()
+
+def init_db():
+    from src.domain.models.base import Base
+    try:
+        Base.metadata.create_all(bind=engine)
+        logger.info("Database tables created successfully")
+    except SQLAlchemyError as e:
+        logger.error(f"Failed to initialize database: {e}")
+        raise
+
+def test_connection():
+    try:
+        with get_db() as db:
+            db.execute("SELECT 1")
+            logger.info("Database connection test successful")
+            return True
+    except SQLAlchemyError as e:
+        logger.error(f"Database connection test failed: {e}")
+        return False
