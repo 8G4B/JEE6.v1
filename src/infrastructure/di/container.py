@@ -13,7 +13,7 @@ from src.domain.models.periodic_clean import PeriodicClean
 from src.infrastructure.database.session import get_db_session
 from src.interfaces.commands.base_command import BaseCommand
 from src.interfaces.commands.channel_command import ChannelCommands
-from src.interfaces.commands.timeout_command import TimeoutCommand
+from src.interfaces.commands.time_command import TimeCommands
 from src.interfaces.commands.information_command import InformationCommand
 from src.interfaces.commands.meal_command import MealCommand
 from src.interfaces.commands.lol_command import LoLCommand
@@ -56,7 +56,7 @@ class Container(containers.DeclarativeContainer):
     )
     
     timeout_command = providers.Factory(
-        TimeoutCommand,
+        TimeCommands,
         bot=bot
     )
     
