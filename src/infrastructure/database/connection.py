@@ -18,11 +18,10 @@ engine = create_engine(
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-@contextmanager
-def get_db() -> Session:
+def get_db_session():
     db = SessionLocal()
     try:
-        yield db
+        return db
     except SQLAlchemyError as e:
         logger.error(f"Database error: {e}")
         db.rollback()
@@ -34,10 +33,12 @@ def init_db():
     from src.domain.models.base import Base
     try:
         Base.metadata.create_all(bind=engine)
-        
-        with get_db() as db:
-            pass
-            
+        db = get_db_session()
+        try:
+            db.execute(text("SELECT 1"))
+            db.commit()
+        finally:
+            db.close()
         logger.info("Database tables created successfully")
         return True
     except SQLAlchemyError as e:
@@ -46,11 +47,14 @@ def init_db():
 
 def test_connection() -> bool:
     try:
-        with get_db() as db:
+        db = get_db_session()
+        try:
             db.execute(text("SELECT 1"))
             db.commit()
             logger.info("Database connection test successful")
             return True
+        finally:
+            db.close()
     except SQLAlchemyError as e:
         logger.error(f"Database connection test failed: {e}")
         return False
