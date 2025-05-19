@@ -1,60 +1,77 @@
-from sqlalchemy import create_engine, text
-from sqlalchemy.orm import sessionmaker, Session
-from sqlalchemy.exc import SQLAlchemyError
-from contextlib import contextmanager
+import mysql.connector
+from mysql.connector import Error
 import logging
 from src.config.settings.base import BaseConfig
 
 logger = logging.getLogger(__name__)
 
-engine = create_engine(
-    BaseConfig.DATABASE_URL,
-    pool_size=5,
-    max_overflow=10,
-    pool_timeout=30,
-    pool_recycle=1800,
-    pool_pre_ping=True
-)
-
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-def get_db_session():
-    db = SessionLocal()
+def get_connection():
     try:
-        return db
-    except SQLAlchemyError as e:
-        logger.error(f"Database error: {e}")
-        db.rollback()
-        raise
-    finally:
-        db.close()
+        connection = mysql.connector.connect(
+            host=BaseConfig.DB_HOST,
+            user=BaseConfig.DB_USER,
+            password=BaseConfig.DB_PASSWORD,
+            database=BaseConfig.DB_NAME,
+            charset='utf8mb4',
+            collation='utf8mb4_unicode_ci'
+        )
+        return connection
+    except Error as e:
+        logger.error(f"Error connecting to MySQL: {e}")
+        return None
 
 def init_db():
-    from src.domain.models.base import Base
     try:
-        Base.metadata.create_all(bind=engine)
-        db = get_db_session()
-        try:
-            db.execute(text("SELECT 1"))
-            db.commit()
-        finally:
-            db.close()
-        logger.info("Database tables created successfully")
-        return True
-    except SQLAlchemyError as e:
+        connection = get_connection()
+        if connection:
+            cursor = connection.cursor()
+            
+            # Create justice_records table
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS justice_records (
+                    user_id BIGINT NOT NULL,
+                    server_id BIGINT NOT NULL,
+                    count INT NOT NULL DEFAULT 0,
+                    last_timeout DATETIME NOT NULL,
+                    PRIMARY KEY (user_id, server_id)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+            """)
+            
+            # Create timeout_history table
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS timeout_history (
+                    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+                    user_id BIGINT NOT NULL,
+                    server_id BIGINT NOT NULL,
+                    moderator_id BIGINT NOT NULL,
+                    reason VARCHAR(1000),
+                    duration INT NOT NULL,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    INDEX idx_user_server (user_id, server_id)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+            """)
+            
+            connection.commit()
+            cursor.close()
+            connection.close()
+            logger.info("Database tables created successfully")
+            return True
+    except Error as e:
         logger.error(f"Failed to initialize database: {e}")
         return False
 
 def test_connection() -> bool:
     try:
-        db = get_db_session()
-        try:
-            db.execute(text("SELECT 1"))
-            db.commit()
+        connection = get_connection()
+        if connection and connection.is_connected():
+            cursor = connection.cursor()
+            cursor.execute("SELECT 1")
+            cursor.fetchone()
+            cursor.close()
+            connection.close()
             logger.info("Database connection test successful")
             return True
-        finally:
-            db.close()
-    except SQLAlchemyError as e:
+        return False
+    except Error as e:
         logger.error(f"Database connection test failed: {e}")
         return False

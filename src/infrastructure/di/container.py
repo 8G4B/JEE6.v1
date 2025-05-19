@@ -1,5 +1,5 @@
 from dependency_injector import containers, providers
-from src.infrastructure.database.connection import get_db_session
+from src.infrastructure.database.connection import get_connection
 from src.repositories.user_balance_repository import UserBalanceRepository
 from src.repositories.justice_repository import JusticeRepository
 from src.services.user_service import UserService
@@ -12,7 +12,7 @@ from src.config.settings.base import BaseConfig
 class Container(containers.DeclarativeContainer):
     config = providers.Singleton(BaseConfig)
     
-    db = providers.Singleton(get_db_session)
+    db = providers.Singleton(get_connection)
     
     user_repository = providers.Factory(
         UserBalanceRepository,
@@ -21,7 +21,7 @@ class Container(containers.DeclarativeContainer):
     
     justice_repository = providers.Factory(
         JusticeRepository,
-        db_factory=db
+        get_connection=db
     )
     
     time_service = providers.Factory(TimeService)
