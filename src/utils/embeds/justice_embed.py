@@ -59,5 +59,5 @@ class JusticeEmbed:
     @staticmethod
     def create_error_embed(error: str) -> discord.Embed:
         return discord.Embed(
-            title="❌ 오류", description=str(error), color=discord.Color.red()
+            title="❗ 오류", description=str(error), color=discord.Color.red()
         )

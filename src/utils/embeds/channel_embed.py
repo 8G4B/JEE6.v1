@@ -25,7 +25,7 @@ class ChannelEmbed:
     @staticmethod
     def create_error_embed(error_message: str) -> discord.Embed:
         return discord.Embed(
-            title="❌ 오류",
+            title="❗ 오류",
             description=error_message,
             color=discord.Color.red(),
             timestamp=discord.utils.utcnow(),
