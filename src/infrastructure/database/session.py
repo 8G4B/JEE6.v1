@@ -1,6 +1,8 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from src.config.settings.base import BaseConfig
+from src.domain.models.base import Base
+from src.domain.models.periodic_clean import PeriodicClean
 
 DATABASE_URL = (
     f"mysql+mysqlconnector://{BaseConfig.DB_USER}:{BaseConfig.DB_PASSWORD}"
@@ -16,3 +18,6 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 def get_db_session():
     return SessionLocal()
+
+def create_tables():
+    Base.metadata.create_all(bind=engine)

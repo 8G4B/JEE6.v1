@@ -52,14 +52,21 @@ class ChannelCommands(BaseCommand):
         try:
             repo = self.container.periodic_clean_repository(db=db)
             channel_service = self.container.channel_service()
-            for sched in repo.get_all_enabled():
-                guild = self.bot.get_guild(sched.guild_id)
-                if not guild:
-                    continue
-                channel = guild.get_channel(sched.channel_id)
-                if not channel:
-                    continue
-                self._start_periodic_clean_task(guild, channel, sched.interval_seconds)
+            try:
+                schedules = repo.get_all_enabled()
+                for sched in schedules:
+                    guild = self.bot.get_guild(sched.guild_id)
+                    if not guild:
+                        continue
+                    channel = guild.get_channel(sched.channel_id)
+                    if not channel:
+                        continue
+                    self._start_periodic_clean_task(guild, channel, sched.interval_seconds)
+            except Exception as e:
+                if "Table" in str(e) and "doesn't exist" in str(e):
+                    logger.warning(f"주기적 청소 테이블이 아직 생성되지 않았습니다: {e}")
+                else:
+                    logger.error(f"주기적 청소 작업 초기화 중 오류: {e}")
         finally:
             db.close()
 

@@ -4,6 +4,7 @@ from src.infrastructure.di.container import Container
 from src.infrastructure.discord.bot import Bot
 from src.config.settings.base import BaseConfig
 from src.infrastructure.database.connection import init_db, test_connection
+from src.infrastructure.database.session import create_tables
 
 logging.basicConfig(
     level=logging.INFO,
@@ -22,6 +23,7 @@ async def main():
         init_db()
         
         logger.info("컨테이너 초기화 중...")
+        create_tables() 
         container = Container()
         
         logger.info("봇 인스턴스 생성 중...")
