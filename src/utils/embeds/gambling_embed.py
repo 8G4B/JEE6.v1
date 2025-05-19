@@ -21,8 +21,11 @@ class GamblingEmbed:
     @staticmethod
     def create_work_embed(author_name: str, reward: int, balance: int) -> discord.Embed:
         return discord.Embed(
-            title=f"💸 {author_name} 돈 벌었음",
-            description=f"## 수익: +{reward:,}원\n- 재산: {balance:,}원",
+            title=f"☭ {author_name} 노동",
+            description=(
+                f"정당한 노동을 통해 {reward:,}원을 벌었다.\n"
+                f"- 재산: {balance:,}원(+{reward:,})"
+            ),
             color=discord.Color.green()
         )
     
