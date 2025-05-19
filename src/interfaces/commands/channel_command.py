@@ -53,6 +53,8 @@ class ChannelCommands(BaseCommand):
             repo = self.container.periodic_clean_repository(db=db)
             channel_service = self.container.channel_service()
             try:
+                self._update_channel_names(db, repo)
+                
                 schedules = repo.get_all_enabled()
                 for sched in schedules:
                     guild = self.bot.get_guild(sched.guild_id)
@@ -65,10 +67,43 @@ class ChannelCommands(BaseCommand):
             except Exception as e:
                 if "Table" in str(e) and "doesn't exist" in str(e):
                     logger.warning(f"주기적 청소 테이블이 아직 생성되지 않았습니다: {e}")
+                elif "Unknown column" in str(e) and "channel_name" in str(e):
+                    logger.warning(f"channel_name 컬럼이 아직 추가되지 않았습니다. 앱을 재시작하면 자동으로 추가됩니다: {e}")
                 else:
                     logger.error(f"주기적 청소 작업 초기화 중 오류: {e}")
         finally:
             db.close()
+
+    def _update_channel_names(self, db, repo):
+        """비어있는 channel_name 필드를 업데이트합니다."""
+        try:
+            # SQL 직접 실행
+            result = db.execute("SELECT guild_id, channel_id FROM periodic_clean WHERE channel_name = '' OR channel_name IS NULL")
+            records = result.fetchall()
+            
+            updated = 0
+            for record in records:
+                guild_id, channel_id = record
+                guild = self.bot.get_guild(guild_id)
+                if not guild:
+                    continue
+                    
+                channel = guild.get_channel(channel_id)
+                if not channel:
+                    continue
+                    
+                # 채널 이름 업데이트
+                db.execute(
+                    "UPDATE periodic_clean SET channel_name = :name WHERE guild_id = :guild_id AND channel_id = :channel_id",
+                    {"name": channel.name, "guild_id": guild_id, "channel_id": channel_id}
+                )
+                updated += 1
+                
+            if updated > 0:
+                db.commit()
+                logger.info(f"{updated}개의 레코드에 channel_name 필드가 업데이트되었습니다.")
+        except Exception as e:
+            logger.error(f"channel_name 업데이트 중 오류: {e}")
 
     def _start_periodic_clean_task(self, guild, channel, seconds):
         key = (guild.id, channel.id)
