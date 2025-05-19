@@ -51,45 +51,54 @@ class Container(containers.DeclarativeContainer):
 
     channel_command = providers.Factory(
         ChannelCommands,
-        bot=bot
+        bot=bot,
+        container=providers.Self()
     )
     
     timeout_command = providers.Factory(
         TimeCommands,
-        bot=bot
+        bot=bot,
+        container=providers.Self()
     )
     
     information_command = providers.Factory(
         InformationCommands,
-        bot=bot
+        bot=bot,
+        container=providers.Self()
     )
     
     meal_command = providers.Factory(
         MealCommands,
-        bot=bot
+        bot=bot,
+        container=providers.Self()
     )
     
     lol_command = providers.Factory(
         LolCommands,
-        bot=bot
+        bot=bot,
+        container=providers.Self()
     )
     
     valo_command = providers.Factory(
         ValoCommands,
-        bot=bot
+        bot=bot,
+        container=providers.Self()
     )
     
     gambling_command = providers.Factory(
         GamblingCommands,
-        bot=bot
+        bot=bot,
+        container=providers.Self()
     )
     
     gambling_games = providers.Factory(
         GamblingGames,
-        bot=bot
+        bot=bot,
+        container=providers.Self()
     )
     
     gambling_card_games = providers.Factory(
         GamblingCardGames,
-        bot=bot
+        bot=bot,
+        container=providers.Self()
     )
