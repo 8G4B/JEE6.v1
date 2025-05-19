@@ -1,7 +1,13 @@
 from datetime import datetime
-from src.utils.time.formatter import format_time
+from zoneinfo import ZoneInfo
 
 class TimeService:
-    def get_current_time(self):
-        current_time = datetime.now()
-        return format_time(current_time)
+    def __init__(self, timezone: str = 'Asia/Seoul'):
+        self.timezone = timezone
+
+    def get_current_time(self) -> str:
+        current_time = datetime.now(ZoneInfo(self.timezone))
+        return current_time.strftime("%Y-%m-%d %H:%M:%S")
+
+    def get_current_datetime(self) -> datetime:
+        return datetime.now(ZoneInfo(self.timezone))
