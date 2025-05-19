@@ -1,6 +1,5 @@
 from datetime import datetime
 from zoneinfo import ZoneInfo
-from typing import Optional
 
 
 class TimeService:

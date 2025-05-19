@@ -4,9 +4,7 @@ import asyncio
 import requests
 import time
 from typing import Dict, List, Tuple, Optional
-from datetime import datetime
 from src.config.settings.riot_settings import (
-    RIOT_API_KEY,
     LOL_BASE_URL,
     LOL_ASIA_URL,
     RIOT_HEADERS,

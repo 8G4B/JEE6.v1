@@ -1,6 +1,4 @@
 import logging
-from typing import Optional, Tuple
-from datetime import timedelta
 from mysql.connector import MySQLConnection
 from src.domain.models.timeout_history import TimeoutHistory
 from src.repositories.raw_repository_base import RawRepositoryBase
@@ -48,7 +46,7 @@ class JusticeRepository(RawRepositoryBase):
             result = self.execute_query(_set_count)
             success = result is True
             self.log_operation(
-                f"set_user_count", f"{user_id}, {server_id}, {count}", success=success
+                "set_user_count", f"{user_id}, {server_id}, {count}", success=success
             )
             return success
         except Exception as e:
@@ -80,7 +78,7 @@ class JusticeRepository(RawRepositoryBase):
             result = self.execute_query(_add_history)
             success = result is True
             self.log_operation(
-                f"add_timeout_history",
+                "add_timeout_history",
                 f"{history.user_id}, {history.server_id}, {history.moderator_id}",
                 success=success,
             )

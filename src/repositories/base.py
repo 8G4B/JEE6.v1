@@ -2,7 +2,6 @@ import logging
 from typing import Generic, TypeVar, Type, Optional, List, Any, Dict, Tuple, Callable
 from sqlalchemy.orm import Session
 from sqlalchemy import text
-from src.domain.models.base import Base
 from src.infrastructure.database.session import get_db_session
 from src.domain.models.base import BaseModel
 

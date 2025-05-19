@@ -1,7 +1,7 @@
 import mysql.connector
 from mysql.connector import Error, MySQLConnection
 import logging
-from typing import Optional, Callable, TypeVar, Generic
+from typing import Optional, Callable, TypeVar
 from src.config.settings.base import BaseConfig
 
 T = TypeVar("T")

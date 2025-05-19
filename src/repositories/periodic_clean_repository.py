@@ -23,13 +23,13 @@ class PeriodicCleanRepository(BaseRepository[PeriodicClean]):
             .filter(
                 self.model.guild_id == guild_id,
                 self.model.channel_name == channel_name,
-                self.model.enabled == True,
+                self.model.enabled,
             )
             .all()
         )
 
     def get_all_enabled(self) -> List[PeriodicClean]:
-        return self.db.query(self.model).filter(self.model.enabled == True).all()
+        return self.db.query(self.model).filter(self.model.enabled).all()
 
     def enable(
         self, guild_id: int, channel_id: int, channel_name: str, interval_seconds: int
@@ -75,7 +75,7 @@ class PeriodicCleanRepository(BaseRepository[PeriodicClean]):
             .filter(
                 self.model.guild_id == guild_id,
                 self.model.channel_name == channel_name,
-                self.model.enabled == True,
+                self.model.enabled,
             )
             .all()
         )

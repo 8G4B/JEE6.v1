@@ -1,5 +1,5 @@
 import logging
-from typing import Optional, TypeVar, Generic, Callable, Any
+from typing import Optional, TypeVar, Callable, Any
 from mysql.connector import MySQLConnection
 from src.infrastructure.database.connection import DatabaseConnection
 
@@ -10,7 +10,6 @@ logger = logging.getLogger(__name__)
 
 
 class RawRepositoryBase:
-
     def __init__(self):
         self.db_connection = DatabaseConnection
 

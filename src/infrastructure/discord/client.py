@@ -1,6 +1,4 @@
-import discord
 from discord.ext import commands
-from src.config.settings.base import BaseConfig
 
 
 class CustomBot(commands.Bot):

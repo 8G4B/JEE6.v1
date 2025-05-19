@@ -1,6 +1,6 @@
 import logging
-from datetime import datetime, timedelta
-from typing import Tuple, Optional
+from datetime import timedelta
+from typing import Tuple
 import discord
 from src.repositories.justice_repository import JusticeRepository
 from src.domain.models.timeout_history import TimeoutHistory

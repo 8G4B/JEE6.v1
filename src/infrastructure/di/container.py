@@ -1,5 +1,4 @@
 from dependency_injector import containers, providers
-from src.infrastructure.database.connection import get_connection
 from src.repositories.user_balance_repository import UserBalanceRepository
 from src.repositories.justice_repository import JusticeRepository
 from src.services.user_service import UserService

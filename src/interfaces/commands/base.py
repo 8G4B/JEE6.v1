@@ -1,8 +1,9 @@
 from discord.ext import commands
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
-if TYPE_CHECKING:
-    from src.infrastructure.di.container import Container
+# from typing import TYPE_CHECKING
+# if TYPE_CHECKING:
+#     from src.infrastructure.di.container import Container
 
 
 class BaseCommand(commands.Cog):
