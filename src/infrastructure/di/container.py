@@ -12,7 +12,7 @@ from src.repositories.periodic_clean_repository import PeriodicCleanRepository
 from src.domain.models.periodic_clean import PeriodicClean
 from src.infrastructure.database.session import get_db_session
 from src.interfaces.commands.base_command import BaseCommand
-from src.interfaces.commands.channel_command import ChannelCommand
+from src.interfaces.commands.channel_command import ChannelCommands
 from src.interfaces.commands.timeout_command import TimeoutCommand
 from src.interfaces.commands.information_command import InformationCommand
 from src.interfaces.commands.meal_command import MealCommand
@@ -51,7 +51,7 @@ class Container(containers.DeclarativeContainer):
     )
 
     channel_command = providers.Factory(
-        ChannelCommand,
+        ChannelCommands,
         bot=bot
     )
     
