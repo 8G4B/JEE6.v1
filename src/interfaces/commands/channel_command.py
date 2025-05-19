@@ -72,7 +72,9 @@ class ChannelCommands(BaseCommand):
 
     def _start_periodic_clean_task(self, guild, channel, seconds):
         key = (guild.id, channel.id)
+        logger.info(f"주기적 청소 등록: guild_id={guild.id}, channel_id={channel.id}, channel_name={channel.name}, seconds={seconds}")
         if key in self.periodic_tasks:
+            logger.info(f"이미 메모리에 등록된 태스크 존재: {key}")
             return
         channel_service = self.container.channel_service()
         async def periodic_clean():
@@ -98,6 +100,7 @@ class ChannelCommands(BaseCommand):
                 await asyncio.sleep(seconds)
         task = asyncio.create_task(periodic_clean())
         self.periodic_tasks[key] = task
+        logger.info(f"주기적 청소 태스크 시작: {key}")
 
     @commands.command(
         name='청소',
@@ -142,6 +145,7 @@ class ChannelCommands(BaseCommand):
                 db = get_db_session()
                 try:
                     repo = self.container.periodic_clean_repository(db=db)
+                    logger.info(f"주기적 청소 DB 등록: guild_id={ctx.guild.id}, channel_id={channel.id}, channel_name={channel.name}, seconds={seconds}")
                     repo.enable(ctx.guild.id, channel.id, seconds)
                 finally:
                     db.close()
@@ -185,25 +189,46 @@ class ChannelCommands(BaseCommand):
         channel = ctx.channel
         if channel_name:
             found = None
+            channel_name_lower = channel_name.lower().strip()
             for ch in ctx.guild.text_channels:
-                if ch.name == channel_name:
+                if ch.name.lower() == channel_name_lower:
                     found = ch
                     break
             if not found:
                 await ctx.send(embed=ChannelEmbed.create_error_embed(f"'{channel_name}' 이런 채널 없는데요"))
                 return
             channel = found
+        
         key = (ctx.guild.id, channel.id)
+        logger.info(f"주기적 청소 중지 요청: guild_id={ctx.guild.id}, channel_id={channel.id}, channel_name={channel.name}")
+        
         db = get_db_session()
+        db_record_exists = False
+        task_exists = False
+        
         try:
             repo = self.container.periodic_clean_repository(db=db)
-            repo.disable(ctx.guild.id, channel.id)
+            record = repo.get_by_guild_and_channel(ctx.guild.id, channel.id)
+            
+            if record and record.enabled:
+                logger.info(f"DB에 활성화된 주기적 청소 기록 발견: guild_id={ctx.guild.id}, channel_id={channel.id}")
+                db_record_exists = True
+                repo.disable(ctx.guild.id, channel.id)
+            else:
+                logger.info(f"DB에 주기적 청소 기록 없음: guild_id={ctx.guild.id}, channel_id={channel.id}")
         finally:
             db.close()
+        
         task = self.periodic_tasks.get(key)
         if task:
+            logger.info(f"메모리에 주기적 청소 태스크 발견: {key}")
+            task_exists = True
             task.cancel()
             del self.periodic_tasks[key]
+        else:
+            logger.info(f"메모리에 주기적 청소 태스크 없음: {key}")
+        
+        if db_record_exists or task_exists:
             await ctx.send(embed=ChannelEmbed.create_clean_success_embed())
         else:
             await ctx.send(embed=ChannelEmbed.create_error_embed("이 채널에 등록된 주기적 청소가 없습니다."))
