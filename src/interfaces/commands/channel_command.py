@@ -49,31 +49,31 @@ class ChannelCommands(BaseCommand):
         return self.container.db() if hasattr(self.container, 'db') else None
 
     def _init_periodic_tasks(self):
-        db = get_db_session()
         try:
-            repo = self.container.periodic_clean_repository(db=db)
-            channel_service = self.container.channel_service()
-            try:
-                self._update_channel_names(db, repo)
-                
-                schedules = repo.get_all_enabled()
-                for sched in schedules:
-                    guild = self.bot.get_guild(sched.guild_id)
-                    if not guild:
-                        continue
-                    channel = guild.get_channel(sched.channel_id)
-                    if not channel:
-                        continue
-                    self._start_periodic_clean_task(guild, channel, sched.interval_seconds)
-            except Exception as e:
-                if "Table" in str(e) and "doesn't exist" in str(e):
-                    logger.warning(f"주기적 청소 테이블이 아직 생성되지 않았습니다: {e}")
-                elif "Unknown column" in str(e) and "channel_name" in str(e):
-                    logger.warning(f"channel_name 컬럼이 아직 추가되지 않았습니다. 앱을 재시작하면 자동으로 추가됩니다: {e}")
-                else:
-                    logger.error(f"주기적 청소 작업 초기화 중 오류: {e}")
-        finally:
-            db.close()
+            with get_db_session() as db:
+                repo = self.container.periodic_clean_repository(db=db)
+                channel_service = self.container.channel_service()
+                try:
+                    self._update_channel_names(db, repo)
+                    
+                    schedules = repo.get_all_enabled()
+                    for sched in schedules:
+                        guild = self.bot.get_guild(sched.guild_id)
+                        if not guild:
+                            continue
+                        channel = guild.get_channel(sched.channel_id)
+                        if not channel:
+                            continue
+                        self._start_periodic_clean_task(guild, channel, sched.interval_seconds)
+                except Exception as e:
+                    if "Table" in str(e) and "doesn't exist" in str(e):
+                        logger.warning(f"주기적 청소 테이블이 아직 생성되지 않았습니다: {e}")
+                    elif "Unknown column" in str(e) and "channel_name" in str(e):
+                        logger.warning(f"channel_name 컬럼이 아직 추가되지 않았습니다. 앱을 재시작하면 자동으로 추가됩니다: {e}")
+                    else:
+                        logger.error(f"주기적 청소 작업 초기화 중 오류: {e}")
+        except Exception as e:
+            logger.error(f"세션 관리 중 오류 발생: {e}")
 
     def _update_channel_names(self, db, repo):
         try:
@@ -183,13 +183,17 @@ class ChannelCommands(BaseCommand):
                         await ctx.send(embed=ChannelEmbed.create_error_embed(f"'{channel_name}' 이런 채널 없는데요"))
                         return
                     channel = found
-                db = get_db_session()
+                
                 try:
-                    repo = self.container.periodic_clean_repository(db=db)
-                    logger.info(f"주기적 청소 DB 등록: guild_id={ctx.guild.id}, channel_id={channel.id}, channel_name={channel.name}, seconds={seconds}")
-                    repo.enable(ctx.guild.id, channel.id, channel.name, seconds)
-                finally:
-                    db.close()
+                    with get_db_session() as db:
+                        repo = self.container.periodic_clean_repository(db=db)
+                        logger.info(f"주기적 청소 DB 등록: guild_id={ctx.guild.id}, channel_id={channel.id}, channel_name={channel.name}, seconds={seconds}")
+                        repo.enable(ctx.guild.id, channel.id, channel.name, seconds)
+                except Exception as e:
+                    logger.error(f"주기적 청소 DB 등록 중 오류: {e}")
+                    await ctx.send(embed=ChannelEmbed.create_error_embed(f"주기적 청소 등록 중 오류가 발생했습니다: {e}"))
+                    return
+                
                 self._start_periodic_clean_task(ctx.guild, channel, seconds)
                 period_str = format_seconds(seconds)
                 msg = f"`#{channel.name}` 채널을 앞으로 {period_str}마다 청소합니다."
@@ -227,7 +231,6 @@ class ChannelCommands(BaseCommand):
     )
     @commands.has_permissions(manage_channels=True)
     async def stop_periodic_clean(self, ctx, *, channel_name: str = None):
-        db = get_db_session()
         guild_id = ctx.guild.id
         channel = ctx.channel
         channel_name_to_search = channel.name
@@ -245,29 +248,30 @@ class ChannelCommands(BaseCommand):
         logger.info(f"주기적 청소 중지 요청: guild_id={guild_id}, channel_name={channel_name_to_search}")
         
         try:
-            repo = self.container.periodic_clean_repository(db=db)
-            
-            records = repo.find_by_channel_name(guild_id, channel_name_to_search)
-            
-            if not records:
-                logger.info(f"DB에 '{channel_name_to_search}' 채널의 주기적 청소 기록이 없습니다.")
-                await ctx.send(embed=ChannelEmbed.create_error_embed(f"'{channel_name_to_search}' 채널에 등록된 주기적 청소가 없습니다."))
-                db.close()
-                return
-            
-            disabled_records = repo.disable_by_name(guild_id, channel_name_to_search)
-            logger.info(f"DB에서 {len(disabled_records)}개의 주기적 청소 기록을 비활성화했습니다.")
-            
-            cancelled_tasks = 0
-            for record in records:
-                task_key = (guild_id, record.channel_id)
-                task = self.periodic_tasks.get(task_key)
-                if task:
-                    task.cancel()
-                    del self.periodic_tasks[task_key]
-                    cancelled_tasks += 1
-                    logger.info(f"메모리에서 태스크 취소: {task_key}")
-            
-            await ctx.send(embed=ChannelEmbed.create_clean_success_embed(f"'{channel_name_to_search}' 채널의 주기적 청소가 중지되었습니다."))
-        finally:
-            db.close()
+            with get_db_session() as db:
+                repo = self.container.periodic_clean_repository(db=db)
+                
+                records = repo.find_by_channel_name(guild_id, channel_name_to_search)
+                
+                if not records:
+                    logger.info(f"DB에 '{channel_name_to_search}' 채널의 주기적 청소 기록이 없습니다.")
+                    await ctx.send(embed=ChannelEmbed.create_error_embed(f"'{channel_name_to_search}' 채널에 등록된 주기적 청소가 없습니다."))
+                    return
+                
+                disabled_records = repo.disable_by_name(guild_id, channel_name_to_search)
+                logger.info(f"DB에서 {len(disabled_records)}개의 주기적 청소 기록을 비활성화했습니다.")
+                
+                cancelled_tasks = 0
+                for record in records:
+                    task_key = (guild_id, record.channel_id)
+                    task = self.periodic_tasks.get(task_key)
+                    if task:
+                        task.cancel()
+                        del self.periodic_tasks[task_key]
+                        cancelled_tasks += 1
+                        logger.info(f"메모리에서 태스크 취소: {task_key}")
+                
+                await ctx.send(embed=ChannelEmbed.create_clean_success_embed(f"'{channel_name_to_search}' 채널의 주기적 청소가 중지되었습니다."))
+        except Exception as e:
+            logger.error(f"주기적 청소 중지 중 오류: {e}")
+            await ctx.send(embed=ChannelEmbed.create_error_embed(f"주기적 청소 중지 중 오류가 발생했습니다: {e}"))
