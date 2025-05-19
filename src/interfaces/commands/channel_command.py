@@ -76,20 +76,21 @@ class ChannelCommands(BaseCommand):
             return
         channel_service = self.container.channel_service()
         async def periodic_clean():
+            current_channel = channel
             while True:
                 try:
-                    start_embed = ChannelEmbed.create_clean_start_embed(channel.name)
-                    await channel.send(embed=start_embed)
+                    start_embed = ChannelEmbed.create_clean_start_embed(current_channel.name)
+                    await current_channel.send(embed=start_embed)
                     success, message, new_channel = await channel_service.clean_channel(
-                        guild, channel, None
+                        guild, current_channel, None
                     )
                     if success and new_channel:
                         success_embed = ChannelEmbed.create_clean_success_embed()
                         await new_channel.send(embed=success_embed)
-                        channel = new_channel
+                        current_channel = new_channel
                     else:
                         error_embed = ChannelEmbed.create_error_embed(message)
-                        await channel.send(embed=error_embed)
+                        await current_channel.send(embed=error_embed)
                         break
                 except Exception as e:
                     logger.error(f"주기적 청소 에러: {e}")
@@ -146,7 +147,7 @@ class ChannelCommands(BaseCommand):
                     db.close()
                 self._start_periodic_clean_task(ctx.guild, channel, seconds)
                 period_str = format_seconds(seconds)
-                msg = f"`{channel.name}`을 앞으로 {period_str}마다 청소합니다."
+                msg = f"`#{channel.name}` 채널을 앞으로 {period_str}마다 청소합니다."
                 embed = ChannelEmbed.create_clean_start_embed(msg)
                 await ctx.send(embed=embed)
                 return
