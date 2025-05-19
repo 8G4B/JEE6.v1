@@ -14,8 +14,8 @@ class GamblingEmbed:
     def create_balance_embed(author_name: str, balance: int) -> discord.Embed:
         return discord.Embed(
             title=f"💰 {author_name}의 지갑",
-            description=f"- 현재 재산: {balance:,}원",
-            color=discord.Color.gold()
+            description=f"현재 잔액: {balance:,}원",
+            color=discord.Color.blue()
         )
     
     @staticmethod
@@ -43,14 +43,13 @@ class GamblingEmbed:
         amount: int, tax: int, balance: int
     ) -> discord.Embed:
         return discord.Embed(
-            title=f"💸 {sender_name}님이 {recipient_name}님에게 송금",
+            title="💸 송금 완료",
             description=(
-                f"## 송금액: {amount:,}원\n"
-                f"- 증여세: {tax:,}원\n"
-                f"- 실수령액: {amount - tax:,}원\n"
-                f"- 송금 후 잔액: {balance:,}원"
+                f"{sender_name} → {recipient_name}\n"
+                f"## {amount:,}원 송금(증여세: {tax:,}원)\n"
+                f"- 잔액: {balance:,}원"
             ),
-            color=discord.Color.blue()
+            color=discord.Color.green()
         )
     
     @staticmethod
@@ -86,7 +85,7 @@ class GamblingEmbed:
                 total_winnings = winnings + (tax or 0)
                 multiplier = total_winnings / bet
                 description_parts.extend([
-                    f"## 수익: {bet:,}원 × {multiplier:.2f} = {winnings:,}원(세금: {tax:,}원)" if tax else f"## 수익: {bet:,}원 × {multiplier:.2f} = {winnings:,}원",
+                    f"## 수익: {bet:,}원 × {multiplier:.2f} = {winnings:,}원(증권거래세: {tax:,}원)" if tax else f"## 수익: {bet:,}원 × {multiplier:.2f} = {winnings:,}원",
                     f"- 재산: {balance:,}원(+{winnings:,})"
                 ])
             else:
@@ -109,9 +108,9 @@ class GamblingEmbed:
         time_str = f"{minutes}분 {seconds}초" if minutes > 0 else f"{seconds}초"
             
         return discord.Embed(
-            title="⏱️ 쿨타임",
+            title="힘들어서 쉬는 중 ㅋ",
             description=f"{time_str} 후에 다시 시도해주세요.",
-            color=discord.Color.orange()
+            color=discord.Color.red()
         )
     
     @staticmethod
