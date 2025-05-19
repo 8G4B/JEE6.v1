@@ -12,7 +12,7 @@ from src.config.settings.base import BaseConfig
 class Container(containers.DeclarativeContainer):
     config = providers.Singleton(BaseConfig)
     
-    db = providers.Factory(get_connection)
+    db = providers.Callable(get_connection)
     
     user_repository = providers.Factory(
         UserBalanceRepository,
