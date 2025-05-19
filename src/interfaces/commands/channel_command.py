@@ -1,36 +1,176 @@
-from discord.ext import commands
+from discord.ext import commands, tasks
 import logging
+import re
+import asyncio
 from src.interfaces.commands.base_command import BaseCommand
 from src.utils.embeds.channel_embed import ChannelEmbed
+from sqlalchemy.orm import Session
 
 logger = logging.getLogger(__name__)
 
+TIME_UNITS = {
+    '초': 1, 's': 1, 'sec': 1,
+    '분': 60, 'm': 60, 'min': 60,
+    '시간': 3600, 'h': 3600, 'hr': 3600,
+    '일': 86400, 'd': 86400, 'day': 86400
+}
+
+def parse_time_string(time_str):
+    match = re.match(r"(\d+)\s*([a-zA-Z가-힣]+)", time_str)
+    if not match:
+        return None
+    value, unit = match.groups()
+    value = int(value)
+    unit = unit.lower()
+    for k, v in TIME_UNITS.items():
+        if unit.startswith(k):
+            return value * v
+    return None
+
+def format_seconds(seconds):
+    if seconds % 86400 == 0:
+        return f"{seconds // 86400}일"
+    elif seconds % 3600 == 0:
+        return f"{seconds // 3600}시간"
+    elif seconds % 60 == 0:
+        return f"{seconds // 60}분"
+    else:
+        return f"{seconds}초"
+
 class ChannelCommands(BaseCommand):
+    def __init__(self, bot, container):
+        super().__init__(bot, container)
+        self.periodic_tasks = {}
+        self._init_periodic_tasks()
+
+    def _get_db(self):
+        return self.container.db() if hasattr(self.container, 'db') else None
+
+    def _init_periodic_tasks(self):
+        db = self._get_db()
+        repo = self.container.periodic_clean_repository()
+        channel_service = self.container.channel_service()
+        if not db or not repo:
+            return
+        for sched in repo.get_all_enabled(db):
+            guild = self.bot.get_guild(sched.guild_id)
+            if not guild:
+                continue
+            channel = guild.get_channel(sched.channel_id)
+            if not channel:
+                continue
+            self._start_periodic_clean_task(guild, channel, sched.interval_seconds)
+
+    def _start_periodic_clean_task(self, guild, channel, seconds):
+        key = (guild.id, channel.id)
+        if key in self.periodic_tasks:
+            return
+        channel_service = self.container.channel_service()
+        async def periodic_clean():
+            while True:
+                try:
+                    start_embed = ChannelEmbed.create_clean_start_embed(channel.name)
+                    await channel.send(embed=start_embed)
+                    success, message, new_channel = await channel_service.clean_channel(
+                        guild, channel, None
+                    )
+                    if success and new_channel:
+                        success_embed = ChannelEmbed.create_clean_success_embed()
+                        await new_channel.send(embed=success_embed)
+                        channel = new_channel
+                    else:
+                        error_embed = ChannelEmbed.create_error_embed(message)
+                        await channel.send(embed=error_embed)
+                        break
+                except Exception as e:
+                    logger.error(f"주기적 청소 에러: {e}")
+                    break
+                await asyncio.sleep(seconds)
+        task = asyncio.create_task(periodic_clean())
+        self.periodic_tasks[key] = task
+
     @commands.command(
         name='청소',
         aliases=['clean', 'c', 'C', 'CLEAN', 'ㅊ'],
-        description="채널을 청소합니다."
+        description="채널을 청소합니다. (!청소 [주기] [채널명])"
     )
     @commands.has_permissions(manage_channels=True)
-    async def clean_channel(self, ctx, *, channel_name: str = None):
-        logger.info(f"clean_channel({ctx.guild.name}, {ctx.author.name})")
-        
+    async def clean_channel(self, ctx, *, arg: str = None):
+        db = self._get_db()
+        repo = self.container.periodic_clean_repository()
         channel_service = self.container.channel_service()
-        
+        if arg:
+            parts = arg.split()
+            if len(parts) >= 1:
+                seconds = parse_time_string(parts[0])
+                if seconds:
+                    channel_name = parts[1] if len(parts) > 1 else None
+                    channel = ctx.channel
+                    if channel_name:
+                        found = None
+                        for ch in ctx.guild.text_channels:
+                            if ch.name == channel_name:
+                                found = ch
+                                break
+                        if not found:
+                            await ctx.send(embed=ChannelEmbed.create_error_embed(f"'{channel_name}' 이런 채널 없는데요"))
+                            return
+                        channel = found
+                    repo.enable(db, ctx.guild.id, channel.id, seconds)
+                    self._start_periodic_clean_task(ctx.guild, channel, seconds)
+                    period_str = format_seconds(seconds)
+                    msg = f"`{channel.name}`을 앞으로 {period_str}마다 청소합니다."
+                    embed = ChannelEmbed.create_clean_start_embed(msg)
+                    await ctx.send(embed=embed)
+                    return
+        channel_name = arg if arg else None
+        await self.clean_channel_once(ctx, channel_name)
+
+    async def clean_channel_once(self, ctx, channel_name=None):
+        logger.info(f"clean_channel_once({ctx.guild.name}, {ctx.author.name})")
+        channel_service = self.container.channel_service()
         start_embed = ChannelEmbed.create_clean_start_embed(
             channel_name or ctx.channel.name
         )
         await ctx.send(embed=start_embed)
-        
         success, message, new_channel = await channel_service.clean_channel(
             ctx.guild,
             ctx.channel,
             channel_name
         )
-        
         if success and new_channel:
             success_embed = ChannelEmbed.create_clean_success_embed()
             await new_channel.send(embed=success_embed)
         else:
             error_embed = ChannelEmbed.create_error_embed(message)
-            await ctx.send(embed=error_embed) 
+            await ctx.send(embed=error_embed)
+
+    @commands.command(
+        name='청소.중지',
+        aliases=['clean.stop', '청소.멈춰', '청소.끄기'],
+        description="주기적 채널 청소를 중단합니다."
+    )
+    @commands.has_permissions(manage_channels=True)
+    async def stop_periodic_clean(self, ctx, *, channel_name: str = None):
+        db = self._get_db()
+        repo = self.container.periodic_clean_repository()
+        channel = ctx.channel
+        if channel_name:
+            found = None
+            for ch in ctx.guild.text_channels:
+                if ch.name == channel_name:
+                    found = ch
+                    break
+            if not found:
+                await ctx.send(embed=ChannelEmbed.create_error_embed(f"'{channel_name}' 이런 채널 없는데요"))
+                return
+            channel = found
+        key = (ctx.guild.id, channel.id)
+        repo.disable(db, ctx.guild.id, channel.id)
+        task = self.periodic_tasks.get(key)
+        if task:
+            task.cancel()
+            del self.periodic_tasks[key]
+            await ctx.send(embed=ChannelEmbed.create_clean_success_embed())
+        else:
+            await ctx.send(embed=ChannelEmbed.create_error_embed("이 채널에 등록된 주기적 청소가 없습니다.")) 

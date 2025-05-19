@@ -8,6 +8,8 @@ from src.services.channel_service import ChannelService
 from src.services.justice_service import JusticeService
 from src.domain.models.user_balance import UserBalance
 from src.config.settings.base import BaseConfig
+from src.repositories.periodic_clean_repository import PeriodicCleanRepository
+from src.domain.models.periodic_clean import PeriodicClean
 
 class Container(containers.DeclarativeContainer):
     config = providers.Singleton(BaseConfig)
@@ -31,4 +33,8 @@ class Container(containers.DeclarativeContainer):
     user_service = providers.Factory(
         UserService,
         user_repository=user_repository
+    )
+    periodic_clean_repository = providers.Factory(
+        PeriodicCleanRepository,
+        model=PeriodicClean
     )

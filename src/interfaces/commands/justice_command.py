@@ -25,10 +25,8 @@ class JusticeCommands(BaseCommand):
                 reason=reason
             )
             
-            # Apply timeout
             await member.timeout(duration, reason=reason)
             
-            # Send DM to user
             try:
                 dm_embed = JusticeEmbed.create_judge_dm_embed(
                     server_name=ctx.guild.name,
@@ -42,7 +40,6 @@ class JusticeCommands(BaseCommand):
             except Exception as e:
                 logger.error(f"DM send error: {e}")
             
-            # Send response in channel
             embed = JusticeEmbed.create_judge_embed(
                 member=member,
                 duration=duration,

@@ -1,10 +1,15 @@
 import discord
 import logging
 from typing import Optional, Tuple
+from sqlalchemy.orm import Session
 
 logger = logging.getLogger(__name__)
 
 class ChannelService:
+    def __init__(self, periodic_clean_repository=None, db: Session = None):
+        self.periodic_clean_repository = periodic_clean_repository
+        self.db = db
+
     async def clean_channel(
         self,
         guild: discord.Guild,
@@ -45,4 +50,17 @@ class ChannelService:
             return False, "권한이 부족합니다.", None
         except Exception as e:
             logger.error(f"Channel cleaning error: {str(e)}")
-            return False, str(e), None 
+            return False, str(e), None
+
+    def enable_periodic_clean(self, guild_id, channel_id, interval_seconds):
+        if self.periodic_clean_repository and self.db:
+            return self.periodic_clean_repository.enable(self.db, guild_id, channel_id, interval_seconds)
+
+    def disable_periodic_clean(self, guild_id, channel_id):
+        if self.periodic_clean_repository and self.db:
+            return self.periodic_clean_repository.disable(self.db, guild_id, channel_id)
+
+    def get_all_enabled_periodic_cleans(self):
+        if self.periodic_clean_repository and self.db:
+            return self.periodic_clean_repository.get_all_enabled(self.db)
+        return [] 
