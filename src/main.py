@@ -40,4 +40,4 @@ if __name__ == "__main__":
     except KeyboardInterrupt:
         logger.info("봇이 안전하게 종료되었습니다.")
     except Exception as e:
-        logger.error(f"사소한 오류 발생: {e}", exc_info=True) 
+        logger.error(f"사소한 오류 발생: {e}", exc_info=True)
