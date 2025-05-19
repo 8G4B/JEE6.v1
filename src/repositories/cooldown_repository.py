@@ -2,7 +2,7 @@ import logging
 from datetime import datetime
 from typing import Optional
 from src.domain.models.cooldown import Cooldown
-from src.repositories.base_repository import RawRepositoryBase
+from src.repositories.base import RawRepositoryBase
 from src.infrastructure.database.session import get_db_session
 
 logger = logging.getLogger(__name__)

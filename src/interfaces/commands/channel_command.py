@@ -2,9 +2,8 @@ from discord.ext import commands, tasks
 import logging
 import re
 import asyncio
-from src.interfaces.commands.base_command import BaseCommand
+from src.interfaces.commands.base import BaseCommand
 from src.utils.embeds.channel_embed import ChannelEmbed
-from sqlalchemy.orm import Session
 from src.infrastructure.database.session import get_db_session
 from sqlalchemy import text
 

@@ -6,11 +6,11 @@ import secrets
 import asyncio
 from datetime import datetime
 
-from src.interfaces.commands.base_command import BaseCommand
+from src.interfaces.commands.base import BaseCommand
 from src.services.gambling_service import GamblingService, GamblingManager
 from src.utils.embeds.gambling_embed import GamblingEmbed
 from src.config.settings.gambling_settings import (
-    MIN_BET, MIN_JACKPOT_BET, MAX_BET, INITIAL_JACKPOT,
+    MIN_JACKPOT_BET, MAX_BET,
     JACKPOT_WIN_COOLDOWN, GAME_COOLDOWN, WORK_COOLDOWN,
     RESET_TIMES, WORK_REWARD_RANGE
 )

@@ -1,8 +1,7 @@
-import discord
 from discord.ext import commands
 import logging
 from datetime import datetime, timedelta
-from src.interfaces.commands.base_command import BaseCommand
+from src.interfaces.commands.base import BaseCommand
 from src.utils.embeds.meal_embed import MealEmbed
 from src.services.meal_service import MealService
 from src.config.settings.meal_settings import NO_MEAL

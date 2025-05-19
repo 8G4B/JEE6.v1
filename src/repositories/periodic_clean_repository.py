@@ -1,7 +1,6 @@
 from typing import Optional, List
-from sqlalchemy.orm import Session
 from src.domain.models.periodic_clean import PeriodicClean
-from src.repositories.base_repository import BaseRepository
+from src.repositories.base import BaseRepository
 
 class PeriodicCleanRepository(BaseRepository[PeriodicClean]):
     def get_by_guild_and_channel(self, guild_id: int, channel_id: int) -> Optional[PeriodicClean]:

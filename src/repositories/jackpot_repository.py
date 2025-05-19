@@ -1,7 +1,6 @@
 import logging
-from typing import Optional
 from src.domain.models.jackpot import Jackpot
-from src.repositories.base_repository import RawRepositoryBase
+from src.repositories.base import RawRepositoryBase
 from src.infrastructure.database.session import get_db_session
 from src.config.settings.gambling_settings import INITIAL_JACKPOT
 

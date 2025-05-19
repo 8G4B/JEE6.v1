@@ -1,5 +1,5 @@
 from src.domain.models.user import User
-from src.repositories.base_repository import BaseRepository
+from src.repositories.base import BaseRepository
 from typing import Optional
 
 class UserRepository(BaseRepository[User]):

@@ -1,7 +1,7 @@
 import discord
 from discord.ext import commands
 import logging
-from src.interfaces.commands.base_command import BaseCommand
+from src.interfaces.commands.base import BaseCommand
 from src.utils.embeds.justice_embed import JusticeEmbed
 
 logger = logging.getLogger(__name__)

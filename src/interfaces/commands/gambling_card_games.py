@@ -4,7 +4,7 @@ import logging
 import random
 import asyncio
 
-from src.interfaces.commands.base_command import BaseCommand
+from src.interfaces.commands.base import BaseCommand
 from src.services.gambling_service import GamblingService, GamblingManager
 from src.utils.embeds.gambling_embed import GamblingEmbed
 from src.config.settings.gambling_settings import (

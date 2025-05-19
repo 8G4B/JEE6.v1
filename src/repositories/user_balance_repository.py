@@ -1,8 +1,7 @@
 import logging
-from typing import List, Tuple, Optional
-from sqlalchemy import text
+from typing import List, Tuple
 from src.domain.models.user_balance import UserBalance
-from src.repositories.base_repository import RawRepositoryBase
+from src.repositories.base import RawRepositoryBase
 from src.infrastructure.database.session import get_db_session
 
 logger = logging.getLogger(__name__)

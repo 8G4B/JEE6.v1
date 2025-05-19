@@ -1,5 +1,5 @@
 from discord.ext import commands
-from src.interfaces.commands.base_command import BaseCommand
+from src.interfaces.commands.base import BaseCommand
 from src.utils.embeds.time_embed import TimeEmbed
 
 class TimeCommands(BaseCommand):
