@@ -37,6 +37,5 @@ class Container(containers.DeclarativeContainer):
     )
     periodic_clean_repository = providers.Factory(
         PeriodicCleanRepository,
-        model=PeriodicClean,
-        db=get_db_session()
+        model=PeriodicClean
     )

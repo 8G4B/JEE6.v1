@@ -5,6 +5,7 @@ import asyncio
 from src.interfaces.commands.base_command import BaseCommand
 from src.utils.embeds.channel_embed import ChannelEmbed
 from sqlalchemy.orm import Session
+from src.infrastructure.database.session import get_db_session
 
 logger = logging.getLogger(__name__)
 
@@ -47,19 +48,20 @@ class ChannelCommands(BaseCommand):
         return self.container.db() if hasattr(self.container, 'db') else None
 
     def _init_periodic_tasks(self):
-        db = self._get_db()
-        repo = self.container.periodic_clean_repository()
-        channel_service = self.container.channel_service()
-        if not db or not repo:
-            return
-        for sched in repo.get_all_enabled(db):
-            guild = self.bot.get_guild(sched.guild_id)
-            if not guild:
-                continue
-            channel = guild.get_channel(sched.channel_id)
-            if not channel:
-                continue
-            self._start_periodic_clean_task(guild, channel, sched.interval_seconds)
+        db = get_db_session()
+        try:
+            repo = self.container.periodic_clean_repository(db=db)
+            channel_service = self.container.channel_service()
+            for sched in repo.get_all_enabled():
+                guild = self.bot.get_guild(sched.guild_id)
+                if not guild:
+                    continue
+                channel = guild.get_channel(sched.channel_id)
+                if not channel:
+                    continue
+                self._start_periodic_clean_task(guild, channel, sched.interval_seconds)
+        finally:
+            db.close()
 
     def _start_periodic_clean_task(self, guild, channel, seconds):
         key = (guild.id, channel.id)
@@ -96,9 +98,6 @@ class ChannelCommands(BaseCommand):
     )
     @commands.has_permissions(manage_channels=True)
     async def clean_channel(self, ctx, *, arg: str = None):
-        db = self._get_db()
-        repo = self.container.periodic_clean_repository()
-        channel_service = self.container.channel_service()
         channel_name = None
         seconds = None
         if arg:
@@ -132,7 +131,12 @@ class ChannelCommands(BaseCommand):
                         await ctx.send(embed=ChannelEmbed.create_error_embed(f"'{channel_name}' 이런 채널 없는데요"))
                         return
                     channel = found
-                repo.enable(db, ctx.guild.id, channel.id, seconds)
+                db = get_db_session()
+                try:
+                    repo = self.container.periodic_clean_repository(db=db)
+                    repo.enable(ctx.guild.id, channel.id, seconds)
+                finally:
+                    db.close()
                 self._start_periodic_clean_task(ctx.guild, channel, seconds)
                 period_str = format_seconds(seconds)
                 msg = f"`{channel.name}`을 앞으로 {period_str}마다 청소합니다."
@@ -170,8 +174,6 @@ class ChannelCommands(BaseCommand):
     )
     @commands.has_permissions(manage_channels=True)
     async def stop_periodic_clean(self, ctx, *, channel_name: str = None):
-        db = self._get_db()
-        repo = self.container.periodic_clean_repository()
         channel = ctx.channel
         if channel_name:
             found = None
@@ -184,7 +186,12 @@ class ChannelCommands(BaseCommand):
                 return
             channel = found
         key = (ctx.guild.id, channel.id)
-        repo.disable(db, ctx.guild.id, channel.id)
+        db = get_db_session()
+        try:
+            repo = self.container.periodic_clean_repository(db=db)
+            repo.disable(ctx.guild.id, channel.id)
+        finally:
+            db.close()
         task = self.periodic_tasks.get(key)
         if task:
             task.cancel()
