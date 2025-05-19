@@ -143,7 +143,7 @@ class LolService:
                 game_mode = match_data['info']['gameMode']
                 kr_mode = self.game_mode_kr.get(game_mode, game_mode)
                 formatted_matches.append({
-                    'name': f"[{"승리" if win else "패배"}] - {champion_name}, {kr_mode}",
+                    'name': f"[{'승리' if win else '패배'}] - {champion_name}, {kr_mode}",
                     'value': f"- **{kills}/{deaths}/{assists}** ({kda})\n- {minutes}분 {seconds}초"
                 })
             return formatted_matches
