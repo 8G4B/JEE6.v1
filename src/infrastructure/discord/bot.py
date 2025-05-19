@@ -5,7 +5,14 @@ from src.interfaces.commands.time_command import TimeCommands
 
 class Bot(commands.Bot):
     def __init__(self, container: Container):
-        super().__init__(command_prefix='!')
+        intents = discord.Intents.default()
+        intents.message_content = True
+        intents.members = True
+        
+        super().__init__(
+            command_prefix='!',
+            intents=intents
+        )
         self.container = container
         self.remove_command('help')  
     
