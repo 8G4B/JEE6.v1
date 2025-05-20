@@ -1,4 +1,4 @@
-from src.interfaces.commands.Basee import BaseCommand
+from src.interfaces.commands.Base import BaseCommand
 import logging
 from src.interfaces.commands.channel.CleanCommand import CleanCommand
 from src.interfaces.commands.channel.PeriodicCleanCommand import PeriodicCleanCommand

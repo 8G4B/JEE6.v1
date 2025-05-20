@@ -1,6 +1,6 @@
 import discord
 from discord.ext import commands
-from src.infrastructure.di.Containerr import Container
+from src.infrastructure.di.Container import Container
 from src.interfaces.commands.information.TimeCommand import TimeCommands
 from src.interfaces.commands.channel import ChannelCommands
 from src.interfaces.commands.channel import CleanCommand

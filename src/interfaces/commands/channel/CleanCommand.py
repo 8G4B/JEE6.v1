@@ -1,6 +1,6 @@
 from discord.ext import commands
 import shlex
-from src.interfaces.commands.Basee import BaseCommand
+from src.interfaces.commands.Base import BaseCommand
 from src.utils.embeds.ChannelEmbed import ChannelEmbed
 import logging
 
