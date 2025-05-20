@@ -7,6 +7,7 @@ from sqlalchemy import text
 from src.utils.time.timeParser import parse_time_string
 from src.utils.time.formatSeconds import format_seconds
 import logging
+import shlex
 
 logger = logging.getLogger(__name__)
 
@@ -153,8 +154,6 @@ class ChannelCommands(BaseCommand):
         if not arg:
             return None, None
 
-        import shlex
-
         tokens = shlex.split(arg)
         i = 0
         while i < len(tokens):
@@ -231,13 +230,25 @@ class ChannelCommands(BaseCommand):
     @commands.command(
         name="청소.중지",
         aliases=["clean.stop", "청소멈춰", "청소끄기", "청소 중지"],
-        description="주기적 채널 청소를 중단합니다.",
+        description="청소.중지 [-n 채널명]",
     )
     @commands.has_permissions(manage_channels=True)
-    async def stop_periodic_clean(self, ctx, *, channel_name: str = None):
+    async def stop_periodic_clean(self, ctx, *, arg: str = None):
         guild_id = ctx.guild.id
         channel = ctx.channel
         channel_name_to_search = channel.name
+
+        channel_name = None
+        if arg:
+            tokens = shlex.split(arg)
+            i = 0
+            while i < len(tokens):
+                if (tokens[i] in ("-n", "--name")) and i + 1 < len(tokens):
+                    channel_name = tokens[i + 1]
+                    i += 2
+                else:
+                    channel_name = arg
+                    break
 
         if channel_name:
             channel_name_to_search = channel_name.lower().strip()

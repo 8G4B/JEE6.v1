@@ -1,13 +1,13 @@
 import discord
 from discord.ext import commands
 from src.infrastructure.di.container import Container
-from src.interfaces.commands.time_command import TimeCommands
-from src.interfaces.commands.channel_command import ChannelCommands
-from src.interfaces.commands.justice_command import JusticeCommands
-from src.interfaces.commands.information_command import InformationCommands
-from src.interfaces.commands.meal_command import MealCommands
-from src.interfaces.commands.lol_command import LolCommands
-from src.interfaces.commands.valo_command import ValoCommands
+from src.interfaces.commands.information.TimeCommand import TimeCommands
+from src.interfaces.commands.channel.ChannelCommand import ChannelCommands
+from src.interfaces.commands.justice.JusticeCommand import JusticeCommands
+from src.interfaces.commands.information.InformationCommand import InformationCommands
+from src.interfaces.commands.meal.MealCommand import MealCommands
+from src.interfaces.commands.riot.LolCommand import LolCommands
+from src.interfaces.commands.riot.ValoCommand import ValoCommands
 
 
 class Bot(commands.Bot):

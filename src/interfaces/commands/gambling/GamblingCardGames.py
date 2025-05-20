@@ -72,7 +72,7 @@ class GamblingCardGames(BaseCommand):
 
         return True, bet_amount
 
-    @commands.command(name="도박.블랙잭", description="블랙잭 게임")
+    @commands.command(name="도박.블랙잭", description="도박.블랙잭 [베팅금]")
     async def blackjack(self, ctx, bet: str = None):
         user_id = ctx.author.id
         server_id = ctx.guild.id
@@ -317,7 +317,7 @@ class GamblingCardGames(BaseCommand):
 
         await game_message.edit(embed=embed)
 
-    @commands.command(name="도박.바카라", description="바카라 게임")
+    @commands.command(name="도박.바카라", description="도박.바카라 [베팅금]")
     async def baccarat(self, ctx, bet: str = None):
         user_id = ctx.author.id
         server_id = ctx.guild.id
@@ -482,7 +482,7 @@ class GamblingCardGames(BaseCommand):
         await game_message.edit(embed=embed)
 
     @commands.command(
-        name="도박.인디언", aliases=["도박.인디언포커"], description="인디언 포커"
+        name="도박.인디언", aliases=["도박.인디언포커"], description="도박.인디언포커 [베팅금]"
     )
     async def indian_poker(self, ctx, bet: str = None):
         user_id = ctx.author.id

@@ -9,15 +9,15 @@ from src.domain.models.user_balance import UserBalance
 from src.config.settings.base import BaseConfig
 from src.repositories.PeriodicCleanRepository import PeriodicCleanRepository
 from src.domain.models.periodic_clean import PeriodicClean
-from src.interfaces.commands.channel_command import ChannelCommands
-from src.interfaces.commands.time_command import TimeCommands
-from src.interfaces.commands.information_command import InformationCommands
-from src.interfaces.commands.meal_command import MealCommands
-from src.interfaces.commands.lol_command import LolCommands
-from src.interfaces.commands.valo_command import ValoCommands
-from src.interfaces.commands.gambling_command import GamblingCommands
-from src.interfaces.commands.gambling_games import GamblingGames
-from src.interfaces.commands.gambling_card_games import GamblingCardGames
+from src.interfaces.commands.channel.ChannelCommand import ChannelCommands
+from src.interfaces.commands.TimeCommand import TimeCommands
+from src.interfaces.commands.InformationCommand import InformationCommands
+from src.interfaces.commands.MealCommand import MealCommands
+from src.interfaces.commands.LolCommand import LolCommands
+from src.interfaces.commands.ValoCommand import ValoCommands
+from src.interfaces.commands.gambling.GamblingCommand import GamblingCommands
+from src.interfaces.commands.gambling.GamblingGames import GamblingGames
+from src.interfaces.commands.gambling.GamblingCardGames import GamblingCardGames
 
 
 class Container(containers.DeclarativeContainer):
