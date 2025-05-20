@@ -2,6 +2,7 @@ import logging
 from typing import Generic, TypeVar, Type, Optional, List
 from sqlalchemy.orm import Session
 from src.domain.models.base import BaseModel
+from src.infrastructure.database.session import SessionLocal
 
 T = TypeVar("T", bound=BaseModel)
 
@@ -9,9 +10,9 @@ logger = logging.getLogger(__name__)
 
 
 class BaseRepository(Generic[T]):
-    def __init__(self, model: Type[T], db: Session):
+    def __init__(self, model: Type[T], db: Session = None):
         self.model = model
-        self.db = db
+        self.db = db if db is not None else SessionLocal()
 
     def get_by_id(self, id: int) -> Optional[T]:
         return self.db.query(self.model).filter(self.model.id == id).first()
@@ -37,3 +38,7 @@ class BaseRepository(Generic[T]):
             self.db.commit()
             return True
         return False
+
+    def __del__(self):
+        if hasattr(self, 'db') and self.db is not None:
+            self.db.close()
