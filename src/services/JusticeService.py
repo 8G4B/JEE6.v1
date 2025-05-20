@@ -14,12 +14,12 @@ class JusticeService:
         self.repository = justice_repository
 
     async def judge_user(
-        self, 
-        member: discord.Member, 
-        server_id: int, 
-        moderator_id: int, 
+        self,
+        member: discord.Member,
+        server_id: int,
+        moderator_id: int,
         reason: str,
-        custom_duration: Optional[str] = None
+        custom_duration: Optional[str] = None,
     ) -> Tuple[int, timedelta]:
         user_id = member.id
 

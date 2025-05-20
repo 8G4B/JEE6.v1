@@ -34,7 +34,7 @@ class JusticeRepository(MySQLRawRepository):
         def _set_count(connection: MySQLConnection) -> bool:
             with connection.cursor() as cursor:
                 sql = """
-                INSERT INTO justice_records (user_id, server_id, count, last_timeout) 
+                INSERT INTO justice_records (user_id, server_id, count, last_timeout)
                 VALUES (%s, %s, %s, NOW())
                 ON DUPLICATE KEY UPDATE count = %s, last_timeout = NOW()
                 """
