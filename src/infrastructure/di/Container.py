@@ -9,7 +9,7 @@ from src.domain.models.user_balance import UserBalance
 from src.config.settings.base import BaseConfig
 from src.repositories.PeriodicCleanRepository import PeriodicCleanRepository
 from src.domain.models.periodic_clean import PeriodicClean
-from src.interfaces.commands.channel.ChannelCommand import ChannelCommands
+from src.interfaces.commands.channel import ChannelCommands
 from src.interfaces.commands.information.TimeCommand import TimeCommands
 from src.interfaces.commands.information.InformationCommand import InformationCommands
 from src.interfaces.commands.meal.MealCommand import MealCommands
