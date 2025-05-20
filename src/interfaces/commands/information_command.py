@@ -1,7 +1,7 @@
 from discord.ext import commands
 import logging
 from src.interfaces.commands.base import BaseCommand
-from src.utils.embeds.information_embed import InformationEmbed
+from src.utils.embeds.InformationEmbed import InformationEmbed
 from src.infrastructure.database.connection import test_connection
 
 logger = logging.getLogger(__name__)

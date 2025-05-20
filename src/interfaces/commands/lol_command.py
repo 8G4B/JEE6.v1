@@ -3,7 +3,7 @@ from discord.ext import commands
 import logging
 import aiohttp
 from src.interfaces.commands.base import BaseCommand
-from src.utils.embeds.lol_embed import LolEmbed
+from src.utils.embeds.LolEmbed import LolEmbed
 from src.services.lol_service import LolService
 
 logger = logging.getLogger(__name__)

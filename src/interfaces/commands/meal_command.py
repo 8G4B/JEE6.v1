@@ -2,7 +2,7 @@ from discord.ext import commands
 import logging
 from datetime import datetime, timedelta
 from src.interfaces.commands.base import BaseCommand
-from src.utils.embeds.meal_embed import MealEmbed
+from src.utils.embeds.MealEmbed import MealEmbed
 from src.services.meal_service import MealService
 
 logger = logging.getLogger(__name__)

@@ -2,7 +2,7 @@ from discord.ext import commands
 import logging
 import aiohttp
 from src.interfaces.commands.base import BaseCommand
-from src.utils.embeds.valo_embed import ValoEmbed
+from src.utils.embeds.ValoEmbed import ValoEmbed
 from src.services.valo_service import ValoService
 
 logger = logging.getLogger(__name__)

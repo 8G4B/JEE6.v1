@@ -1,7 +1,7 @@
 from discord.ext import commands
 import asyncio
 from src.interfaces.commands.base import BaseCommand
-from src.utils.embeds.channel_embed import ChannelEmbed
+from src.utils.embeds.ChannelEmbed import ChannelEmbed
 from src.infrastructure.database.session import get_db_session
 from sqlalchemy import text
 from src.utils.time.timeParser import parse_time_string
