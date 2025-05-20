@@ -10,11 +10,11 @@ from src.config.settings.base import BaseConfig
 from src.repositories.PeriodicCleanRepository import PeriodicCleanRepository
 from src.domain.models.periodic_clean import PeriodicClean
 from src.interfaces.commands.channel.ChannelCommand import ChannelCommands
-from src.interfaces.commands.TimeCommand import TimeCommands
-from src.interfaces.commands.InformationCommand import InformationCommands
-from src.interfaces.commands.MealCommand import MealCommands
-from src.interfaces.commands.LolCommand import LolCommands
-from src.interfaces.commands.ValoCommand import ValoCommands
+from src.interfaces.commands.information.TimeCommand import TimeCommands
+from src.interfaces.commands.information.InformationCommand import InformationCommands
+from src.interfaces.commands.meal.MealCommand import MealCommands
+from src.interfaces.commands.riot.LolCommand import LolCommands
+from src.interfaces.commands.riot.ValoCommand import ValoCommands
 from src.interfaces.commands.gambling.GamblingCommand import GamblingCommands
 from src.interfaces.commands.gambling.GamblingGames import GamblingGames
 from src.interfaces.commands.gambling.GamblingCardGames import GamblingCardGames
