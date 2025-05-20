@@ -3,7 +3,7 @@ import logging
 import aiohttp
 from src.interfaces.commands.base import BaseCommand
 from src.utils.embeds.ValoEmbed import ValoEmbed
-from src.services.valo_service import ValoService
+from src.services.ValoService import ValoService
 
 logger = logging.getLogger(__name__)
 

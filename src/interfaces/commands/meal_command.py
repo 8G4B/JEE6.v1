@@ -3,7 +3,7 @@ import logging
 from datetime import datetime, timedelta
 from src.interfaces.commands.base import BaseCommand
 from src.utils.embeds.MealEmbed import MealEmbed
-from src.services.meal_service import MealService
+from src.services.MealService import MealService
 
 logger = logging.getLogger(__name__)
 
@@ -33,9 +33,9 @@ class MealCommands(BaseCommand):
             await ctx.reply(embed=embed)
 
         except Exception as e:
-            logger.error(f"급식 정보 처리 중 오류: {e}")
+            logger.error(e)
             await ctx.send(
-                embed=MealEmbed.create_error_embed(f"오류가 발생했습니다: {e}")
+                embed=MealEmbed.create_error_embed(e)
             )
 
     @commands.command(
@@ -57,9 +57,9 @@ class MealCommands(BaseCommand):
             await ctx.reply(embed=embed)
 
         except Exception as e:
-            logger.error(f"급식 정보 처리 중 오류: {e}")
+            logger.error(e)
             await ctx.send(
-                embed=MealEmbed.create_error_embed(f"오류가 발생했습니다: {e}")
+                embed=MealEmbed.create_error_embed(e)
             )
 
     @commands.command(

@@ -4,7 +4,7 @@ import logging
 import aiohttp
 from src.interfaces.commands.base import BaseCommand
 from src.utils.embeds.LolEmbed import LolEmbed
-from src.services.lol_service import LolService
+from src.services.LolService import LolService
 
 logger = logging.getLogger(__name__)
 
