@@ -230,7 +230,7 @@ class ChannelCommands(BaseCommand):
 
     @commands.command(
         name="청소.중지",
-        aliases=["clean.stop", "청소멈춰", "청소끄기", "청소.중지", "청소 중지"],
+        aliases=["clean.stop", "청소멈춰", "청소끄기", "청소 중지"],
         description="주기적 채널 청소를 중단합니다.",
     )
     @commands.has_permissions(manage_channels=True)

@@ -4,8 +4,8 @@ from src.repositories.base import BaseRepository
 
 
 class PeriodicCleanRepository(BaseRepository[PeriodicClean]):
-    def __init__(self, model=PeriodicClean):
-        super().__init__(model=model)
+    def __init__(self, model=PeriodicClean, db=None):
+        super().__init__(model=model, db=db)
 
     def get_by_guild_and_channel(
         self, guild_id: int, channel_id: int
