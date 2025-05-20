@@ -1,6 +1,6 @@
 from typing import Optional, List
 from src.domain.models.periodic_clean import PeriodicClean
-from src.repositories.Base import BaseRepository
+from .Base import BaseRepository
 
 
 class PeriodicCleanRepository(BaseRepository[PeriodicClean]):

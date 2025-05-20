@@ -1,5 +1,5 @@
 from src.domain.models.user import User
-from src.repositories.Base import BaseRepository
+from .Base import BaseRepository
 from typing import Optional
 
 
