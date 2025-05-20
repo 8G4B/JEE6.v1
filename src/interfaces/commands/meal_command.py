@@ -34,9 +34,7 @@ class MealCommands(BaseCommand):
 
         except Exception as e:
             logger.error(e)
-            await ctx.send(
-                embed=MealEmbed.create_error_embed(e)
-            )
+            await ctx.send(embed=MealEmbed.create_error_embed(e))
 
     @commands.command(
         name="급식",
@@ -58,9 +56,7 @@ class MealCommands(BaseCommand):
 
         except Exception as e:
             logger.error(e)
-            await ctx.send(
-                embed=MealEmbed.create_error_embed(e)
-            )
+            await ctx.send(embed=MealEmbed.create_error_embed(e))
 
     @commands.command(
         name="급식.아침",

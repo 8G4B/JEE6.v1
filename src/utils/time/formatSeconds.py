@@ -1,4 +1,3 @@
-
 def format_seconds(seconds):
     if seconds % 86400 == 0:
         return f"{seconds // 86400}일"

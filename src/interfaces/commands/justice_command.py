@@ -50,7 +50,7 @@ class JusticeCommands(BaseCommand):
                 server_id=ctx.guild.id,
                 moderator_id=ctx.author.id,
                 reason=message,
-                custom_duration=custom_duration
+                custom_duration=custom_duration,
             )
 
             await member.timeout(duration, reason=message)

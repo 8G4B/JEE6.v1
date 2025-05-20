@@ -40,5 +40,5 @@ class BaseRepository(Generic[T]):
         return False
 
     def __del__(self):
-        if hasattr(self, 'db') and self.db is not None:
+        if hasattr(self, "db") and self.db is not None:
             self.db.close()

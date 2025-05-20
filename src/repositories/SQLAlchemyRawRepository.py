@@ -73,9 +73,7 @@ class SQLAlchemyRawRepository:
                 logger.debug(f"UPDATE: {self.model.__name__}(id={id}, {kwargs})")
                 return True
         except Exception as e:
-            logger.error(
-                f"UPDATE: {self.model.__name__}(id={id}, {kwargs}) - {e}"
-            )
+            logger.error(f"UPDATE: {self.model.__name__}(id={id}, {kwargs}) - {e}")
             return False
 
     def delete(self, id: Any) -> bool:
