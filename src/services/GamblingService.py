@@ -6,9 +6,9 @@ from datetime import datetime, timedelta
 
 # from functools import lru_cache
 
-from src.repositories.user_balance_repository import UserBalanceRepository
-from src.repositories.jackpot_repository import JackpotRepository
-from src.repositories.cooldown_repository import CooldownRepository
+from src.repositories.UserBalanceRepository import UserBalanceRepository
+from src.repositories.JackpotRepository import JackpotRepository
+from src.repositories.CooldownRepository import CooldownRepository
 from src.config.settings.gambling_settings import (
     INCOME_TAX_BRACKETS,
     SECURITIES_TRANSACTION_TAX_BRACKETS,
@@ -63,7 +63,7 @@ class GamblingService:
         self, bet_amount: Optional[int], min_bet: int = MIN_BET, max_bet: int = MAX_BET
     ) -> Optional[str]:
         if bet_amount is None:
-            return f"{min_bet:,}원 이상 베팅하세요"
+            return f"베팅을 해야죠 ({min_bet:,}원 이상)"
         if bet_amount < min_bet:
             return f"{min_bet:,}원 이상 베팅하세요"
         if bet_amount > max_bet:
@@ -164,7 +164,7 @@ class GamblingService:
                 user = await bot.fetch_user(user_id)
                 username = user.name
             except Exception:
-                username = f"알 수 없음({user_id})"
+                username = f"누구세요({user_id})"
 
             result.append((user_id, username, balance))
 

@@ -1,12 +1,12 @@
 import logging
 from mysql.connector import MySQLConnection
 from src.domain.models.timeout_history import TimeoutHistory
-from src.repositories.raw_repository_base import RawRepositoryBase
+from src.repositories.MySQLRawRepository import MySQLRawRepository
 
 logger = logging.getLogger(__name__)
 
 
-class JusticeRepository(RawRepositoryBase):
+class JusticeRepository(MySQLRawRepository):
     def __init__(self):
         super().__init__()
 

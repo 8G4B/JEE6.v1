@@ -2,7 +2,7 @@ import logging
 from datetime import timedelta
 from typing import Tuple
 import discord
-from src.repositories.justice_repository import JusticeRepository
+from src.repositories.JusticeRepository import JusticeRepository
 from src.domain.models.timeout_history import TimeoutHistory
 
 logger = logging.getLogger(__name__)

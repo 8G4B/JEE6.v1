@@ -6,7 +6,7 @@ import secrets
 import asyncio
 
 from src.interfaces.commands.base import BaseCommand
-from src.services.gambling_service import GamblingService, GamblingManager
+from src.services.GamblingService import GamblingService, GamblingManager
 from src.utils.embeds.GamblingEmbed import GamblingEmbed
 from src.config.settings.gambling_settings import (
     MIN_BET,

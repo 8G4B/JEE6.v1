@@ -1,6 +1,6 @@
 from typing import List, Tuple
 from sqlalchemy.orm import Session
-from src.repositories.user_balance_repository import UserBalanceRepository
+from src.repositories.UserBalanceRepository import UserBalanceRepository
 
 
 class UserService:

@@ -1,13 +1,13 @@
 import logging
 from typing import List, Tuple
 from src.domain.models.user_balance import UserBalance
-from src.repositories.base import RawRepositoryBase
+from src.repositories.SQLAlchemyRawRepository import SQLAlchemyRawRepository
 from src.infrastructure.database.session import get_db_session
 
 logger = logging.getLogger(__name__)
 
 
-class UserBalanceRepository(RawRepositoryBase):
+class UserBalanceRepository(SQLAlchemyRawRepository):
     def __init__(self, model=UserBalance):
         super().__init__(model)
 
@@ -30,7 +30,7 @@ class UserBalanceRepository(RawRepositoryBase):
 
                 return user_balance.balance
         except Exception as e:
-            logger.error(f"사용자 잔액 조회 중 오류: {e}")
+            logger.error(e)
             return 0
 
     async def set_user_balance(
@@ -54,7 +54,7 @@ class UserBalanceRepository(RawRepositoryBase):
 
                 session.commit()
         except Exception as e:
-            logger.error(f"사용자 잔액 설정 중 오류: {e}")
+            logger.error(e)
 
     async def add_user_balance(self, user_id: int, server_id: int, amount: int) -> None:
         try:
@@ -75,7 +75,7 @@ class UserBalanceRepository(RawRepositoryBase):
 
                 session.commit()
         except Exception as e:
-            logger.error(f"사용자 잔액 증가 중 오류: {e}")
+            logger.error(e)
 
     async def subtract_user_balance(
         self, user_id: int, server_id: int, amount: int
@@ -98,7 +98,7 @@ class UserBalanceRepository(RawRepositoryBase):
 
                 session.commit()
         except Exception as e:
-            logger.error(f"사용자 잔액 감소 중 오류: {e}")
+            logger.error(e)
 
     async def get_rankings(
         self, server_id: int, limit: int = 10
@@ -114,7 +114,7 @@ class UserBalanceRepository(RawRepositoryBase):
                 )
                 return result
         except Exception as e:
-            logger.error(f"랭킹 조회 중 오류: {e}")
+            logger.error(e)
             return []
 
     async def get_sorted_balances(
@@ -132,5 +132,5 @@ class UserBalanceRepository(RawRepositoryBase):
                 result = [(row[0], row[1]) for row in query.all()]
                 return result
         except Exception as e:
-            logger.error(f"사용자 잔액 정렬 목록 조회 중 오류: {e}")
+            logger.error(e)
             return []

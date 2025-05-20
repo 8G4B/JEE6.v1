@@ -1,13 +1,13 @@
 import logging
 from src.domain.models.jackpot import Jackpot
-from src.repositories.base import RawRepositoryBase
+from src.repositories.SQLAlchemyRawRepository import SQLAlchemyRawRepository
 from src.infrastructure.database.session import get_db_session
 from src.config.settings.gambling_settings import INITIAL_JACKPOT
 
 logger = logging.getLogger(__name__)
 
 
-class JackpotRepository(RawRepositoryBase):
+class JackpotRepository(SQLAlchemyRawRepository):
     def __init__(self, model=Jackpot):
         super().__init__(model)
 

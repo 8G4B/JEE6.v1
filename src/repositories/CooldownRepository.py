@@ -2,13 +2,13 @@ import logging
 from datetime import datetime
 from typing import Optional
 from src.domain.models.cooldown import Cooldown
-from src.repositories.base import RawRepositoryBase
+from src.repositories.SQLAlchemyRawRepository import SQLAlchemyRawRepository
 from src.infrastructure.database.session import get_db_session
 
 logger = logging.getLogger(__name__)
 
 
-class CooldownRepository(RawRepositoryBase):
+class CooldownRepository(SQLAlchemyRawRepository):
     def __init__(self, model=Cooldown):
         super().__init__(model)
 
@@ -26,7 +26,7 @@ class CooldownRepository(RawRepositoryBase):
 
                 return cooldown.last_played
         except Exception as e:
-            logger.error(f"쿨다운 조회 중 오류: {e}")
+            logger.error(e)
             return None
 
     async def set_cooldown(self, user_id: int, action_type: str) -> None:
@@ -50,7 +50,7 @@ class CooldownRepository(RawRepositoryBase):
 
                 session.commit()
         except Exception as e:
-            logger.error(f"쿨다운 설정 중 오류: {e}")
+            logger.error(e)
 
     async def delete_cooldown(self, user_id: int, action_type: str) -> None:
         try:
@@ -65,7 +65,7 @@ class CooldownRepository(RawRepositoryBase):
                     session.delete(cooldown)
                     session.commit()
         except Exception as e:
-            logger.error(f"쿨다운 삭제 중 오류: {e}")
+            logger.error(e)
 
     async def delete_all_cooldowns(self, user_id: int) -> None:
         try:
@@ -77,4 +77,4 @@ class CooldownRepository(RawRepositoryBase):
 
                 session.commit()
         except Exception as e:
-            logger.error(f"모든 쿨다운 삭제 중 오류: {e}")
+            logger.error(e)

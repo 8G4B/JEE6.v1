@@ -55,14 +55,14 @@ class ChannelService:
                         guild.id, old_channel_id, new_channel.id, channel_name
                     )
                 except Exception as e:
-                    logger.error(f"Failed to update channel ID in database: {e}")
+                    logger.error(e)
 
             return True, "채널이 성공적으로 청소되었습니다.", new_channel
 
         except discord.Forbidden:
-            return False, "권한이 부족합니다.", None
+            return False, "권한이 딸립니다.", None
         except Exception as e:
-            logger.error(f"Channel cleaning error: {str(e)}")
+            logger.error(e)
             return False, str(e), None
 
     def enable_periodic_clean(self, guild_id, channel_id, interval_seconds):

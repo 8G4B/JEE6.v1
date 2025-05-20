@@ -9,7 +9,7 @@ R = TypeVar("R")
 logger = logging.getLogger(__name__)
 
 
-class RawRepositoryBase:
+class MySQLRawRepository:
     def __init__(self):
         self.db_connection = DatabaseConnection
 
