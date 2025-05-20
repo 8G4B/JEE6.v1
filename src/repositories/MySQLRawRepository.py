@@ -1,7 +1,7 @@
 import logging
 from typing import Optional, TypeVar, Callable, Any
 from mysql.connector import MySQLConnection
-from src.infrastructure.database.connection import DatabaseConnection
+from src.infrastructure.database.Connection import DatabaseConnection
 
 T = TypeVar("T")
 R = TypeVar("R")

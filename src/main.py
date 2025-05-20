@@ -1,9 +1,9 @@
 import asyncio
 import logging
-from src.infrastructure.di.container import Container
+from src.infrastructure.di.Container import Container
 from src.infrastructure.discord.bot import Bot
 from src.config.settings.base import BaseConfig
-from src.infrastructure.database.connection import init_db, test_connection
+from src.infrastructure.database.Connection import init_db, test_connection
 from src.infrastructure.database.session import create_tables
 
 logging.basicConfig(

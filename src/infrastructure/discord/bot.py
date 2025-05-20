@@ -1,8 +1,10 @@
 import discord
 from discord.ext import commands
-from src.infrastructure.di.container import Container
+from src.infrastructure.di.Container import Container
 from src.interfaces.commands.information.TimeCommand import TimeCommands
-from src.interfaces.commands.channel.ChannelCommand import ChannelCommands
+from src.interfaces.commands.channel import ChannelCommands
+from src.interfaces.commands.channel import CleanCommand
+from src.interfaces.commands.channel import PeriodicCleanCommand
 from src.interfaces.commands.justice.JusticeCommand import JusticeCommands
 from src.interfaces.commands.information.InformationCommand import InformationCommands
 from src.interfaces.commands.meal.MealCommand import MealCommands
@@ -25,6 +27,8 @@ class Bot(commands.Bot):
     async def setup_hook(self) -> None:
         await self.add_cog(TimeCommands(self, self.container))
         await self.add_cog(ChannelCommands(self, self.container))
+        await self.add_cog(CleanCommand(self, self.container))
+        await self.add_cog(PeriodicCleanCommand(self, self.container))
         await self.add_cog(JusticeCommands(self, self.container))
         await self.add_cog(InformationCommands(self, self.container))
         await self.add_cog(MealCommands(self, self.container))
