@@ -1,5 +1,6 @@
 import discord
 from datetime import timedelta
+from src.utils.time.formatSeconds import format_seconds
 
 
 class JusticeEmbed:
@@ -7,7 +8,13 @@ class JusticeEmbed:
     def create_judge_dm_embed(
         server_name: str, duration: timedelta, count: int, reason: str
     ) -> discord.Embed:
-        duration_text = "60초" if duration <= timedelta(minutes=1) else "1주일"
+        if duration <= timedelta(minutes=1):
+            duration_text = "60초"
+        elif duration == timedelta(weeks=1):
+            duration_text = "1주일"
+        else:
+            duration_text = format_seconds(int(duration.total_seconds()))
+
         return (
             discord.Embed(
                 title="✉️ 통지서",
@@ -26,7 +33,13 @@ class JusticeEmbed:
         reason: str,
         moderator_name: str,
     ) -> discord.Embed:
-        duration_text = "60초" if duration <= timedelta(minutes=1) else "1주일"
+        if duration <= timedelta(minutes=1):
+            duration_text = "60초"
+        elif duration == timedelta(weeks=1):
+            duration_text = "1주일"
+        else:
+            duration_text = format_seconds(int(duration.total_seconds()))
+
         return (
             discord.Embed(
                 title="⚖️ 처벌",

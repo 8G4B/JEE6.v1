@@ -8,16 +8,40 @@ logger = logging.getLogger(__name__)
 
 
 class JusticeCommands(BaseCommand):
+    def _parse_judge_args(self, args):
+        message = "없"
+        custom_duration = None
+
+        i = 0
+        while i < len(args):
+            if args[i] == "-m" and i + 1 < len(args):
+                message_parts = []
+                j = i + 1
+                while j < len(args) and not args[j].startswith("-"):
+                    message_parts.append(args[j])
+                    j += 1
+                message = " ".join(message_parts)
+                i = j
+            elif args[i] == "-p" and i + 1 < len(args):
+                custom_duration = args[i + 1]
+                i += 2
+            else:
+                i += 1
+
+        return message, custom_duration
+
     @commands.command(
         name="심판",
         aliases=["judge", "j", "J", "JUDGE", "타임아웃", "ㅓ"],
-        description="사용자를 타임아웃 시킵니다.",
+        description="!심판 [유저] (-m [메시지]) (-p [기간])",
     )
     @commands.has_permissions(moderate_members=True)
-    async def judge(self, ctx, member: discord.Member, *, reason: str = "없"):
+    async def judge(self, ctx, member: discord.Member, *args):
         logger.info(
-            f"judge({ctx.guild.name}, {ctx.author.name}, {member.name}, {reason})"
+            f"judge({ctx.guild.name}, {ctx.author.name}, {member.name}, {args})"
         )
+
+        message, custom_duration = self._parse_judge_args(args)
 
         try:
             justice_service = self.container.justice_service()
@@ -25,17 +49,18 @@ class JusticeCommands(BaseCommand):
                 member=member,
                 server_id=ctx.guild.id,
                 moderator_id=ctx.author.id,
-                reason=reason,
+                reason=message,
+                custom_duration=custom_duration
             )
 
-            await member.timeout(duration, reason=reason)
+            await member.timeout(duration, reason=message)
 
             try:
                 dm_embed = JusticeEmbed.create_judge_dm_embed(
                     server_name=ctx.guild.name,
                     duration=duration,
                     count=count,
-                    reason=reason,
+                    reason=message,
                 )
                 await member.send(embed=dm_embed)
             except discord.Forbidden:
@@ -47,7 +72,7 @@ class JusticeCommands(BaseCommand):
                 member=member,
                 duration=duration,
                 count=count,
-                reason=reason,
+                reason=message,
                 moderator_name=ctx.author.display_name,
             )
             await ctx.send(embed=embed)
