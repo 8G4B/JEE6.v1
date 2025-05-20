@@ -1,6 +1,6 @@
 from discord.ext import commands
 import logging
-from src.interfaces.commands.base import BaseCommand
+from src.interfaces.commands.Basee import BaseCommand
 from src.utils.embeds.InformationEmbed import InformationEmbed
 from src.infrastructure.database.Connection import test_connection
 

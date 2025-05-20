@@ -2,7 +2,7 @@ import discord
 from discord.ext import commands
 import logging
 import aiohttp
-from src.interfaces.commands.base import BaseCommand
+from src.interfaces.commands.Basee import BaseCommand
 from src.utils.embeds.LolEmbed import LolEmbed
 from src.services.LolService import LolService
 

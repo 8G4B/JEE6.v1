@@ -1,7 +1,7 @@
 from discord.ext import commands
 import logging
 import aiohttp
-from src.interfaces.commands.base import BaseCommand
+from src.interfaces.commands.Basee import BaseCommand
 from src.utils.embeds.ValoEmbed import ValoEmbed
 from src.services.ValoService import ValoService
 
