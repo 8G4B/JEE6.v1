@@ -1,6 +1,6 @@
 import logging
 from mysql.connector import MySQLConnection
-from src.domain.models.timeout_history import TimeoutHistory
+from src.domain.models.TimeoutHistory import TimeoutHistory
 from src.repositories.MySQLRawRepository import MySQLRawRepository
 
 logger = logging.getLogger(__name__)
@@ -59,8 +59,8 @@ class JusticeRepository(MySQLRawRepository):
             with connection.cursor() as cursor:
                 duration_seconds = int(history.duration.total_seconds())
                 sql = """
-                INSERT INTO timeout_history 
-                (user_id, server_id, moderator_id, reason, duration) 
+                INSERT INTO timeout_history
+                (user_id, server_id, moderator_id, reason, duration)
                 VALUES (%s, %s, %s, %s, %s)
                 """
                 params = (
