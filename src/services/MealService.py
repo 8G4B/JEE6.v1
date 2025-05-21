@@ -3,7 +3,7 @@ import logging
 import aiohttp
 from datetime import datetime, timedelta
 from typing import Dict, Optional, List, Tuple
-from src.config.settings.meal_settings import (
+from src.config.settings.mealSettings import (
     MEAL_API_KEY,
     ATPT_OFCDC_SC_CODE,
     SD_SCHUL_CODE,

@@ -5,10 +5,10 @@ from src.services.UserService import UserService
 from src.services.TimeService import TimeService
 from src.services.ChannelService import ChannelService
 from src.services.JusticeService import JusticeService
-from src.domain.models.user_balance import UserBalance
-from src.config.settings.base import BaseConfig
+from src.domain.models.UserBalance import UserBalance
+from src.config.settings.Base import BaseConfig
 from src.repositories.PeriodicCleanRepository import PeriodicCleanRepository
-from src.domain.models.periodic_clean import PeriodicClean
+from src.domain.models.PeriodicClean import PeriodicClean
 from src.interfaces.commands.channel import ChannelCommands
 from src.interfaces.commands.information.TimeCommand import TimeCommands
 from src.interfaces.commands.information.InformationCommand import InformationCommands

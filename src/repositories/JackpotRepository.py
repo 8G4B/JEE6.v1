@@ -1,8 +1,8 @@
 import logging
-from src.domain.models.jackpot import Jackpot
+from src.domain.models.Jackpot import Jackpot
 from src.repositories.SQLAlchemyRawRepository import SQLAlchemyRawRepository
-from src.infrastructure.database.session import get_db_session
-from src.config.settings.gambling_settings import INITIAL_JACKPOT
+from src.infrastructure.database.Session import get_db_session
+from src.config.settings.gamblingSettings import INITIAL_JACKPOT
 
 logger = logging.getLogger(__name__)
 

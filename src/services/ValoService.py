@@ -2,7 +2,7 @@ import logging
 import aiohttp
 import time
 from typing import Dict, List, Tuple, Optional
-from src.config.settings.riot_settings import (
+from src.config.settings.riotSettings import (
     VALO_ASIA_URL,
     VALO_AP_URL,
     RIOT_HEADERS,

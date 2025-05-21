@@ -9,7 +9,7 @@ from datetime import datetime, timedelta
 from src.repositories.UserBalanceRepository import UserBalanceRepository
 from src.repositories.JackpotRepository import JackpotRepository
 from src.repositories.CooldownRepository import CooldownRepository
-from src.config.settings.gambling_settings import (
+from src.config.settings.gamblingSettings import (
     INCOME_TAX_BRACKETS,
     SECURITIES_TRANSACTION_TAX_BRACKETS,
     GIFT_TAX_BRACKETS,

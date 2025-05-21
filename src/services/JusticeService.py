@@ -3,7 +3,7 @@ from datetime import timedelta
 from typing import Tuple, Optional
 import discord
 from src.repositories.JusticeRepository import JusticeRepository
-from src.domain.models.timeout_history import TimeoutHistory
+from src.domain.models.TimeoutHistory import TimeoutHistory
 from src.utils.time.timeParser import parse_time_string
 
 logger = logging.getLogger(__name__)

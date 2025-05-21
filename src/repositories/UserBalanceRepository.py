@@ -1,6 +1,6 @@
 import logging
 from typing import List, Tuple
-from src.domain.models.user_balance import UserBalance
+from src.domain.models.UserBalance import UserBalance
 from src.repositories.SQLAlchemyRawRepository import SQLAlchemyRawRepository
 from src.infrastructure.database.session import get_db_session
 
