@@ -6,6 +6,7 @@ from src.interfaces.commands.channel import ChannelCommands
 from src.interfaces.commands.channel import CleanCommand
 from src.interfaces.commands.channel import PeriodicCleanCommand
 from src.interfaces.commands.justice.JusticeCommand import JusticeCommands
+from src.interfaces.commands.justice.ReleaseCommand import ReleaseCommand
 from src.interfaces.commands.information.InformationCommand import InformationCommands
 from src.interfaces.commands.meal.MealCommand import MealCommands
 from src.interfaces.commands.riot.LolCommand import LolCommands
@@ -30,6 +31,7 @@ class Bot(commands.Bot):
         await self.add_cog(CleanCommand(self, self.container))
         await self.add_cog(PeriodicCleanCommand(self, self.container))
         await self.add_cog(JusticeCommands(self, self.container))
+        await self.add_cog(ReleaseCommand(self, self.container))
         await self.add_cog(InformationCommands(self, self.container))
         await self.add_cog(MealCommands(self, self.container))
         await self.add_cog(LolCommands(self, self.container))
