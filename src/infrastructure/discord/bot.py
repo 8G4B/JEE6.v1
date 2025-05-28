@@ -11,6 +11,7 @@ from src.interfaces.commands.information.InformationCommand import InformationCo
 from src.interfaces.commands.meal.MealCommand import MealCommands
 from src.interfaces.commands.riot.LolCommand import LolCommands
 from src.interfaces.commands.riot.ValoCommand import ValoCommands
+from src.config.settings.Base import BaseConfig
 
 
 class Bot(commands.Bot):
@@ -26,21 +27,23 @@ class Bot(commands.Bot):
         self.remove_command("help")
 
     async def setup_hook(self) -> None:
-        await self.add_cog(TimeCommands(self, self.container))
-        await self.add_cog(ChannelCommands(self, self.container))
-        await self.add_cog(CleanCommand(self, self.container))
-        await self.add_cog(PeriodicCleanCommand(self, self.container))
-        await self.add_cog(JusticeCommands(self, self.container))
-        await self.add_cog(ReleaseCommand(self, self.container))
+        if BaseConfig.ENABLE_MANAGEMENT_COMMANDS:
+            await self.add_cog(TimeCommands(self, self.container))
+            await self.add_cog(ChannelCommands(self, self.container))
+            await self.add_cog(CleanCommand(self, self.container))
+            await self.add_cog(PeriodicCleanCommand(self, self.container))
+            await self.add_cog(JusticeCommands(self, self.container))
+            await self.add_cog(ReleaseCommand(self, self.container))
+            await self.add_cog(self.container.gambling_command())
+            await self.add_cog(self.container.gambling_games())
+            await self.add_cog(self.container.gambling_card_games())
+
         await self.add_cog(InformationCommands(self, self.container))
         await self.add_cog(MealCommands(self, self.container))
         await self.add_cog(LolCommands(self, self.container))
         await self.add_cog(ValoCommands(self, self.container))
 
-        await self.add_cog(self.container.gambling_command())
-        await self.add_cog(self.container.gambling_games())
-        await self.add_cog(self.container.gambling_card_games())
-
     async def on_ready(self):
         print(f"Logged in as {self.user.name} (ID: {self.user.id})")
         print(f"Connected to {len(self.guilds)} guilds")
+        print(f"Management commands enabled: {BaseConfig.ENABLE_MANAGEMENT_COMMANDS}")

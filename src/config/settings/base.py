@@ -22,3 +22,5 @@ class BaseConfig:
     GPT_API_KEY = os.getenv("GPT_API_KEY")
 
     LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
+
+    ENABLE_MANAGEMENT_COMMANDS = os.getenv("M", "True").lower() in ("true", "1", "yes")
