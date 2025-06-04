@@ -24,3 +24,6 @@ class BaseConfig:
     LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
 
     ENABLE_MANAGEMENT_COMMANDS = os.getenv("M", "True").lower() in ("true", "1", "yes")
+    ENABLE_GAMBLING_COMMANDS = os.getenv("G", "True").lower() in ("true", "1", "yes")
+
+    PREFIX = "!"

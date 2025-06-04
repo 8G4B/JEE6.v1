@@ -20,7 +20,9 @@ class Bot(commands.Bot):
         intents.message_content = True
         intents.members = True
 
-        super().__init__(command_prefix="!", intents=intents, help_command=None)
+        super().__init__(
+            command_prefix=BaseConfig.PREFIX, intents=intents, help_command=None
+        )
 
         self.container = container
         self.container.bot.override(self)
@@ -28,12 +30,11 @@ class Bot(commands.Bot):
 
     async def setup_hook(self) -> None:
         if BaseConfig.ENABLE_MANAGEMENT_COMMANDS:
-            await self.add_cog(TimeCommands(self, self.container))
             await self.add_cog(ChannelCommands(self, self.container))
             await self.add_cog(CleanCommand(self, self.container))
             await self.add_cog(PeriodicCleanCommand(self, self.container))
-            await self.add_cog(JusticeCommands(self, self.container))
-            await self.add_cog(ReleaseCommand(self, self.container))
+
+        if BaseConfig.ENABLE_GAMBLING_COMMANDS:
             await self.add_cog(self.container.gambling_command())
             await self.add_cog(self.container.gambling_games())
             await self.add_cog(self.container.gambling_card_games())
@@ -42,6 +43,9 @@ class Bot(commands.Bot):
         await self.add_cog(MealCommands(self, self.container))
         await self.add_cog(LolCommands(self, self.container))
         await self.add_cog(ValoCommands(self, self.container))
+        await self.add_cog(TimeCommands(self, self.container))
+        await self.add_cog(JusticeCommands(self, self.container))
+        await self.add_cog(ReleaseCommand(self, self.container))
 
     async def on_ready(self):
         print(f"Logged in as {self.user.name} (ID: {self.user.id})")
