@@ -9,7 +9,7 @@ class MealEmbed:
         )
 
         if cal_info:
-            embed.set_footer(text=f"{cal_info}kcal")
+            embed.set_footer(text=f"{cal_info}")
 
         return embed
 
