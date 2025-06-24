@@ -63,19 +63,17 @@ class MealService:
             logger.error(f"Error fetching meal info: {e}")
             return None
 
-    async def _get_menu_from_meal_info(self, meal_info: list, meal_code: str) -> str:
-        return next(
-            (
-                meal["DDISH_NM"]
-                for meal in meal_info
-                if meal["MMEAL_SC_CODE"] == meal_code
-            ),
-            NO_MEAL,
-        )
+    async def _get_menu_and_cal_from_meal_info(self, meal_info: list, meal_code: str) -> Tuple[str, str]:
+        for meal in meal_info:
+            if meal["MMEAL_SC_CODE"] == meal_code:
+                menu = meal["DDISH_NM"]
+                cal_info = meal.get("CAL_INFO", "").strip()
+                return menu, cal_info
+        return NO_MEAL, ""
 
     async def get_current_meal(
         self, now: datetime
-    ) -> Tuple[Optional[str], Optional[str]]:
+    ) -> Tuple[Optional[str], Optional[str], Optional[str]]:
         today = now.strftime("%Y%m%d")
         current_hour = now.hour
         current_minute = now.minute
@@ -84,30 +82,30 @@ class MealService:
 
         if not meal_info:
             logger.warning(f"No meal info available for today ({today})")
-            return None, None
+            return None, None, None
 
         for time_check, code, title in MEAL_TIMES:
             if time_check(current_hour, current_minute):
-                menu = await self._get_menu_from_meal_info(meal_info, code)
-                return title, menu
+                menu, cal_info = await self._get_menu_and_cal_from_meal_info(meal_info, code)
+                return title, menu, cal_info
 
         tomorrow = (now + timedelta(days=1)).strftime("%Y%m%d")
         tomorrow_meal_info = await self.get_meal_info(tomorrow)
 
         if tomorrow_meal_info:
-            menu = await self._get_menu_from_meal_info(tomorrow_meal_info, "1")
+            menu, cal_info = await self._get_menu_and_cal_from_meal_info(tomorrow_meal_info, "1")
         else:
-            menu = NO_MEAL
+            menu, cal_info = NO_MEAL, ""
 
-        return "🍳 내일 아침", menu
+        return "🍳 내일 아침", menu, cal_info
 
     async def get_meal_by_type(
         self, date: str, meal_code: str, title: str
-    ) -> Tuple[Optional[str], Optional[str]]:
+    ) -> Tuple[Optional[str], Optional[str], Optional[str]]:
         meal_info = await self.get_meal_info(date)
         if not meal_info:
             logger.warning(f"No meal info available for {date}")
-            return None, None
+            return None, None, None
 
-        menu = await self._get_menu_from_meal_info(meal_info, meal_code)
-        return title, menu
+        menu, cal_info = await self._get_menu_and_cal_from_meal_info(meal_info, meal_code)
+        return title, menu, cal_info

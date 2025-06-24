@@ -1,6 +1,6 @@
 from sqlalchemy import Column, BigInteger, String, DateTime
 from datetime import datetime
-from src.domain.models.base import Base
+from src.domain.models.Base import Base
 
 
 class Cooldown(Base):

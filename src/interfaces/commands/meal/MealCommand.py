@@ -21,12 +21,12 @@ class MealCommands(BaseCommand):
         )
 
         try:
-            title, menu = await self.meal_service.get_meal_by_type(
+            title, menu, cal_info = await self.meal_service.get_meal_by_type(
                 date, meal_code, title
             )
 
             if title and menu:
-                embed = MealEmbed.create_meal_embed(title, menu)
+                embed = MealEmbed.create_meal_embed(title, menu, cal_info)
             else:
                 embed = MealEmbed.create_error_embed(error_message)
 
@@ -45,10 +45,10 @@ class MealCommands(BaseCommand):
         logger.info(f"meal({ctx.guild.name}, {ctx.author.name})")
 
         try:
-            title, menu = await self.meal_service.get_current_meal(datetime.now())
+            title, menu, cal_info = await self.meal_service.get_current_meal(datetime.now())
 
             if title and menu:
-                embed = MealEmbed.create_meal_embed(title, menu)
+                embed = MealEmbed.create_meal_embed(title, menu, cal_info)
             else:
                 embed = MealEmbed.create_error_embed("나이스 API 이슈")
 
