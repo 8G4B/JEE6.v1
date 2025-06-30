@@ -1,9 +1,9 @@
 import logging
 from datetime import datetime
 from typing import Optional
-from src.domain.models.cooldown import Cooldown
+from src.domain.models.Cooldown import Cooldown
 from src.repositories.SQLAlchemyRawRepository import SQLAlchemyRawRepository
-from src.infrastructure.database.session import get_db_session
+from src.infrastructure.database.Session import get_db_session
 
 logger = logging.getLogger(__name__)
 

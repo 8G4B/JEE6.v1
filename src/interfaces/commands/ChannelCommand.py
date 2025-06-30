@@ -2,7 +2,7 @@ from discord.ext import commands
 import asyncio
 from src.interfaces.commands.Base import BaseCommand
 from src.utils.embeds.ChannelEmbed import ChannelEmbed
-from src.infrastructure.database.session import get_db_session
+from src.infrastructure.database.Session import get_db_session
 from sqlalchemy import text
 from src.utils.time.timeParser import parse_time_string
 from src.utils.time.formatSeconds import format_seconds
