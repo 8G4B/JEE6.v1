@@ -18,6 +18,7 @@ from src.interfaces.commands.riot.ValoCommand import ValoCommands
 from src.interfaces.commands.gambling.GamblingCommand import GamblingCommands
 from src.interfaces.commands.gambling.GamblingGames import GamblingGames
 from src.interfaces.commands.gambling.GamblingCardGames import GamblingCardGames
+from src.interfaces.commands.bus.BusCommand import BusCommands
 
 
 class Container(containers.DeclarativeContainer):
@@ -67,3 +68,5 @@ class Container(containers.DeclarativeContainer):
     gambling_card_games = providers.Factory(
         GamblingCardGames, bot=bot, container=providers.Self()
     )
+
+    bus_command = providers.Factory(BusCommands, bot=bot, container=providers.Self())
