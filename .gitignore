@@ -2,6 +2,7 @@
 discord.log
 
 *.log
+*.logs
 .sh
 run.sh
 

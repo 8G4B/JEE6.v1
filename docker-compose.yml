@@ -1,0 +1,42 @@
+services:
+  mariadb:
+    image: mariadb:10.11
+    container_name: jee6_mariadb
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: 1234
+      MYSQL_DATABASE: hammer
+    volumes:
+      - mariadb_data:/var/lib/mysql
+    networks:
+      - jee6_network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-p1234"]
+      timeout: 20s
+      retries: 10
+
+  discord_bot:
+    build:
+      context: .
+      dockerfile: dockerfile
+    container_name: allofthelight
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - DB_HOST=mariadb
+      - DB_PORT=3306
+      - DB_NAME=hammer
+      - DB_USER=root
+      - DB_PASSWORD=1234
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    networks:
+      - jee6_network
+volumes:
+  mariadb_data:
+
+networks:
+  jee6_network:
+    driver: bridge 
