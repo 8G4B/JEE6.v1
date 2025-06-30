@@ -25,6 +25,7 @@ class BusEmbed:
             arrival_time = bus['arrival_time']
             remaining_stations = bus['remaining_stations']
             current_stop = bus.get('current_stop', '')
+            arrive_flag = bus.get('arrive_flag', 0)
 
             # 버스 유형에 따른 이모지
             bus_emoji = "🚌"
@@ -35,7 +36,7 @@ class BusEmbed:
 
             field_name = f"{bus_emoji} {route_no}번 ({vehicle_type})"
             
-            field_value = f"🕐 **{arrival_time}** 후 도착\n"
+            field_value = f"🕐 **{arrival_time}** 후 도착\n" if arrive_flag == 0 else f"⏳ **{arrival_time}** 후 도착 (곧 도착)"
             if current_stop:
                 field_value += f"📍현재 **{current_stop}** ({remaining_stations}개 전)\n"
             else:
