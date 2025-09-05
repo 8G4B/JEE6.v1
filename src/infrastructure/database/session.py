@@ -43,6 +43,7 @@ def create_tables():
 def update_schema():
     try:
         inspector = inspect(engine)
+
         if "periodic_clean" in inspector.get_table_names():
             columns = [col["name"] for col in inspector.get_columns("periodic_clean")]
             if "channel_name" not in columns:
@@ -57,5 +58,19 @@ def update_schema():
                     )
                     conn.commit()
                 logger.info("channel_name 컬럼 추가 완료")
+
+        if "channel_slow_mode" in inspector.get_table_names():
+            columns = [col["name"] for col in inspector.get_columns("channel_slow_mode")]
+            if "updated_at" not in columns:
+                logger.info("channel_slow_mode 테이블에 updated_at 컬럼 추가 중...")
+                with engine.connect() as conn:
+                    conn.execute(
+                        text(
+                            "ALTER TABLE channel_slow_mode "
+                            "ADD COLUMN updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"
+                        )
+                    )
+                    conn.commit()
+                logger.info("updated_at 컬럼 추가 완료")
     except Exception as e:
         logger.error(f"테이블 스키마 업데이트 중 오류 발생: {e}")

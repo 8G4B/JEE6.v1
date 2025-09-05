@@ -1,14 +1,17 @@
 from dependency_injector import containers, providers
 from src.repositories.UserBalanceRepository import UserBalanceRepository
 from src.repositories.JusticeRepository import JusticeRepository
+from src.repositories.PeriodicCleanRepository import PeriodicCleanRepository
+from src.repositories.ChannelSlowModeRepository import ChannelSlowModeRepository
 from src.services.UserService import UserService
 from src.services.TimeService import TimeService
 from src.services.ChannelService import ChannelService
 from src.services.JusticeService import JusticeService
+from src.services.SlowModeService import SlowModeService
 from src.domain.models.UserBalance import UserBalance
-from src.config.settings.Base import BaseConfig
-from src.repositories.PeriodicCleanRepository import PeriodicCleanRepository
 from src.domain.models.PeriodicClean import PeriodicClean
+from src.domain.models.ChannelSlowMode import ChannelSlowMode
+from src.config.settings.Base import BaseConfig
 from src.interfaces.commands.channel import ChannelCommands
 from src.interfaces.commands.information.TimeCommand import TimeCommands
 from src.interfaces.commands.information.InformationCommand import InformationCommands
@@ -18,6 +21,7 @@ from src.interfaces.commands.riot.ValoCommand import ValoCommands
 from src.interfaces.commands.gambling.GamblingCommand import GamblingCommands
 from src.interfaces.commands.gambling.GamblingGames import GamblingGames
 from src.interfaces.commands.gambling.GamblingCardGames import GamblingCardGames
+from src.interfaces.commands.channel.SlowModeCommand import SlowModeCommand
 
 
 class Container(containers.DeclarativeContainer):
@@ -28,15 +32,21 @@ class Container(containers.DeclarativeContainer):
 
     justice_repository = providers.Factory(JusticeRepository)
 
+    periodic_clean_repository = providers.Factory(
+        PeriodicCleanRepository, model=PeriodicClean
+    )
+
+    slow_mode_repository = providers.Factory(
+        ChannelSlowModeRepository, model=ChannelSlowMode
+    )
+
     time_service = providers.Factory(TimeService)
     channel_service = providers.Factory(ChannelService)
     justice_service = providers.Factory(
         JusticeService, justice_repository=justice_repository
     )
     user_service = providers.Factory(UserService, user_repository=user_repository)
-    periodic_clean_repository = providers.Factory(
-        PeriodicCleanRepository, model=PeriodicClean
-    )
+    slow_mode_service = providers.Factory(SlowModeService)
 
     channel_command = providers.Factory(
         ChannelCommands, bot=bot, container=providers.Self()
@@ -66,4 +76,8 @@ class Container(containers.DeclarativeContainer):
 
     gambling_card_games = providers.Factory(
         GamblingCardGames, bot=bot, container=providers.Self()
+    )
+
+    slow_mode_command = providers.Factory(
+        SlowModeCommand, bot=bot, container=providers.Self()
     )

@@ -90,6 +90,23 @@ def init_db():
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
             """
             )
+            cursor.execute(
+                """
+                CREATE TABLE IF NOT EXISTS channel_slow_mode (
+                    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+                    guild_id BIGINT NOT NULL,
+                    channel_id BIGINT NOT NULL,
+                    channel_name VARCHAR(100) NOT NULL,
+                    enabled BOOLEAN DEFAULT TRUE,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                    INDEX idx_guild_id (guild_id),
+                    INDEX idx_channel_id (channel_id),
+                    INDEX idx_channel_name (channel_name),
+                    UNIQUE KEY unique_guild_channel (guild_id, channel_id)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+            """
+            )
             connection.commit()
         logger.info("Database tables created successfully")
         return True
