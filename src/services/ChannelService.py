@@ -7,8 +7,14 @@ logger = logging.getLogger(__name__)
 
 
 class ChannelService:
-    def __init__(self, periodic_clean_repository=None, db: Session = None):
+    def __init__(
+        self,
+        periodic_clean_repository=None,
+        slow_mode_repository=None,
+        db: Session = None,
+    ):
         self.periodic_clean_repository = periodic_clean_repository
+        self.slow_mode_repository = slow_mode_repository
         self.db = db
 
     async def clean_channel(
@@ -52,6 +58,14 @@ class ChannelService:
             if self.periodic_clean_repository and self.db:
                 try:
                     self.periodic_clean_repository.update_channel_id(
+                        guild.id, old_channel_id, new_channel.id, channel_name
+                    )
+                except Exception as e:
+                    logger.error(e)
+
+            if self.slow_mode_repository and self.db:
+                try:
+                    self.slow_mode_repository.update_channel_id(
                         guild.id, old_channel_id, new_channel.id, channel_name
                     )
                 except Exception as e:
