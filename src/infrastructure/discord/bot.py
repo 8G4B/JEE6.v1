@@ -5,6 +5,7 @@ from src.interfaces.commands.information.TimeCommand import TimeCommands
 from src.interfaces.commands.channel import ChannelCommands
 from src.interfaces.commands.channel import CleanCommand
 from src.interfaces.commands.channel import PeriodicCleanCommand
+from src.interfaces.commands.channel.SlowModeCommand import SlowModeCommand
 from src.interfaces.commands.justice.JusticeCommand import JusticeCommands
 from src.interfaces.commands.justice.ReleaseCommand import ReleaseCommand
 from src.interfaces.commands.information.InformationCommand import InformationCommands
@@ -33,6 +34,7 @@ class Bot(commands.Bot):
             await self.add_cog(ChannelCommands(self, self.container))
             await self.add_cog(CleanCommand(self, self.container))
             await self.add_cog(PeriodicCleanCommand(self, self.container))
+            await self.add_cog(SlowModeCommand(self, self.container))
 
         if BaseConfig.ENABLE_GAMBLING_COMMANDS:
             await self.add_cog(self.container.gambling_command())
