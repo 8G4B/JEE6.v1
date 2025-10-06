@@ -1,6 +1,11 @@
 class DomainException(Exception):
-    pass
+    def __init__(self, message: str):
+        self.message = message
+        print(self.message)
+        super().__init__(self.message)
 
 
 class NotFoundException(DomainException):
-    pass
+    def __init__(self, message: str):
+        print(message)
+        super().__init__(message)

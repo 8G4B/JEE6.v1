@@ -46,7 +46,6 @@ class Bot(commands.Bot):
         await self.add_cog(TimeCommands(self, self.container))
         await self.add_cog(JusticeCommands(self, self.container))
         await self.add_cog(ReleaseCommand(self, self.container))
-        await self.add_cog(self.container.bus_command())
 
     async def on_ready(self):
         print(f"Logged in as {self.user.name} (ID: {self.user.id})")

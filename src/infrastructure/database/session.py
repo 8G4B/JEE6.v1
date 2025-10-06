@@ -1,7 +1,7 @@
 from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy.exc import SQLAlchemyError
-from src.domain.models.base import Base
+from src.domain.models.Base import Base
 from src.infrastructure.database.Connection import DatabaseConnection
 import logging
 from contextlib import contextmanager

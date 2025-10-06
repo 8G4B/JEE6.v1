@@ -20,7 +20,6 @@ class BaseConfig:
 
     RIOT_API_KEY = os.getenv("RIOT_API_KEY")
     GPT_API_KEY = os.getenv("GPT_API_KEY")
-    BIS_API_KEY = os.getenv("BIS_API_KEY")
 
     LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
 

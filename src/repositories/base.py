@@ -1,8 +1,8 @@
 import logging
 from typing import Generic, TypeVar, Type, Optional, List
 from sqlalchemy.orm import Session
-from src.domain.models.base import BaseModel
-from src.infrastructure.database.session import SessionLocal
+from src.domain.models.Base import BaseModel
+from src.infrastructure.database.Session import SessionLocal
 
 T = TypeVar("T", bound=BaseModel)
 
