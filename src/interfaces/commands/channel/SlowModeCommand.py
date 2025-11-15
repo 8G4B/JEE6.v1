@@ -17,10 +17,14 @@ class SlowModeCommand(BaseCommand):
         super().__init__(bot, container)
         self.slow_mode_service = SlowModeService()
         self.slow_mode_tasks = {}
-        self._init_slow_mode_tasks()
 
-    def _init_slow_mode_tasks(self):
+    async def cog_load(self):
+        await self._init_slow_mode_tasks()
+
+    async def _init_slow_mode_tasks(self):
         try:
+            await self.bot.wait_until_ready()
+
             with get_db_session() as db:
                 repo = self.container.slow_mode_repository(db=db)
                 schedules = repo.get_all_enabled()
@@ -34,8 +38,31 @@ class SlowModeCommand(BaseCommand):
                         continue
                     self._start_slow_mode_task(guild, channel)
                     logger.info(f"슬로우 모드 태스크 시작: {guild.name} - {channel.name}")
+
+                    await self._apply_initial_slow_mode(channel)
         except Exception as e:
             logger.error(f"슬로우 모드 태스크 초기화 중 오류: {e}")
+
+    async def _apply_initial_slow_mode(self, channel):
+        try:
+            now = datetime.now(ZoneInfo("Asia/Seoul"))
+
+            if self.slow_mode_service.is_slow_mode_active_time(now):
+                period = self.slow_mode_service.get_current_slow_period(now)
+
+                if period:
+                    delay = 3000
+                    success, message = await self.slow_mode_service.apply_slow_mode(
+                        channel, delay
+                    )
+                    if success:
+                        logger.info(f"슬로우 모드 적용: {channel.name} - {period} ({delay}초)")
+                else:
+                    await self.slow_mode_service.remove_slow_mode(channel)
+            else:
+                await self.slow_mode_service.remove_slow_mode(channel)
+        except Exception as e:
+            logger.error(f"슬로우 모드 적용 중 오류: {e}")
 
     def _start_slow_mode_task(self, guild, channel):
         key = (guild.id, channel.id)
