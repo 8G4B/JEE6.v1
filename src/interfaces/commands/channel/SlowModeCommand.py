@@ -17,14 +17,17 @@ class SlowModeCommand(BaseCommand):
         super().__init__(bot, container)
         self.slow_mode_service = SlowModeService()
         self.slow_mode_tasks = {}
+        self._initialized = False
 
-    async def cog_load(self):
+    @commands.Cog.listener()
+    async def on_ready(self):
+        if self._initialized:
+            return
+        self._initialized = True
         await self._init_slow_mode_tasks()
 
     async def _init_slow_mode_tasks(self):
         try:
-            await self.bot.wait_until_ready()
-
             with get_db_session() as db:
                 repo = self.container.slow_mode_repository(db=db)
                 schedules = repo.get_all_enabled()
