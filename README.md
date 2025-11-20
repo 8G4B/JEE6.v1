@@ -18,6 +18,8 @@
 
     - `!급식` `!밥`을 통해 다음 급식을 확인할 수 있어요.
 
+      - 7:30, 12:30, 18:30을 기준으로 다음 급식이 바뀝니다
+
     - `!급식.아침` `!급식.점심` `!급식.저녁` 을 통해 오늘의 각 식사메뉴를 확인할 수 있어요.
 
     - `!급식.내일아침` `!급식.내일점심` `!급식.내일저녁` 을 통해 내일의 각 식사메뉴를 확인할 수 있어요.
@@ -106,6 +108,32 @@
 
       - 지금 GPT API 돈없음 이슈로 작동하지 않아요...
 
+## env
+
+```env
+MEAL_API_KEY=[나이스 API KEY]
+DISCORD_TOKEN=[디코 APP Token]
+RIOT_API_KEY=RGAPI-...
+
+TZ=Asia/Seoul
+AWS_REGION=ap-northeast-2
+AWS_ACCOUNT_ID=[aws sts get-caller-identity 하면 나옴]
+EFS_FILE_SYSTEM_ID=fs-...
+
+DB_HOST=mariadb
+DB_PORT=3306
+DB_NAME=...
+DB_PASSWORD=...
+DB_USER=...
+
+SUBNET_ID_1=subnet-...
+SUBNET_ID_2=subnet-...
+SECURITY_GROUP_ID=sg-...
+
+M=[서버 관리 명령어 활성화 boolean]
+G=[도박 명령어 활성화 boolean]
+```
+
 ## 로컬에서 실행
 
 1. 패키지 설치
@@ -129,17 +157,6 @@
 
    `.env` 파일을 만들어서 환경변수를 설정해주세요. 이 파일은 보안상의 이유로 `.gitignore`에 포함되어 있어서 github에 올라가지 않아요.
 
-   터미널에 다음 명령어를 입력하거나,
-
-   ```shell
-   echo "DISCORD_TOKEN=[여기에 토큰 입력]" >> .env
-   echo "MEAL_API_KEY=[여기에 키 입력]" >> .env
-   echo "GPT_API_KEY=[여기에 키 입력]" >> .env
-   echo "RIOT_API_KEY=[여기에 키 입력]" >> .env
-   ```
-
-   root 디렉토리에 `.env` 파일을 만들어서 직접 설정해도 됩니다.
-
 3. 실행
 
    `app.py` 파일을 실행해주세요.
@@ -157,17 +174,6 @@ Windows의 경우와 Ubuntu의 경우로 나뉘어요.
 2. 환경변수 설정
 
    `.env` 파일을 만들어서 환경변수를 설정해주세요. 이 파일은 보안상의 이유로 `.gitignore`에 포함되어 있어서 github에 올라가지 않아요.
-
-   터미널에 다음 명령어를 입력하거나,
-
-   ```shell
-   echo "DISCORD_TOKEN=[여기에 토큰 입력]" >> .env
-   echo "MEAL_API_KEY=[여기에 키 입력]" >> .env
-   echo "GPT_API_KEY=[여기에 키 입력]" >> .env
-   echo "RIOT_API_KEY=[여기에 키 입력]" >> .env
-   ```
-
-   root 디렉토리에 `.env` 파일을 만들어서 직접 설정해도 됩니다.
 
 3. 도커 이미지 빌드
 
@@ -202,13 +208,6 @@ Windows의 경우와 Ubuntu의 경우로 나뉘어요.
 
    `.env` 파일을 만들어서 환경변수를 설정해주세요. 이 파일은 보안상의 이유로 `.gitignore`에 포함되어 있어서 github에 올라가지 않아요.
 
-   ```bash
-    echo "DISCORD_TOKEN=[여기에 토큰 입력]" >> .env
-    echo "MEAL_API_KEY=[여기에 키 입력]" >> .env
-    echo "GPT_API_KEY=[여기에 키 입력]" >> .env
-    echo "RIOT_API_KEY=[여기에 키 입력]" >> .env
-   ```
-
 3. 도커 이미지 빌드
 
    다음 명령어를 실행해주세요.
@@ -224,3 +223,93 @@ Windows의 경우와 Ubuntu의 경우로 나뉘어요.
    ```bash
    sudo docker run --env-file .env jee6
    ```
+
+## AWS로 배포
+
+이대로 따라하려면 AWS CLI가 설치되어 있어야 해요~
+
+### 1. EFS 파일 시스템 생성
+
+```bash
+EFS_FILE_SYSTEM_ID=$(aws efs create-file-system \
+  --region ap-northeast-2 \
+  --performance-mode generalPurpose \
+  --throughput-mode bursting \
+  --encrypted \
+  --query 'FileSystemId' \
+  --output text)
+```
+생성된 값을 .env의 EFS_FILE_SYSTEM_ID에 복사해 넣어주세요.
+
+### 2. EFS 마운트 타겟 생성
+
+```bash
+source .env
+
+aws efs create-mount-target \
+  --file-system-id ${EFS_FILE_SYSTEM_ID} \
+  --subnet-id ${SUBNET_ID_1} \
+  --security-groups ${SECURITY_GROUP_ID} \
+  --region ap-northeast-2
+
+aws efs create-mount-target \
+  --file-system-id ${EFS_FILE_SYSTEM_ID} \
+  --subnet-id ${SUBNET_ID_2} \
+  --security-groups ${SECURITY_GROUP_ID} \
+  --region ap-northeast-2
+```
+
+### 3. IAM 역할 생성
+
+```bash
+aws iam create-role \
+  --role-name ecsTaskExecutionRole \
+  --assume-role-policy-document file://trust-policy.json
+
+aws iam attach-role-policy \
+  --role-name ecsTaskExecutionRole \
+  --policy-arn arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
+
+aws iam put-role-policy \
+  --role-name ecsTaskExecutionRole \
+  --policy-name EFSAccessPolicy \
+  --policy-document file://efs-access-policy.json
+
+aws iam create-role \
+  --role-name ecsTaskRole \
+  --assume-role-policy-document file://trust-policy.json
+
+aws iam put-role-policy \
+  --role-name ecsTaskRole \
+  --policy-name EFSAccessPolicy \
+  --policy-document file://efs-access-policy.json
+```
+
+### 4. CloudWatch Logs 그룹 생성
+
+```bash
+aws logs create-log-group --log-group-name /ecs/jee6-bot/mariadb --region ap-northeast-2
+aws logs create-log-group --log-group-name /ecs/jee6-bot/discord-bot --region ap-northeast-2
+```
+처음 한 번만 실행하면 됩니다
+
+### 5. .env 파일 설정 및 배포
+
+```bash
+nano .env
+
+./deploy.sh
+```
+
+### 배포 확인
+
+```bash
+aws ecs describe-services \
+  --cluster jee6-bot-cluster \
+  --services jee6-bot-service \
+  --region ap-northeast-2 \
+  --query 'services[0].{Status:status,RunningCount:runningCount,DesiredCount:desiredCount}'
+
+aws logs tail /ecs/jee6-bot/discord-bot --follow --region ap-northeast-2
+```
+
