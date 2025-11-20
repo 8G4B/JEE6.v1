@@ -14,3 +14,8 @@ __pycache__/
 .vscode/
 .idea/
 .cursor
+
+ecs-task-definition-generated.json
+ecs-service-definition-updated.json
+*-generated.json
+*-updated.json

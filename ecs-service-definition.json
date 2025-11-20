@@ -1,0 +1,31 @@
+{
+  "serviceName": "jee6-bot-service",
+  "cluster": "jee6-bot-cluster",
+  "taskDefinition": "jee6-bot-task",
+  "desiredCount": 1,
+  "launchType": "FARGATE",
+  "networkConfiguration": {
+    "awsvpcConfiguration": {
+      "subnets": [
+        "subnet-xxxxxxxxx",
+        "subnet-yyyyyyyyy"
+      ],
+      "securityGroups": [
+        "sg-xxxxxxxxx"
+      ],
+      "assignPublicIp": "ENABLED"
+    }
+  },
+  "serviceRegistries": [],
+  "deploymentConfiguration": {
+    "maximumPercent": 200,
+    "minimumHealthyPercent": 100,
+    "deploymentCircuitBreaker": {
+      "enable": true,
+      "rollback": true
+    }
+  },
+  "healthCheckGracePeriodSeconds": 60,
+  "enableExecuteCommand": true
+}
+
