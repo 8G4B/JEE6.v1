@@ -1,5 +1,6 @@
 import json
 import logging
+import asyncio
 import aiohttp
 from datetime import datetime, timedelta
 from typing import Dict, Optional, List, Tuple
@@ -14,6 +15,8 @@ from src.config.settings.mealSettings import (
 
 logger = logging.getLogger(__name__)
 
+TIMEOUT = aiohttp.ClientTimeout(total=5, connect=2)
+
 
 class MealService:
     base_url = "https://open.neis.go.kr/hub/mealServiceDietInfo"
@@ -25,6 +28,18 @@ class MealService:
     }
 
     _cache: Dict[str, tuple[List, datetime]] = {}
+    _session: Optional[aiohttp.ClientSession] = None
+
+    def __init__(self):
+        if MealService._session is None or MealService._session.closed:
+            MealService._session = aiohttp.ClientSession(timeout=TIMEOUT)
+
+    async def __aenter__(self):
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        if MealService._session and not MealService._session.closed:
+            await MealService._session.close()
 
     async def get_meal_info(self, date: str) -> Optional[List]:
         if date in self._cache:
@@ -40,26 +55,31 @@ class MealService:
 
         try:
             logger.debug(f"Requesting meal info for {date}")
-            async with aiohttp.ClientSession() as session:
-                async with session.get(self.base_url, params=params) as response:
-                    data = await response.json()
-
-                    if "mealServiceDietInfo" in data:
-                        meals = data["mealServiceDietInfo"][1]["row"]
-                        for meal in meals:
-                            meal["DDISH_NM"] = "\n".join(
-                                f"- {dish.strip()}"
-                                for dish in meal["DDISH_NM"]
-                                .replace("*", "")
-                                .split("<br/>")
-                                if dish.strip()
-                            )
-                        self._cache[date] = (meals, datetime.now())
-                        return meals
-                    logger.warning(f"No meal info returned for {date}")
+            session = MealService._session
+            if session is None or session.closed:
+                session = MealService._session = aiohttp.ClientSession(timeout=TIMEOUT)
+            async with session.get(self.base_url, params=params) as response:
+                if response.status != 200:
+                    logger.warning(f"API returned status {response.status} for {date}")
                     return None
+                data = await response.json()
 
-        except (aiohttp.ClientError, json.JSONDecodeError, KeyError) as e:
+                if "mealServiceDietInfo" in data:
+                    meals = data["mealServiceDietInfo"][1]["row"]
+                    for meal in meals:
+                        meal["DDISH_NM"] = "\n".join(
+                            f"- {dish.strip()}"
+                            for dish in meal["DDISH_NM"]
+                            .replace("*", "")
+                            .split("<br/>")
+                            if dish.strip()
+                        )
+                    self._cache[date] = (meals, datetime.now())
+                    return meals
+                logger.warning(f"No meal info returned for {date}")
+                return None
+
+        except (aiohttp.ClientError, asyncio.TimeoutError, json.JSONDecodeError, KeyError) as e:
             logger.error(f"Error fetching meal info: {e}")
             return None
 

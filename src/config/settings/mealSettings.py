@@ -18,4 +18,4 @@ MEAL_TIMES = [
     ((lambda h, m: h < 18 or (h == 18 and m < 30)), "3", "🍖 저녁"),
 ]
 
-CACHE_DURATION = timedelta(hours=1)
+CACHE_DURATION = timedelta(hours=6)
