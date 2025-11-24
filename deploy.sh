@@ -13,7 +13,7 @@ echo "🔐 ECR login"
 aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com
 
 echo "🔨 docker build"
-docker build -t ${ECR_REPO_NAME}:latest -f dockerfile .
+DOCKER_DEFAULT_PLATFORM=linux/amd64 docker build -t ${ECR_REPO_NAME}:latest -f dockerfile .
 
 ECR_URI="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPO_NAME}:latest"
 docker tag ${ECR_REPO_NAME}:latest ${ECR_URI}
