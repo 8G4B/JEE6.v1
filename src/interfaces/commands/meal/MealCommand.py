@@ -60,7 +60,7 @@ class MealCommands(BaseCommand):
 
     @commands.command(
         name="급식.아침",
-        aliases=["급식.조식", "meal.breakfast", "ㄱㅅ.ㅇㅊ"],
+        aliases=["급식.조식", "meal.breakfast", "ㄱㅅ.ㅇㅊ", "아침"],
         description="아침 급식 조회",
     )
     async def breakfast(self, ctx):
@@ -74,7 +74,7 @@ class MealCommands(BaseCommand):
 
     @commands.command(
         name="급식.점심",
-        aliases=["급식.중식", "meal.lunch", "ㄱㅅ.ㅈㅅ"],
+        aliases=["급식.중식", "meal.lunch", "ㄱㅅ.ㅈㅅ", "점심"],
         description="점심 급식 조회",
     )
     async def lunch(self, ctx):
@@ -88,7 +88,7 @@ class MealCommands(BaseCommand):
 
     @commands.command(
         name="급식.저녁",
-        aliases=["급식.석식", "meal.dinner", "ㄱㅅ.ㅓㄴ"],
+        aliases=["급식.석식", "meal.dinner", "ㄱㅅ.ㅈㄴ", "저녁"],
         description="저녁 급식 조회",
     )
     async def dinner(self, ctx):
@@ -102,7 +102,7 @@ class MealCommands(BaseCommand):
 
     @commands.command(
         name="급식.내일아침",
-        aliases=["급식.내일조식", "meal.tomorrow_breakfast", "ㄱㅅ.ㄴㅇㅊ"],
+        aliases=["급식.내일조식", "meal.tomorrow_breakfast", "ㄱㅅ.ㄴㅇㅊ", "내일아침"],
         description="내일 아침 급식 조회",
     )
     async def tomorrow_breakfast(self, ctx):
@@ -116,7 +116,7 @@ class MealCommands(BaseCommand):
 
     @commands.command(
         name="급식.내일점심",
-        aliases=["급식.내일중식", "meal.tomorrow_lunch", "ㄱㅅ.ㄴㅈㅅ"],
+        aliases=["급식.내일중식", "meal.tomorrow_lunch", "ㄱㅅ.ㄴㅈㅅ", "내일점심"],
         description="내일 점심 급식 조회",
     )
     async def tomorrow_lunch(self, ctx):
@@ -130,7 +130,7 @@ class MealCommands(BaseCommand):
 
     @commands.command(
         name="급식.내일저녁",
-        aliases=["급식.내일석식", "meal.tomorrow_dinner", "ㄱㅅ.ㄴㅓㄴ"],
+        aliases=["급식.내일석식", "meal.tomorrow_dinner", "ㄱㅅ.ㄴㅓㄴ", "내일저녁"],
         description="내일 저녁 급식 조회",
     )
     async def tomorrow_dinner(self, ctx):
