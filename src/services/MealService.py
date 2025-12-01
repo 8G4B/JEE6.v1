@@ -17,7 +17,7 @@ from src.domain.models.Meal import Meal
 
 logger = logging.getLogger(__name__)
 
-TIMEOUT = aiohttp.ClientTimeout(total=10, connect=5)
+TIMEOUT = aiohttp.ClientTimeout(total=30, connect=5)
 
 
 class MealService:
