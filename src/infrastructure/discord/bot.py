@@ -12,6 +12,7 @@ from src.interfaces.commands.channel.SlowModeCommand import SlowModeCommand
 from src.interfaces.commands.justice.JusticeCommand import JusticeCommands
 from src.interfaces.commands.justice.ReleaseCommand import ReleaseCommand
 from src.interfaces.commands.information.InformationCommand import InformationCommands
+from src.interfaces.commands.information.WaterCommand import WaterCommand
 from src.interfaces.commands.meal.MealCommand import MealCommands
 from src.interfaces.commands.riot.LolCommand import LolCommands
 from src.interfaces.commands.riot.ValoCommand import ValoCommands
@@ -48,6 +49,7 @@ class Bot(commands.Bot):
             await self.add_cog(self.container.gambling_card_games())
 
         await self.add_cog(InformationCommands(self, self.container))
+        await self.add_cog(WaterCommand(self, self.container))
         await self.add_cog(MealCommands(self, self.container))
         await self.add_cog(LolCommands(self, self.container))
         await self.add_cog(ValoCommands(self, self.container))
