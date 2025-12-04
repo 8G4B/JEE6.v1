@@ -29,10 +29,19 @@ class WaterService:
                         logger.warning("No data rows found in API response")
                         return None
 
-                    latest_data = rows[0]
+                    target_station = "선유"
+                    latest_data = None
 
-                    msr_time = latest_data.get("MSR_TIME", "00:00")
-                    w_temp = latest_data.get("W_TEMP", "0.0")
+                    for row in rows:
+                        if row.get("MSRSTN_NM") == target_station:
+                            latest_data = row
+                            break
+
+                    if not latest_data:
+                        latest_data = rows[0]
+
+                    msr_time = latest_data.get("HR", "00:00")
+                    w_temp = latest_data.get("WATT", "0.0")
 
                     if ":" in msr_time:
                         hour, minute = msr_time.split(":")
