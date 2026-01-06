@@ -18,6 +18,7 @@ from src.interfaces.commands.riot.LolCommand import LolCommands
 from src.interfaces.commands.riot.ValoCommand import ValoCommands
 from src.config.settings.Base import BaseConfig
 from src.services.MealService import MealService
+from src.interfaces.commands.school.GraduationCommand import GraduationCommand
 
 logger = logging.getLogger(__name__)
 
@@ -56,6 +57,7 @@ class Bot(commands.Bot):
         await self.add_cog(TimeCommands(self, self.container))
         await self.add_cog(JusticeCommands(self, self.container))
         await self.add_cog(ReleaseCommand(self, self.container))
+        await self.add_cog(GraduationCommand(self, self.container))
 
     async def on_ready(self):
         print(f"Logged in as {self.user.name} (ID: {self.user.id})")
