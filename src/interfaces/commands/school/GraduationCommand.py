@@ -16,10 +16,10 @@ class GraduationCommand(BaseCommand):
         graduate_role = discord.utils.get(guild.roles, name=graduate_role_name)
 
         if not graduate_role:
-            await ctx.send(f"오류: '{graduate_role_name}' 역할을 찾을 수 없습니다.")
+            await ctx.send(f"'{graduate_role_name}' 역할을 찾을 수 없습니다.")
             return
 
-        msg = await ctx.send("졸업생 닉네임 변경 중입니다... (이 작업은 시간이 걸릴 수 있습니다)")
+        msg = await ctx.send("변경 중입니다...")
 
         count_nicks = 0
 
@@ -46,4 +46,4 @@ class GraduationCommand(BaseCommand):
                 except Exception as e:
                     print(f"Failed to update nickname for {member.display_name}: {e}")
 
-        await msg.edit(content=f"졸업생 닉네임 변경이 완료되었습니다.\n- 닉네임 변경: {count_nicks}명")
+        await msg.edit(content=f"졸업생 {count_nicks}명 닉네임 변경 완료")
