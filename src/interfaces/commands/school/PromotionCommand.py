@@ -66,40 +66,44 @@ class PromotionCommand(BaseCommand):
             await ctx.send("명렬표 파일(`2025_전체학생명렬_flat.json`)을 찾을 수 없습니다.")
             return
 
-        student_map = {(s["grade"], s["class"], s["no"]): s for s in students}
+        students_by_name: dict[str, list] = {}
+        for s in students:
+            students_by_name.setdefault(s["name"], []).append(s)
 
         msg = await ctx.send("역할 부여 중입니다...")
 
-        nick_pattern = re.compile(r"^([1-3])([1-4])(\d{2})\s+(.+)$")
+        student_nick_pattern = re.compile(r"^[1-3][1-4]\d{2}\s+.+$")
         role_cache: dict[str, discord.Role] = {}
         created_roles: list[str] = []
 
-        count_nick = 0
-        count_role = 0
+        count_done = 0
+        ambiguous: list[str] = []
         skipped: list[str] = []
 
         for member in guild.members:
             if member.bot:
                 continue
 
-            match = nick_pattern.match(member.display_name)
-            if not match:
+            if student_nick_pattern.match(member.display_name):
                 continue
 
-            grade = int(match.group(1))
-            cls = int(match.group(2))
-            no = int(match.group(3))
-            name = match.group(4)
+            name = member.display_name
+            candidates = students_by_name.get(name)
 
-            student = student_map.get((grade, cls, no))
-            if student is None or student["name"] != name:
-                skipped.append(member.display_name)
+            if not candidates:
                 continue
 
-            correct_nick = f"{grade}{cls}{no:02d} {student['name']}"
+            if len(candidates) > 1:
+                ambiguous.append(name)
+                continue
 
+            student = candidates[0]
+            grade = student["grade"]
+            cls = student["class"]
+            no = student["no"]
             gender_suffix = "남학생" if student["gender"] == "M" else "여학생"
 
+            new_nick = f"{grade}{cls}{no:02d} {name}"
             target_role_names = [
                 f"{grade}학년",
                 f"{grade}학년 {cls}반",
@@ -107,9 +111,7 @@ class PromotionCommand(BaseCommand):
             ]
 
             try:
-                if member.display_name != correct_nick:
-                    await member.edit(nick=correct_nick)
-                    count_nick += 1
+                await member.edit(nick=new_nick)
 
                 roles_to_add = []
                 for rname in target_role_names:
@@ -119,16 +121,19 @@ class PromotionCommand(BaseCommand):
 
                 if roles_to_add:
                     await member.add_roles(*roles_to_add)
-                    count_role += 1
+
+                count_done += 1
 
             except discord.Forbidden:
-                skipped.append(f"{member.display_name} (권한 없음)")
+                skipped.append(f"{name} (권한 없음)")
             except Exception as e:
-                skipped.append(f"{member.display_name} ({e})")
+                skipped.append(f"{name} ({e})")
 
-        summary = f"닉네임 {count_nick}명, 역할 {count_role}명 변경했어요"
+        summary = f"{count_done}명 처리 완료했어요"
         if created_roles:
             summary += f"\n새로 만든 역할: {', '.join(created_roles)}"
+        if ambiguous:
+            summary += f"\n동명이인 (수동 처리 필요): {', '.join(ambiguous)}"
         if skipped:
             summary += f"\n실패작들: {', '.join(skipped)}"
 
