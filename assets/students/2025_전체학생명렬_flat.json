@@ -1,0 +1,1259 @@
+{
+  "schoolYear": 2025,
+  "students": [
+    {
+      "grade": 1,
+      "class": 1,
+      "no": 1,
+      "name": "강우빈"
+    },
+    {
+      "grade": 1,
+      "class": 1,
+      "no": 2,
+      "name": "강태현"
+    },
+    {
+      "grade": 1,
+      "class": 1,
+      "no": 3,
+      "name": "김도연"
+    },
+    {
+      "grade": 1,
+      "class": 1,
+      "no": 4,
+      "name": "김동현"
+    },
+    {
+      "grade": 1,
+      "class": 1,
+      "no": 5,
+      "name": "김민정"
+    },
+    {
+      "grade": 1,
+      "class": 1,
+      "no": 6,
+      "name": "김성주"
+    },
+    {
+      "grade": 1,
+      "class": 1,
+      "no": 7,
+      "name": "김연우"
+    },
+    {
+      "grade": 1,
+      "class": 1,
+      "no": 8,
+      "name": "김유찬"
+    },
+    {
+      "grade": 1,
+      "class": 1,
+      "no": 9,
+      "name": "김의현"
+    },
+    {
+      "grade": 1,
+      "class": 1,
+      "no": 10,
+      "name": "류수연"
+    },
+    {
+      "grade": 1,
+      "class": 1,
+      "no": 11,
+      "name": "배순우"
+    },
+    {
+      "grade": 1,
+      "class": 1,
+      "no": 12,
+      "name": "배재현"
+    },
+    {
+      "grade": 1,
+      "class": 1,
+      "no": 13,
+      "name": "음창승"
+    },
+    {
+      "grade": 1,
+      "class": 1,
+      "no": 14,
+      "name": "이예은"
+    },
+    {
+      "grade": 1,
+      "class": 1,
+      "no": 15,
+      "name": "정수진"
+    },
+    {
+      "grade": 1,
+      "class": 1,
+      "no": 16,
+      "name": "조현성"
+    },
+    {
+      "grade": 1,
+      "class": 1,
+      "no": 17,
+      "name": "한국"
+    },
+    {
+      "grade": 1,
+      "class": 1,
+      "no": 18,
+      "name": "한의준"
+    },
+    {
+      "grade": 1,
+      "class": 2,
+      "no": 1,
+      "name": "기태희"
+    },
+    {
+      "grade": 1,
+      "class": 2,
+      "no": 2,
+      "name": "김민아"
+    },
+    {
+      "grade": 1,
+      "class": 2,
+      "no": 3,
+      "name": "김수빈"
+    },
+    {
+      "grade": 1,
+      "class": 2,
+      "no": 4,
+      "name": "김재경"
+    },
+    {
+      "grade": 1,
+      "class": 2,
+      "no": 5,
+      "name": "김지유"
+    },
+    {
+      "grade": 1,
+      "class": 2,
+      "no": 6,
+      "name": "문강현"
+    },
+    {
+      "grade": 1,
+      "class": 2,
+      "no": 7,
+      "name": "박시온"
+    },
+    {
+      "grade": 1,
+      "class": 2,
+      "no": 8,
+      "name": "박채은"
+    },
+    {
+      "grade": 1,
+      "class": 2,
+      "no": 9,
+      "name": "양은준"
+    },
+    {
+      "grade": 1,
+      "class": 2,
+      "no": 10,
+      "name": "이남진"
+    },
+    {
+      "grade": 1,
+      "class": 2,
+      "no": 11,
+      "name": "임규범"
+    },
+    {
+      "grade": 1,
+      "class": 2,
+      "no": 12,
+      "name": "정연돈"
+    },
+    {
+      "grade": 1,
+      "class": 2,
+      "no": 13,
+      "name": "정예빈"
+    },
+    {
+      "grade": 1,
+      "class": 2,
+      "no": 14,
+      "name": "정윤서"
+    },
+    {
+      "grade": 1,
+      "class": 2,
+      "no": 15,
+      "name": "조하율"
+    },
+    {
+      "grade": 1,
+      "class": 2,
+      "no": 16,
+      "name": "주경서"
+    },
+    {
+      "grade": 1,
+      "class": 2,
+      "no": 17,
+      "name": "최준영"
+    },
+    {
+      "grade": 1,
+      "class": 2,
+      "no": 18,
+      "name": "홍지민"
+    },
+    {
+      "grade": 1,
+      "class": 3,
+      "no": 1,
+      "name": "김서연"
+    },
+    {
+      "grade": 1,
+      "class": 3,
+      "no": 2,
+      "name": "김준표"
+    },
+    {
+      "grade": 1,
+      "class": 3,
+      "no": 3,
+      "name": "김지현"
+    },
+    {
+      "grade": 1,
+      "class": 3,
+      "no": 4,
+      "name": "노민영"
+    },
+    {
+      "grade": 1,
+      "class": 3,
+      "no": 5,
+      "name": "류도호"
+    },
+    {
+      "grade": 1,
+      "class": 3,
+      "no": 6,
+      "name": "송채우"
+    },
+    {
+      "grade": 1,
+      "class": 3,
+      "no": 7,
+      "name": "윤덕영"
+    },
+    {
+      "grade": 1,
+      "class": 3,
+      "no": 8,
+      "name": "윤수연"
+    },
+    {
+      "grade": 1,
+      "class": 3,
+      "no": 9,
+      "name": "이의빈"
+    },
+    {
+      "grade": 1,
+      "class": 3,
+      "no": 10,
+      "name": "이진서"
+    },
+    {
+      "grade": 1,
+      "class": 3,
+      "no": 11,
+      "name": "이찬진"
+    },
+    {
+      "grade": 1,
+      "class": 3,
+      "no": 12,
+      "name": "이하경"
+    },
+    {
+      "grade": 1,
+      "class": 3,
+      "no": 13,
+      "name": "이효은"
+    },
+    {
+      "grade": 1,
+      "class": 3,
+      "no": 14,
+      "name": "임재현"
+    },
+    {
+      "grade": 1,
+      "class": 3,
+      "no": 15,
+      "name": "전준혁"
+    },
+    {
+      "grade": 1,
+      "class": 3,
+      "no": 16,
+      "name": "주현진"
+    },
+    {
+      "grade": 1,
+      "class": 3,
+      "no": 17,
+      "name": "채성원"
+    },
+    {
+      "grade": 1,
+      "class": 3,
+      "no": 18,
+      "name": "천정은"
+    },
+    {
+      "grade": 1,
+      "class": 4,
+      "no": 1,
+      "name": "김민선"
+    },
+    {
+      "grade": 1,
+      "class": 4,
+      "no": 2,
+      "name": "김수현"
+    },
+    {
+      "grade": 1,
+      "class": 4,
+      "no": 3,
+      "name": "김태연"
+    },
+    {
+      "grade": 1,
+      "class": 4,
+      "no": 4,
+      "name": "박하민"
+    },
+    {
+      "grade": 1,
+      "class": 4,
+      "no": 5,
+      "name": "신민기"
+    },
+    {
+      "grade": 1,
+      "class": 4,
+      "no": 6,
+      "name": "신예빈"
+    },
+    {
+      "grade": 1,
+      "class": 4,
+      "no": 7,
+      "name": "오종혁"
+    },
+    {
+      "grade": 1,
+      "class": 4,
+      "no": 8,
+      "name": "유휘영"
+    },
+    {
+      "grade": 1,
+      "class": 4,
+      "no": 9,
+      "name": "윤소현"
+    },
+    {
+      "grade": 1,
+      "class": 4,
+      "no": 10,
+      "name": "윤솔희"
+    },
+    {
+      "grade": 1,
+      "class": 4,
+      "no": 11,
+      "name": "이건우"
+    },
+    {
+      "grade": 1,
+      "class": 4,
+      "no": 12,
+      "name": "이윤도"
+    },
+    {
+      "grade": 1,
+      "class": 4,
+      "no": 13,
+      "name": "전세준"
+    },
+    {
+      "grade": 1,
+      "class": 4,
+      "no": 14,
+      "name": "전혜린"
+    },
+    {
+      "grade": 1,
+      "class": 4,
+      "no": 15,
+      "name": "정종윤"
+    },
+    {
+      "grade": 1,
+      "class": 4,
+      "no": 16,
+      "name": "조영재"
+    },
+    {
+      "grade": 1,
+      "class": 4,
+      "no": 17,
+      "name": "한도엽"
+    },
+    {
+      "grade": 1,
+      "class": 4,
+      "no": 18,
+      "name": "황하윤"
+    },
+    {
+      "grade": 2,
+      "class": 1,
+      "no": 1,
+      "name": "김담율"
+    },
+    {
+      "grade": 2,
+      "class": 1,
+      "no": 2,
+      "name": "김민균"
+    },
+    {
+      "grade": 2,
+      "class": 1,
+      "no": 3,
+      "name": "김승현"
+    },
+    {
+      "grade": 2,
+      "class": 1,
+      "no": 4,
+      "name": "모태환"
+    },
+    {
+      "grade": 2,
+      "class": 1,
+      "no": 5,
+      "name": "문승덕"
+    },
+    {
+      "grade": 2,
+      "class": 1,
+      "no": 6,
+      "name": "박서현"
+    },
+    {
+      "grade": 2,
+      "class": 1,
+      "no": 7,
+      "name": "배경진"
+    },
+    {
+      "grade": 2,
+      "class": 1,
+      "no": 8,
+      "name": "유은서"
+    },
+    {
+      "grade": 2,
+      "class": 1,
+      "no": 9,
+      "name": "이서희"
+    },
+    {
+      "grade": 2,
+      "class": 1,
+      "no": 10,
+      "name": "이세민"
+    },
+    {
+      "grade": 2,
+      "class": 1,
+      "no": 11,
+      "name": "이영서"
+    },
+    {
+      "grade": 2,
+      "class": 1,
+      "no": 12,
+      "name": "임지훈"
+    },
+    {
+      "grade": 2,
+      "class": 1,
+      "no": 13,
+      "name": "임한솔"
+    },
+    {
+      "grade": 2,
+      "class": 1,
+      "no": 14,
+      "name": "전선우"
+    },
+    {
+      "grade": 2,
+      "class": 1,
+      "no": 15,
+      "name": "정하진"
+    },
+    {
+      "grade": 2,
+      "class": 1,
+      "no": 16,
+      "name": "조수민"
+    },
+    {
+      "grade": 2,
+      "class": 1,
+      "no": 17,
+      "name": "한승재"
+    },
+    {
+      "grade": 2,
+      "class": 2,
+      "no": 1,
+      "name": "김민준"
+    },
+    {
+      "grade": 2,
+      "class": 2,
+      "no": 2,
+      "name": "김준혁"
+    },
+    {
+      "grade": 2,
+      "class": 2,
+      "no": 3,
+      "name": "김지훈"
+    },
+    {
+      "grade": 2,
+      "class": 2,
+      "no": 4,
+      "name": "나현욱"
+    },
+    {
+      "grade": 2,
+      "class": 2,
+      "no": 5,
+      "name": "박찬울"
+    },
+    {
+      "grade": 2,
+      "class": 2,
+      "no": 6,
+      "name": "서정민"
+    },
+    {
+      "grade": 2,
+      "class": 2,
+      "no": 7,
+      "name": "송정연"
+    },
+    {
+      "grade": 2,
+      "class": 2,
+      "no": 8,
+      "name": "이산"
+    },
+    {
+      "grade": 2,
+      "class": 2,
+      "no": 9,
+      "name": "이서준"
+    },
+    {
+      "grade": 2,
+      "class": 2,
+      "no": 10,
+      "name": "이시우"
+    },
+    {
+      "grade": 2,
+      "class": 2,
+      "no": 11,
+      "name": "이은아"
+    },
+    {
+      "grade": 2,
+      "class": 2,
+      "no": 12,
+      "name": "이준건"
+    },
+    {
+      "grade": 2,
+      "class": 2,
+      "no": 13,
+      "name": "장경훈"
+    },
+    {
+      "grade": 2,
+      "class": 2,
+      "no": 14,
+      "name": "정창진"
+    },
+    {
+      "grade": 2,
+      "class": 2,
+      "no": 15,
+      "name": "정효주"
+    },
+    {
+      "grade": 2,
+      "class": 2,
+      "no": 16,
+      "name": "주여진"
+    },
+    {
+      "grade": 2,
+      "class": 2,
+      "no": 17,
+      "name": "하창혁"
+    },
+    {
+      "grade": 2,
+      "class": 2,
+      "no": 18,
+      "name": "함성우"
+    },
+    {
+      "grade": 2,
+      "class": 3,
+      "no": 1,
+      "name": "김동현"
+    },
+    {
+      "grade": 2,
+      "class": 3,
+      "no": 2,
+      "name": "김민종"
+    },
+    {
+      "grade": 2,
+      "class": 3,
+      "no": 3,
+      "name": "김봄"
+    },
+    {
+      "grade": 2,
+      "class": 3,
+      "no": 4,
+      "name": "김승찬"
+    },
+    {
+      "grade": 2,
+      "class": 3,
+      "no": 5,
+      "name": "김재관"
+    },
+    {
+      "grade": 2,
+      "class": 3,
+      "no": 6,
+      "name": "김한주"
+    },
+    {
+      "grade": 2,
+      "class": 3,
+      "no": 7,
+      "name": "박정우"
+    },
+    {
+      "grade": 2,
+      "class": 3,
+      "no": 8,
+      "name": "서우주"
+    },
+    {
+      "grade": 2,
+      "class": 3,
+      "no": 9,
+      "name": "이산"
+    },
+    {
+      "grade": 2,
+      "class": 3,
+      "no": 10,
+      "name": "이평강"
+    },
+    {
+      "grade": 2,
+      "class": 3,
+      "no": 11,
+      "name": "정세준"
+    },
+    {
+      "grade": 2,
+      "class": 3,
+      "no": 12,
+      "name": "정재원"
+    },
+    {
+      "grade": 2,
+      "class": 3,
+      "no": 13,
+      "name": "정현태"
+    },
+    {
+      "grade": 2,
+      "class": 3,
+      "no": 14,
+      "name": "최준영"
+    },
+    {
+      "grade": 2,
+      "class": 3,
+      "no": 15,
+      "name": "허은서"
+    },
+    {
+      "grade": 2,
+      "class": 3,
+      "no": 16,
+      "name": "허태희"
+    },
+    {
+      "grade": 2,
+      "class": 4,
+      "no": 1,
+      "name": "권재헌"
+    },
+    {
+      "grade": 2,
+      "class": 4,
+      "no": 2,
+      "name": "김명현"
+    },
+    {
+      "grade": 2,
+      "class": 4,
+      "no": 3,
+      "name": "김민솔"
+    },
+    {
+      "grade": 2,
+      "class": 4,
+      "no": 4,
+      "name": "김태은"
+    },
+    {
+      "grade": 2,
+      "class": 4,
+      "no": 5,
+      "name": "김홍준"
+    },
+    {
+      "grade": 2,
+      "class": 4,
+      "no": 6,
+      "name": "박승일"
+    },
+    {
+      "grade": 2,
+      "class": 4,
+      "no": 7,
+      "name": "박현민"
+    },
+    {
+      "grade": 2,
+      "class": 4,
+      "no": 8,
+      "name": "배용빈"
+    },
+    {
+      "grade": 2,
+      "class": 4,
+      "no": 9,
+      "name": "서경주"
+    },
+    {
+      "grade": 2,
+      "class": 4,
+      "no": 10,
+      "name": "송재욱"
+    },
+    {
+      "grade": 2,
+      "class": 4,
+      "no": 11,
+      "name": "이상혁"
+    },
+    {
+      "grade": 2,
+      "class": 4,
+      "no": 12,
+      "name": "이용표"
+    },
+    {
+      "grade": 2,
+      "class": 4,
+      "no": 13,
+      "name": "이주언"
+    },
+    {
+      "grade": 2,
+      "class": 4,
+      "no": 14,
+      "name": "임시현"
+    },
+    {
+      "grade": 2,
+      "class": 4,
+      "no": 15,
+      "name": "전준연"
+    },
+    {
+      "grade": 2,
+      "class": 4,
+      "no": 16,
+      "name": "최민준"
+    },
+    {
+      "grade": 2,
+      "class": 4,
+      "no": 17,
+      "name": "황지훈"
+    },
+    {
+      "grade": 3,
+      "class": 1,
+      "no": 1,
+      "name": "곽나혁"
+    },
+    {
+      "grade": 3,
+      "class": 1,
+      "no": 2,
+      "name": "곽민성"
+    },
+    {
+      "grade": 3,
+      "class": 1,
+      "no": 3,
+      "name": "권태연"
+    },
+    {
+      "grade": 3,
+      "class": 1,
+      "no": 4,
+      "name": "김유준"
+    },
+    {
+      "grade": 3,
+      "class": 1,
+      "no": 5,
+      "name": "김재균"
+    },
+    {
+      "grade": 3,
+      "class": 1,
+      "no": 6,
+      "name": "김태윤"
+    },
+    {
+      "grade": 3,
+      "class": 1,
+      "no": 7,
+      "name": "김현"
+    },
+    {
+      "grade": 3,
+      "class": 1,
+      "no": 8,
+      "name": "박유현"
+    },
+    {
+      "grade": 3,
+      "class": 1,
+      "no": 9,
+      "name": "손찬형"
+    },
+    {
+      "grade": 3,
+      "class": 1,
+      "no": 10,
+      "name": "신승호"
+    },
+    {
+      "grade": 3,
+      "class": 1,
+      "no": 11,
+      "name": "신희성"
+    },
+    {
+      "grade": 3,
+      "class": 1,
+      "no": 12,
+      "name": "엄지성"
+    },
+    {
+      "grade": 3,
+      "class": 1,
+      "no": 13,
+      "name": "오은찬"
+    },
+    {
+      "grade": 3,
+      "class": 1,
+      "no": 14,
+      "name": "이진헌"
+    },
+    {
+      "grade": 3,
+      "class": 1,
+      "no": 15,
+      "name": "장예슬"
+    },
+    {
+      "grade": 3,
+      "class": 1,
+      "no": 16,
+      "name": "정성찬"
+    },
+    {
+      "grade": 3,
+      "class": 1,
+      "no": 17,
+      "name": "정태관"
+    },
+    {
+      "grade": 3,
+      "class": 2,
+      "no": 1,
+      "name": "김겸비"
+    },
+    {
+      "grade": 3,
+      "class": 2,
+      "no": 2,
+      "name": "김주은"
+    },
+    {
+      "grade": 3,
+      "class": 2,
+      "no": 3,
+      "name": "나혜찬"
+    },
+    {
+      "grade": 3,
+      "class": 2,
+      "no": 4,
+      "name": "류지민"
+    },
+    {
+      "grade": 3,
+      "class": 2,
+      "no": 5,
+      "name": "명재원"
+    },
+    {
+      "grade": 3,
+      "class": 2,
+      "no": 6,
+      "name": "문혜성"
+    },
+    {
+      "grade": 3,
+      "class": 2,
+      "no": 7,
+      "name": "박경일"
+    },
+    {
+      "grade": 3,
+      "class": 2,
+      "no": 8,
+      "name": "박진우"
+    },
+    {
+      "grade": 3,
+      "class": 2,
+      "no": 9,
+      "name": "방가온"
+    },
+    {
+      "grade": 3,
+      "class": 2,
+      "no": 10,
+      "name": "양동찬"
+    },
+    {
+      "grade": 3,
+      "class": 2,
+      "no": 11,
+      "name": "이성민"
+    },
+    {
+      "grade": 3,
+      "class": 2,
+      "no": 12,
+      "name": "이승화"
+    },
+    {
+      "grade": 3,
+      "class": 2,
+      "no": 13,
+      "name": "이예나"
+    },
+    {
+      "grade": 3,
+      "class": 2,
+      "no": 14,
+      "name": "전민혁"
+    },
+    {
+      "grade": 3,
+      "class": 2,
+      "no": 15,
+      "name": "정상혁"
+    },
+    {
+      "grade": 3,
+      "class": 2,
+      "no": 16,
+      "name": "정세준"
+    },
+    {
+      "grade": 3,
+      "class": 3,
+      "no": 1,
+      "name": "김동학"
+    },
+    {
+      "grade": 3,
+      "class": 3,
+      "no": 2,
+      "name": "김서준"
+    },
+    {
+      "grade": 3,
+      "class": 3,
+      "no": 3,
+      "name": "김시후"
+    },
+    {
+      "grade": 3,
+      "class": 3,
+      "no": 4,
+      "name": "김예찬"
+    },
+    {
+      "grade": 3,
+      "class": 3,
+      "no": 5,
+      "name": "김유성"
+    },
+    {
+      "grade": 3,
+      "class": 3,
+      "no": 6,
+      "name": "김은후"
+    },
+    {
+      "grade": 3,
+      "class": 3,
+      "no": 7,
+      "name": "나윤후"
+    },
+    {
+      "grade": 3,
+      "class": 3,
+      "no": 8,
+      "name": "민우석"
+    },
+    {
+      "grade": 3,
+      "class": 3,
+      "no": 9,
+      "name": "박미리"
+    },
+    {
+      "grade": 3,
+      "class": 3,
+      "no": 10,
+      "name": "박민준"
+    },
+    {
+      "grade": 3,
+      "class": 3,
+      "no": 11,
+      "name": "백송주"
+    },
+    {
+      "grade": 3,
+      "class": 3,
+      "no": 12,
+      "name": "변승규"
+    },
+    {
+      "grade": 3,
+      "class": 3,
+      "no": 13,
+      "name": "변정현"
+    },
+    {
+      "grade": 3,
+      "class": 3,
+      "no": 14,
+      "name": "서지완"
+    },
+    {
+      "grade": 3,
+      "class": 3,
+      "no": 15,
+      "name": "이건주"
+    },
+    {
+      "grade": 3,
+      "class": 3,
+      "no": 16,
+      "name": "정승표"
+    },
+    {
+      "grade": 3,
+      "class": 3,
+      "no": 17,
+      "name": "주경주"
+    },
+    {
+      "grade": 3,
+      "class": 3,
+      "no": 18,
+      "name": "진건희"
+    },
+    {
+      "grade": 3,
+      "class": 4,
+      "no": 1,
+      "name": "강민규"
+    },
+    {
+      "grade": 3,
+      "class": 4,
+      "no": 2,
+      "name": "강선무"
+    },
+    {
+      "grade": 3,
+      "class": 4,
+      "no": 3,
+      "name": "김도연"
+    },
+    {
+      "grade": 3,
+      "class": 4,
+      "no": 4,
+      "name": "김동연"
+    },
+    {
+      "grade": 3,
+      "class": 4,
+      "no": 5,
+      "name": "김진원"
+    },
+    {
+      "grade": 3,
+      "class": 4,
+      "no": 6,
+      "name": "류현성"
+    },
+    {
+      "grade": 3,
+      "class": 4,
+      "no": 7,
+      "name": "박종환"
+    },
+    {
+      "grade": 3,
+      "class": 4,
+      "no": 8,
+      "name": "서목룡"
+    },
+    {
+      "grade": 3,
+      "class": 4,
+      "no": 9,
+      "name": "용민주"
+    },
+    {
+      "grade": 3,
+      "class": 4,
+      "no": 10,
+      "name": "윤상혁"
+    },
+    {
+      "grade": 3,
+      "class": 4,
+      "no": 11,
+      "name": "이명훈"
+    },
+    {
+      "grade": 3,
+      "class": 4,
+      "no": 12,
+      "name": "이지혁"
+    },
+    {
+      "grade": 3,
+      "class": 4,
+      "no": 13,
+      "name": "이현준"
+    },
+    {
+      "grade": 3,
+      "class": 4,
+      "no": 14,
+      "name": "장수희"
+    },
+    {
+      "grade": 3,
+      "class": 4,
+      "no": 15,
+      "name": "최보빈"
+    },
+    {
+      "grade": 3,
+      "class": 4,
+      "no": 16,
+      "name": "한수인"
+    },
+    {
+      "grade": 3,
+      "class": 4,
+      "no": 17,
+      "name": "한재형"
+    },
+    {
+      "grade": 3,
+      "class": 4,
+      "no": 18,
+      "name": "홍준"
+    }
+  ]
+}
