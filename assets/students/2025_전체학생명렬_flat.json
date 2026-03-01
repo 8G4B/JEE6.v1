@@ -5,1255 +5,1464 @@
       "grade": 1,
       "class": 1,
       "no": 1,
-      "name": "강우빈"
+      "name": "강우빈",
+      "gender": "M"
     },
     {
       "grade": 1,
       "class": 1,
       "no": 2,
-      "name": "강태현"
+      "name": "강태현",
+      "gender": "F"
     },
     {
       "grade": 1,
       "class": 1,
       "no": 3,
-      "name": "김도연"
+      "name": "김도연",
+      "gender": "M"
     },
     {
       "grade": 1,
       "class": 1,
       "no": 4,
-      "name": "김동현"
+      "name": "김동현",
+      "gender": "F"
     },
     {
       "grade": 1,
       "class": 1,
       "no": 5,
-      "name": "김민정"
+      "name": "김민정",
+      "gender": "M"
     },
     {
       "grade": 1,
       "class": 1,
       "no": 6,
-      "name": "김성주"
+      "name": "김성주",
+      "gender": "F"
     },
     {
       "grade": 1,
       "class": 1,
       "no": 7,
-      "name": "김연우"
+      "name": "김연우",
+      "gender": "M"
     },
     {
       "grade": 1,
       "class": 1,
       "no": 8,
-      "name": "김유찬"
+      "name": "김유찬",
+      "gender": "M"
     },
     {
       "grade": 1,
       "class": 1,
       "no": 9,
-      "name": "김의현"
+      "name": "김의현",
+      "gender": "F"
     },
     {
       "grade": 1,
       "class": 1,
       "no": 10,
-      "name": "류수연"
+      "name": "류수연",
+      "gender": "M"
     },
     {
       "grade": 1,
       "class": 1,
       "no": 11,
-      "name": "배순우"
+      "name": "배순우",
+      "gender": "M"
     },
     {
       "grade": 1,
       "class": 1,
       "no": 12,
-      "name": "배재현"
+      "name": "배재현",
+      "gender": "M"
     },
     {
       "grade": 1,
       "class": 1,
       "no": 13,
-      "name": "음창승"
+      "name": "음창승",
+      "gender": "F"
     },
     {
       "grade": 1,
       "class": 1,
       "no": 14,
-      "name": "이예은"
+      "name": "이예은",
+      "gender": "F"
     },
     {
       "grade": 1,
       "class": 1,
       "no": 15,
-      "name": "정수진"
+      "name": "정수진",
+      "gender": "M"
     },
     {
       "grade": 1,
       "class": 1,
       "no": 16,
-      "name": "조현성"
+      "name": "조현성",
+      "gender": "M"
     },
     {
       "grade": 1,
       "class": 1,
       "no": 17,
-      "name": "한국"
+      "name": "한국",
+      "gender": "M"
     },
     {
       "grade": 1,
       "class": 1,
       "no": 18,
-      "name": "한의준"
+      "name": "한의준",
+      "gender": "M"
     },
     {
       "grade": 1,
       "class": 2,
       "no": 1,
-      "name": "기태희"
+      "name": "기태희",
+      "gender": "F"
     },
     {
       "grade": 1,
       "class": 2,
       "no": 2,
-      "name": "김민아"
+      "name": "김민아",
+      "gender": "F"
     },
     {
       "grade": 1,
       "class": 2,
       "no": 3,
-      "name": "김수빈"
+      "name": "김수빈",
+      "gender": "M"
     },
     {
       "grade": 1,
       "class": 2,
       "no": 4,
-      "name": "김재경"
+      "name": "김재경",
+      "gender": "F"
     },
     {
       "grade": 1,
       "class": 2,
       "no": 5,
-      "name": "김지유"
+      "name": "김지유",
+      "gender": "M"
     },
     {
       "grade": 1,
       "class": 2,
       "no": 6,
-      "name": "문강현"
+      "name": "문강현",
+      "gender": "M"
     },
     {
       "grade": 1,
       "class": 2,
       "no": 7,
-      "name": "박시온"
+      "name": "박시온",
+      "gender": "F"
     },
     {
       "grade": 1,
       "class": 2,
       "no": 8,
-      "name": "박채은"
+      "name": "박채은",
+      "gender": "M"
     },
     {
       "grade": 1,
       "class": 2,
       "no": 9,
-      "name": "양은준"
+      "name": "양은준",
+      "gender": "M"
     },
     {
       "grade": 1,
       "class": 2,
       "no": 10,
-      "name": "이남진"
+      "name": "이남진",
+      "gender": "M"
     },
     {
       "grade": 1,
       "class": 2,
       "no": 11,
-      "name": "임규범"
+      "name": "임규범",
+      "gender": "M"
     },
     {
       "grade": 1,
       "class": 2,
       "no": 12,
-      "name": "정연돈"
+      "name": "정연돈",
+      "gender": "M"
     },
     {
       "grade": 1,
       "class": 2,
       "no": 13,
-      "name": "정예빈"
+      "name": "정예빈",
+      "gender": "F"
     },
     {
       "grade": 1,
       "class": 2,
       "no": 14,
-      "name": "정윤서"
+      "name": "정윤서",
+      "gender": "F"
     },
     {
       "grade": 1,
       "class": 2,
       "no": 15,
-      "name": "조하율"
+      "name": "조하율",
+      "gender": "M"
     },
     {
       "grade": 1,
       "class": 2,
       "no": 16,
-      "name": "주경서"
+      "name": "주경서",
+      "gender": "M"
     },
     {
       "grade": 1,
       "class": 2,
       "no": 17,
-      "name": "최준영"
+      "name": "최준영",
+      "gender": "M"
     },
     {
       "grade": 1,
       "class": 2,
       "no": 18,
-      "name": "홍지민"
+      "name": "홍지민",
+      "gender": "M"
     },
     {
       "grade": 1,
       "class": 3,
       "no": 1,
-      "name": "김서연"
+      "name": "김서연",
+      "gender": "M"
     },
     {
       "grade": 1,
       "class": 3,
       "no": 2,
-      "name": "김준표"
+      "name": "김준표",
+      "gender": "F"
     },
     {
       "grade": 1,
       "class": 3,
       "no": 3,
-      "name": "김지현"
+      "name": "김지현",
+      "gender": "M"
     },
     {
       "grade": 1,
       "class": 3,
       "no": 4,
-      "name": "노민영"
+      "name": "노민영",
+      "gender": "M"
     },
     {
       "grade": 1,
       "class": 3,
       "no": 5,
-      "name": "류도호"
+      "name": "류도호",
+      "gender": "M"
     },
     {
       "grade": 1,
       "class": 3,
       "no": 6,
-      "name": "송채우"
+      "name": "송채우",
+      "gender": "M"
     },
     {
       "grade": 1,
       "class": 3,
       "no": 7,
-      "name": "윤덕영"
+      "name": "윤덕영",
+      "gender": "F"
     },
     {
       "grade": 1,
       "class": 3,
       "no": 8,
-      "name": "윤수연"
+      "name": "윤수연",
+      "gender": "M"
     },
     {
       "grade": 1,
       "class": 3,
       "no": 9,
-      "name": "이의빈"
+      "name": "이의빈",
+      "gender": "M"
     },
     {
       "grade": 1,
       "class": 3,
       "no": 10,
-      "name": "이진서"
+      "name": "이진서",
+      "gender": "M"
     },
     {
       "grade": 1,
       "class": 3,
       "no": 11,
-      "name": "이찬진"
+      "name": "이찬진",
+      "gender": "F"
     },
     {
       "grade": 1,
       "class": 3,
       "no": 12,
-      "name": "이하경"
+      "name": "이하경",
+      "gender": "F"
     },
     {
       "grade": 1,
       "class": 3,
       "no": 13,
-      "name": "이효은"
+      "name": "이효은",
+      "gender": "M"
     },
     {
       "grade": 1,
       "class": 3,
       "no": 14,
-      "name": "임재현"
+      "name": "임재현",
+      "gender": "M"
     },
     {
       "grade": 1,
       "class": 3,
       "no": 15,
-      "name": "전준혁"
+      "name": "전준혁",
+      "gender": "M"
     },
     {
       "grade": 1,
       "class": 3,
       "no": 16,
-      "name": "주현진"
+      "name": "주현진",
+      "gender": "M"
     },
     {
       "grade": 1,
       "class": 3,
       "no": 17,
-      "name": "채성원"
+      "name": "채성원",
+      "gender": "F"
     },
     {
       "grade": 1,
       "class": 3,
       "no": 18,
-      "name": "천정은"
+      "name": "천정은",
+      "gender": "M"
     },
     {
       "grade": 1,
       "class": 4,
       "no": 1,
-      "name": "김민선"
+      "name": "김민선",
+      "gender": "F"
     },
     {
       "grade": 1,
       "class": 4,
       "no": 2,
-      "name": "김수현"
+      "name": "김수현",
+      "gender": "F"
     },
     {
       "grade": 1,
       "class": 4,
       "no": 3,
-      "name": "김태연"
+      "name": "김태연",
+      "gender": "M"
     },
     {
       "grade": 1,
       "class": 4,
       "no": 4,
-      "name": "박하민"
+      "name": "박하민",
+      "gender": "M"
     },
     {
       "grade": 1,
       "class": 4,
       "no": 5,
-      "name": "신민기"
+      "name": "신민기",
+      "gender": "F"
     },
     {
       "grade": 1,
       "class": 4,
       "no": 6,
-      "name": "신예빈"
+      "name": "신예빈",
+      "gender": "M"
     },
     {
       "grade": 1,
       "class": 4,
       "no": 7,
-      "name": "오종혁"
+      "name": "오종혁",
+      "gender": "M"
     },
     {
       "grade": 1,
       "class": 4,
       "no": 8,
-      "name": "유휘영"
+      "name": "유휘영",
+      "gender": "F"
     },
     {
       "grade": 1,
       "class": 4,
       "no": 9,
-      "name": "윤소현"
+      "name": "윤소현",
+      "gender": "F"
     },
     {
       "grade": 1,
       "class": 4,
       "no": 10,
-      "name": "윤솔희"
+      "name": "윤솔희",
+      "gender": "M"
     },
     {
       "grade": 1,
       "class": 4,
       "no": 11,
-      "name": "이건우"
+      "name": "이건우",
+      "gender": "M"
     },
     {
       "grade": 1,
       "class": 4,
       "no": 12,
-      "name": "이윤도"
+      "name": "이윤도",
+      "gender": "M"
     },
     {
       "grade": 1,
       "class": 4,
       "no": 13,
-      "name": "전세준"
+      "name": "전세준",
+      "gender": "F"
     },
     {
       "grade": 1,
       "class": 4,
       "no": 14,
-      "name": "전혜린"
+      "name": "전혜린",
+      "gender": "M"
     },
     {
       "grade": 1,
       "class": 4,
       "no": 15,
-      "name": "정종윤"
+      "name": "정종윤",
+      "gender": "M"
     },
     {
       "grade": 1,
       "class": 4,
       "no": 16,
-      "name": "조영재"
+      "name": "조영재",
+      "gender": "M"
     },
     {
       "grade": 1,
       "class": 4,
       "no": 17,
-      "name": "한도엽"
+      "name": "한도엽",
+      "gender": "F"
     },
     {
       "grade": 1,
       "class": 4,
       "no": 18,
-      "name": "황하윤"
+      "name": "황하윤",
+      "gender": "M"
     },
     {
       "grade": 2,
       "class": 1,
       "no": 1,
-      "name": "김담율"
+      "name": "김담율",
+      "gender": "M"
     },
     {
       "grade": 2,
       "class": 1,
       "no": 2,
-      "name": "김민균"
+      "name": "김민균",
+      "gender": "M"
     },
     {
       "grade": 2,
       "class": 1,
       "no": 3,
-      "name": "김승현"
+      "name": "김승현",
+      "gender": "M"
     },
     {
       "grade": 2,
       "class": 1,
       "no": 4,
-      "name": "모태환"
+      "name": "모태환",
+      "gender": "M"
     },
     {
       "grade": 2,
       "class": 1,
       "no": 5,
-      "name": "문승덕"
+      "name": "문승덕",
+      "gender": "F"
     },
     {
       "grade": 2,
       "class": 1,
       "no": 6,
-      "name": "박서현"
+      "name": "박서현",
+      "gender": "F"
     },
     {
       "grade": 2,
       "class": 1,
       "no": 7,
-      "name": "배경진"
+      "name": "배경진",
+      "gender": "F"
     },
     {
       "grade": 2,
       "class": 1,
       "no": 8,
-      "name": "유은서"
+      "name": "유은서",
+      "gender": "F"
     },
     {
       "grade": 2,
       "class": 1,
       "no": 9,
-      "name": "이서희"
+      "name": "이서희",
+      "gender": "M"
     },
     {
       "grade": 2,
       "class": 1,
       "no": 10,
-      "name": "이세민"
+      "name": "이세민",
+      "gender": "M"
     },
     {
       "grade": 2,
       "class": 1,
       "no": 11,
-      "name": "이영서"
+      "name": "이영서",
+      "gender": "M"
     },
     {
       "grade": 2,
       "class": 1,
       "no": 12,
-      "name": "임지훈"
+      "name": "임지훈",
+      "gender": "M"
     },
     {
       "grade": 2,
       "class": 1,
       "no": 13,
-      "name": "임한솔"
+      "name": "임한솔",
+      "gender": "M"
     },
     {
       "grade": 2,
       "class": 1,
       "no": 14,
-      "name": "전선우"
+      "name": "전선우",
+      "gender": "F"
     },
     {
       "grade": 2,
       "class": 1,
       "no": 15,
-      "name": "정하진"
+      "name": "정하진",
+      "gender": "M"
     },
     {
       "grade": 2,
       "class": 1,
       "no": 16,
-      "name": "조수민"
+      "name": "조수민",
+      "gender": "M"
     },
     {
       "grade": 2,
       "class": 1,
       "no": 17,
-      "name": "한승재"
+      "name": "한승재",
+      "gender": "M"
     },
     {
       "grade": 2,
       "class": 2,
       "no": 1,
-      "name": "김민준"
+      "name": "김민준",
+      "gender": "M"
     },
     {
       "grade": 2,
       "class": 2,
       "no": 2,
-      "name": "김준혁"
+      "name": "김준혁",
+      "gender": "M"
     },
     {
       "grade": 2,
       "class": 2,
       "no": 3,
-      "name": "김지훈"
+      "name": "김지훈",
+      "gender": "M"
     },
     {
       "grade": 2,
       "class": 2,
       "no": 4,
-      "name": "나현욱"
+      "name": "나현욱",
+      "gender": "M"
     },
     {
       "grade": 2,
       "class": 2,
       "no": 5,
-      "name": "박찬울"
+      "name": "박찬울",
+      "gender": "M"
     },
     {
       "grade": 2,
       "class": 2,
       "no": 6,
-      "name": "서정민"
+      "name": "서정민",
+      "gender": "F"
     },
     {
       "grade": 2,
       "class": 2,
       "no": 7,
-      "name": "송정연"
+      "name": "송정연",
+      "gender": "F"
     },
     {
       "grade": 2,
       "class": 2,
       "no": 8,
-      "name": "이산"
+      "name": "이산",
+      "gender": "M"
     },
     {
       "grade": 2,
       "class": 2,
       "no": 9,
-      "name": "이서준"
+      "name": "이서준",
+      "gender": "M"
     },
     {
       "grade": 2,
       "class": 2,
       "no": 10,
-      "name": "이시우"
+      "name": "이시우",
+      "gender": "M"
     },
     {
       "grade": 2,
       "class": 2,
       "no": 11,
-      "name": "이은아"
+      "name": "이은아",
+      "gender": "M"
     },
     {
       "grade": 2,
       "class": 2,
       "no": 12,
-      "name": "이준건"
+      "name": "이준건",
+      "gender": "M"
     },
     {
       "grade": 2,
       "class": 2,
       "no": 13,
-      "name": "장경훈"
+      "name": "장경훈",
+      "gender": "M"
     },
     {
       "grade": 2,
       "class": 2,
       "no": 14,
-      "name": "정창진"
+      "name": "정창진",
+      "gender": "F"
     },
     {
       "grade": 2,
       "class": 2,
       "no": 15,
-      "name": "정효주"
+      "name": "정효주",
+      "gender": "M"
     },
     {
       "grade": 2,
       "class": 2,
       "no": 16,
-      "name": "주여진"
+      "name": "주여진",
+      "gender": "M"
     },
     {
       "grade": 2,
       "class": 2,
       "no": 17,
-      "name": "하창혁"
+      "name": "하창혁",
+      "gender": "M"
     },
     {
       "grade": 2,
       "class": 2,
       "no": 18,
-      "name": "함성우"
+      "name": "함성우",
+      "gender": "M"
     },
     {
       "grade": 2,
       "class": 3,
       "no": 1,
-      "name": "김동현"
+      "name": "김동현",
+      "gender": "M"
     },
     {
       "grade": 2,
       "class": 3,
       "no": 2,
-      "name": "김민종"
+      "name": "김민종",
+      "gender": "F"
     },
     {
       "grade": 2,
       "class": 3,
       "no": 3,
-      "name": "김봄"
+      "name": "김봄",
+      "gender": "M"
     },
     {
       "grade": 2,
       "class": 3,
       "no": 4,
-      "name": "김승찬"
+      "name": "김승찬",
+      "gender": "M"
     },
     {
       "grade": 2,
       "class": 3,
       "no": 5,
-      "name": "김재관"
+      "name": "김재관",
+      "gender": "M"
     },
     {
       "grade": 2,
       "class": 3,
       "no": 6,
-      "name": "김한주"
+      "name": "김한주",
+      "gender": "M"
     },
     {
       "grade": 2,
       "class": 3,
       "no": 7,
-      "name": "박정우"
+      "name": "박정우",
+      "gender": "M"
     },
     {
       "grade": 2,
       "class": 3,
       "no": 8,
-      "name": "서우주"
+      "name": "서우주",
+      "gender": "M"
     },
     {
       "grade": 2,
       "class": 3,
       "no": 9,
-      "name": "이산"
+      "name": "이산",
+      "gender": "M"
     },
     {
       "grade": 2,
       "class": 3,
       "no": 10,
-      "name": "이평강"
+      "name": "이평강",
+      "gender": "M"
     },
     {
       "grade": 2,
       "class": 3,
       "no": 11,
-      "name": "정세준"
+      "name": "정세준",
+      "gender": "M"
     },
     {
       "grade": 2,
       "class": 3,
       "no": 12,
-      "name": "정재원"
+      "name": "정재원",
+      "gender": "M"
     },
     {
       "grade": 2,
       "class": 3,
       "no": 13,
-      "name": "정현태"
+      "name": "정현태",
+      "gender": "M"
     },
     {
       "grade": 2,
       "class": 3,
       "no": 14,
-      "name": "최준영"
+      "name": "최준영",
+      "gender": "M"
     },
     {
       "grade": 2,
       "class": 3,
       "no": 15,
-      "name": "허은서"
+      "name": "허은서",
+      "gender": "F"
     },
     {
       "grade": 2,
       "class": 3,
       "no": 16,
-      "name": "허태희"
+      "name": "허태희",
+      "gender": "M"
     },
     {
       "grade": 2,
       "class": 4,
       "no": 1,
-      "name": "권재헌"
+      "name": "권재헌",
+      "gender": "M"
     },
     {
       "grade": 2,
       "class": 4,
       "no": 2,
-      "name": "김명현"
+      "name": "김명현",
+      "gender": "F"
     },
     {
       "grade": 2,
       "class": 4,
       "no": 3,
-      "name": "김민솔"
+      "name": "김민솔",
+      "gender": "M"
     },
     {
       "grade": 2,
       "class": 4,
       "no": 4,
-      "name": "김태은"
+      "name": "김태은",
+      "gender": "M"
     },
     {
       "grade": 2,
       "class": 4,
       "no": 5,
-      "name": "김홍준"
+      "name": "김홍준",
+      "gender": "M"
     },
     {
       "grade": 2,
       "class": 4,
       "no": 6,
-      "name": "박승일"
+      "name": "박승일",
+      "gender": "M"
     },
     {
       "grade": 2,
       "class": 4,
       "no": 7,
-      "name": "박현민"
+      "name": "박현민",
+      "gender": "M"
     },
     {
       "grade": 2,
       "class": 4,
       "no": 8,
-      "name": "배용빈"
+      "name": "배용빈",
+      "gender": "M"
     },
     {
       "grade": 2,
       "class": 4,
       "no": 9,
-      "name": "서경주"
+      "name": "서경주",
+      "gender": "M"
     },
     {
       "grade": 2,
       "class": 4,
       "no": 10,
-      "name": "송재욱"
+      "name": "송재욱",
+      "gender": "M"
     },
     {
       "grade": 2,
       "class": 4,
       "no": 11,
-      "name": "이상혁"
+      "name": "이상혁",
+      "gender": "M"
     },
     {
       "grade": 2,
       "class": 4,
       "no": 12,
-      "name": "이용표"
+      "name": "이용표",
+      "gender": "M"
     },
     {
       "grade": 2,
       "class": 4,
       "no": 13,
-      "name": "이주언"
+      "name": "이주언",
+      "gender": "M"
     },
     {
       "grade": 2,
       "class": 4,
       "no": 14,
-      "name": "임시현"
+      "name": "임시현",
+      "gender": "M"
     },
     {
       "grade": 2,
       "class": 4,
       "no": 15,
-      "name": "전준연"
+      "name": "전준연",
+      "gender": "M"
     },
     {
       "grade": 2,
       "class": 4,
       "no": 16,
-      "name": "최민준"
+      "name": "최민준",
+      "gender": "M"
     },
     {
       "grade": 2,
       "class": 4,
       "no": 17,
-      "name": "황지훈"
+      "name": "황지훈",
+      "gender": "M"
     },
     {
       "grade": 3,
       "class": 1,
       "no": 1,
-      "name": "곽나혁"
+      "name": "곽나혁",
+      "gender": "M"
     },
     {
       "grade": 3,
       "class": 1,
       "no": 2,
-      "name": "곽민성"
+      "name": "곽민성",
+      "gender": "F"
     },
     {
       "grade": 3,
       "class": 1,
       "no": 3,
-      "name": "권태연"
+      "name": "권태연",
+      "gender": "M"
     },
     {
       "grade": 3,
       "class": 1,
       "no": 4,
-      "name": "김유준"
+      "name": "김유준",
+      "gender": "M"
     },
     {
       "grade": 3,
       "class": 1,
       "no": 5,
-      "name": "김재균"
+      "name": "김재균",
+      "gender": "M"
     },
     {
       "grade": 3,
       "class": 1,
       "no": 6,
-      "name": "김태윤"
+      "name": "김태윤",
+      "gender": "M"
     },
     {
       "grade": 3,
       "class": 1,
       "no": 7,
-      "name": "김현"
+      "name": "김현",
+      "gender": "M"
     },
     {
       "grade": 3,
       "class": 1,
       "no": 8,
-      "name": "박유현"
+      "name": "박유현",
+      "gender": "M"
     },
     {
       "grade": 3,
       "class": 1,
       "no": 9,
-      "name": "손찬형"
+      "name": "손찬형",
+      "gender": "M"
     },
     {
       "grade": 3,
       "class": 1,
       "no": 10,
-      "name": "신승호"
+      "name": "신승호",
+      "gender": "M"
     },
     {
       "grade": 3,
       "class": 1,
       "no": 11,
-      "name": "신희성"
+      "name": "신희성",
+      "gender": "M"
     },
     {
       "grade": 3,
       "class": 1,
       "no": 12,
-      "name": "엄지성"
+      "name": "엄지성",
+      "gender": "M"
     },
     {
       "grade": 3,
       "class": 1,
       "no": 13,
-      "name": "오은찬"
+      "name": "오은찬",
+      "gender": "M"
     },
     {
       "grade": 3,
       "class": 1,
       "no": 14,
-      "name": "이진헌"
+      "name": "이진헌",
+      "gender": "F"
     },
     {
       "grade": 3,
       "class": 1,
       "no": 15,
-      "name": "장예슬"
+      "name": "장예슬",
+      "gender": "M"
     },
     {
       "grade": 3,
       "class": 1,
       "no": 16,
-      "name": "정성찬"
+      "name": "정성찬",
+      "gender": "M"
     },
     {
       "grade": 3,
       "class": 1,
       "no": 17,
-      "name": "정태관"
+      "name": "정태관",
+      "gender": "M"
     },
     {
       "grade": 3,
       "class": 2,
       "no": 1,
-      "name": "김겸비"
+      "name": "김겸비",
+      "gender": "M"
     },
     {
       "grade": 3,
       "class": 2,
       "no": 2,
-      "name": "김주은"
+      "name": "김주은",
+      "gender": "M"
     },
     {
       "grade": 3,
       "class": 2,
       "no": 3,
-      "name": "나혜찬"
+      "name": "나혜찬",
+      "gender": "F"
     },
     {
       "grade": 3,
       "class": 2,
       "no": 4,
-      "name": "류지민"
+      "name": "류지민",
+      "gender": "M"
     },
     {
       "grade": 3,
       "class": 2,
       "no": 5,
-      "name": "명재원"
+      "name": "명재원",
+      "gender": "M"
     },
     {
       "grade": 3,
       "class": 2,
       "no": 6,
-      "name": "문혜성"
+      "name": "문혜성",
+      "gender": "M"
     },
     {
       "grade": 3,
       "class": 2,
       "no": 7,
-      "name": "박경일"
+      "name": "박경일",
+      "gender": "M"
     },
     {
       "grade": 3,
       "class": 2,
       "no": 8,
-      "name": "박진우"
+      "name": "박진우",
+      "gender": "M"
     },
     {
       "grade": 3,
       "class": 2,
       "no": 9,
-      "name": "방가온"
+      "name": "방가온",
+      "gender": "M"
     },
     {
       "grade": 3,
       "class": 2,
       "no": 10,
-      "name": "양동찬"
+      "name": "양동찬",
+      "gender": "M"
     },
     {
       "grade": 3,
       "class": 2,
       "no": 11,
-      "name": "이성민"
+      "name": "이성민",
+      "gender": "F"
     },
     {
       "grade": 3,
       "class": 2,
       "no": 12,
-      "name": "이승화"
+      "name": "이승화",
+      "gender": "F"
     },
     {
       "grade": 3,
       "class": 2,
       "no": 13,
-      "name": "이예나"
+      "name": "이예나",
+      "gender": "M"
     },
     {
       "grade": 3,
       "class": 2,
       "no": 14,
-      "name": "전민혁"
+      "name": "전민혁",
+      "gender": "M"
     },
     {
       "grade": 3,
       "class": 2,
       "no": 15,
-      "name": "정상혁"
+      "name": "정상혁",
+      "gender": "M"
     },
     {
       "grade": 3,
       "class": 2,
       "no": 16,
-      "name": "정세준"
+      "name": "정세준",
+      "gender": "M"
     },
     {
       "grade": 3,
       "class": 3,
       "no": 1,
-      "name": "김동학"
+      "name": "김동학",
+      "gender": "M"
     },
     {
       "grade": 3,
       "class": 3,
       "no": 2,
-      "name": "김서준"
+      "name": "김서준",
+      "gender": "M"
     },
     {
       "grade": 3,
       "class": 3,
       "no": 3,
-      "name": "김시후"
+      "name": "김시후",
+      "gender": "M"
     },
     {
       "grade": 3,
       "class": 3,
       "no": 4,
-      "name": "김예찬"
+      "name": "김예찬",
+      "gender": "M"
     },
     {
       "grade": 3,
       "class": 3,
       "no": 5,
-      "name": "김유성"
+      "name": "김유성",
+      "gender": "M"
     },
     {
       "grade": 3,
       "class": 3,
       "no": 6,
-      "name": "김은후"
+      "name": "김은후",
+      "gender": "M"
     },
     {
       "grade": 3,
       "class": 3,
       "no": 7,
-      "name": "나윤후"
+      "name": "나윤후",
+      "gender": "M"
     },
     {
       "grade": 3,
       "class": 3,
       "no": 8,
-      "name": "민우석"
+      "name": "민우석",
+      "gender": "F"
     },
     {
       "grade": 3,
       "class": 3,
       "no": 9,
-      "name": "박미리"
+      "name": "박미리",
+      "gender": "M"
     },
     {
       "grade": 3,
       "class": 3,
       "no": 10,
-      "name": "박민준"
+      "name": "박민준",
+      "gender": "M"
     },
     {
       "grade": 3,
       "class": 3,
       "no": 11,
-      "name": "백송주"
+      "name": "백송주",
+      "gender": "M"
     },
     {
       "grade": 3,
       "class": 3,
       "no": 12,
-      "name": "변승규"
+      "name": "변승규",
+      "gender": "M"
     },
     {
       "grade": 3,
       "class": 3,
       "no": 13,
-      "name": "변정현"
+      "name": "변정현",
+      "gender": "M"
     },
     {
       "grade": 3,
       "class": 3,
       "no": 14,
-      "name": "서지완"
+      "name": "서지완",
+      "gender": "M"
     },
     {
       "grade": 3,
       "class": 3,
       "no": 15,
-      "name": "이건주"
+      "name": "이건주",
+      "gender": "M"
     },
     {
       "grade": 3,
       "class": 3,
       "no": 16,
-      "name": "정승표"
+      "name": "정승표",
+      "gender": "M"
     },
     {
       "grade": 3,
       "class": 3,
       "no": 17,
-      "name": "주경주"
+      "name": "주경주",
+      "gender": "M"
     },
     {
       "grade": 3,
       "class": 3,
       "no": 18,
-      "name": "진건희"
+      "name": "진건희",
+      "gender": "M"
     },
     {
       "grade": 3,
       "class": 4,
       "no": 1,
-      "name": "강민규"
+      "name": "강민규",
+      "gender": "M"
     },
     {
       "grade": 3,
       "class": 4,
       "no": 2,
-      "name": "강선무"
+      "name": "강선무",
+      "gender": "F"
     },
     {
       "grade": 3,
       "class": 4,
       "no": 3,
-      "name": "김도연"
+      "name": "김도연",
+      "gender": "M"
     },
     {
       "grade": 3,
       "class": 4,
       "no": 4,
-      "name": "김동연"
+      "name": "김동연",
+      "gender": "M"
     },
     {
       "grade": 3,
       "class": 4,
       "no": 5,
-      "name": "김진원"
+      "name": "김진원",
+      "gender": "M"
     },
     {
       "grade": 3,
       "class": 4,
       "no": 6,
-      "name": "류현성"
+      "name": "류현성",
+      "gender": "M"
     },
     {
       "grade": 3,
       "class": 4,
       "no": 7,
-      "name": "박종환"
+      "name": "박종환",
+      "gender": "M"
     },
     {
       "grade": 3,
       "class": 4,
       "no": 8,
-      "name": "서목룡"
+      "name": "서목룡",
+      "gender": "F"
     },
     {
       "grade": 3,
       "class": 4,
       "no": 9,
-      "name": "용민주"
+      "name": "용민주",
+      "gender": "M"
     },
     {
       "grade": 3,
       "class": 4,
       "no": 10,
-      "name": "윤상혁"
+      "name": "윤상혁",
+      "gender": "M"
     },
     {
       "grade": 3,
       "class": 4,
       "no": 11,
-      "name": "이명훈"
+      "name": "이명훈",
+      "gender": "M"
     },
     {
       "grade": 3,
       "class": 4,
       "no": 12,
-      "name": "이지혁"
+      "name": "이지혁",
+      "gender": "M"
     },
     {
       "grade": 3,
       "class": 4,
       "no": 13,
-      "name": "이현준"
+      "name": "이현준",
+      "gender": "F"
     },
     {
       "grade": 3,
       "class": 4,
       "no": 14,
-      "name": "장수희"
+      "name": "장수희",
+      "gender": "F"
     },
     {
       "grade": 3,
       "class": 4,
       "no": 15,
-      "name": "최보빈"
+      "name": "최보빈",
+      "gender": "F"
     },
     {
       "grade": 3,
       "class": 4,
       "no": 16,
-      "name": "한수인"
+      "name": "한수인",
+      "gender": "M"
     },
     {
       "grade": 3,
       "class": 4,
       "no": 17,
-      "name": "한재형"
+      "name": "한재형",
+      "gender": "M"
     },
     {
       "grade": 3,
       "class": 4,
       "no": 18,
-      "name": "홍준"
+      "name": "홍준",
+      "gender": "M"
     }
   ]
 }

@@ -98,18 +98,13 @@ class PromotionCommand(BaseCommand):
 
             correct_nick = f"{grade}{cls}{no:02d} {student['name']}"
 
-            gender_suffix = None
-            for role in member.roles:
-                if "남학생" in role.name:
-                    gender_suffix = "남학생"
-                    break
-                if "여학생" in role.name:
-                    gender_suffix = "여학생"
-                    break
+            gender_suffix = "남학생" if student["gender"] == "M" else "여학생"
 
-            target_role_names = [f"{grade}학년", f"{grade}학년 {cls}반"]
-            if gender_suffix:
-                target_role_names.append(f"{grade}학년 {gender_suffix}")
+            target_role_names = [
+                f"{grade}학년",
+                f"{grade}학년 {cls}반",
+                f"{grade}학년 {gender_suffix}",
+            ]
 
             try:
                 if member.display_name != correct_nick:
@@ -190,28 +185,19 @@ class PromotionCommand(BaseCommand):
             new_no = new_student["no"]
             new_nick = f"{new_grade}{new_class}{new_no:02d} {name}"
 
-            gender_suffix = None
-            for role in member.roles:
-                if "남학생" in role.name:
-                    gender_suffix = "남학생"
-                    break
-                if "여학생" in role.name:
-                    gender_suffix = "여학생"
-                    break
+            gender_suffix = "남학생" if new_student["gender"] == "M" else "여학생"
 
             old_role_names = {
                 f"{cur_grade}학년",
                 f"{cur_grade}학년 {cur_class}반",
+                f"{cur_grade}학년 {gender_suffix}",
             }
-            if gender_suffix:
-                old_role_names.add(f"{cur_grade}학년 {gender_suffix}")
 
             new_role_names = [
                 f"{new_grade}학년",
                 f"{new_grade}학년 {new_class}반",
+                f"{new_grade}학년 {gender_suffix}",
             ]
-            if gender_suffix:
-                new_role_names.append(f"{new_grade}학년 {gender_suffix}")
 
             roles_to_remove = [r for r in member.roles if r.name in old_role_names]
             roles_to_add = [
