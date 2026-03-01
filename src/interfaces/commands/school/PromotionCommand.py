@@ -37,6 +37,108 @@ class PromotionCommand(BaseCommand):
             return class_filtered[0]
         return None
 
+    async def _get_or_create_role(
+        self,
+        guild: discord.Guild,
+        name: str,
+        cache: dict,
+        created: list,
+    ) -> discord.Role:
+        if name in cache:
+            return cache[name]
+        role = discord.utils.get(guild.roles, name=name)
+        if role is None:
+            role = await guild.create_role(name=name, reason="!역할 명령어로 자동 생성")
+            created.append(name)
+        cache[name] = role
+        return role
+
+    @commands.command(name="역할")
+    @commands.has_permissions(administrator=True)
+    async def assign_roles(self, ctx):
+        guild = ctx.guild
+        if not guild:
+            return
+
+        try:
+            students = self._load_students(2025)
+        except FileNotFoundError:
+            await ctx.send("명렬표 파일(`2025_전체학생명렬_flat.json`)을 찾을 수 없습니다.")
+            return
+
+        student_map = {(s["grade"], s["class"], s["no"]): s for s in students}
+
+        msg = await ctx.send("역할 부여 중입니다...")
+
+        nick_pattern = re.compile(r"^([1-3])([1-4])(\d{2})\s+(.+)$")
+        role_cache: dict[str, discord.Role] = {}
+        created_roles: list[str] = []
+
+        count_nick = 0
+        count_role = 0
+        skipped: list[str] = []
+
+        for member in guild.members:
+            if member.bot:
+                continue
+
+            match = nick_pattern.match(member.display_name)
+            if not match:
+                continue
+
+            grade = int(match.group(1))
+            cls = int(match.group(2))
+            no = int(match.group(3))
+            name = match.group(4)
+
+            student = student_map.get((grade, cls, no))
+            if student is None or student["name"] != name:
+                skipped.append(member.display_name)
+                continue
+
+            correct_nick = f"{grade}{cls}{no:02d} {student['name']}"
+
+            gender_suffix = None
+            for role in member.roles:
+                if "남학생" in role.name:
+                    gender_suffix = "남학생"
+                    break
+                if "여학생" in role.name:
+                    gender_suffix = "여학생"
+                    break
+
+            target_role_names = [f"{grade}학년", f"{grade}학년 {cls}반"]
+            if gender_suffix:
+                target_role_names.append(f"{grade}학년 {gender_suffix}")
+
+            try:
+                if member.display_name != correct_nick:
+                    await member.edit(nick=correct_nick)
+                    count_nick += 1
+
+                roles_to_add = []
+                for rname in target_role_names:
+                    role_obj = await self._get_or_create_role(guild, rname, role_cache, created_roles)
+                    if role_obj not in member.roles:
+                        roles_to_add.append(role_obj)
+
+                if roles_to_add:
+                    await member.add_roles(*roles_to_add)
+                    count_role += 1
+
+            except discord.Forbidden:
+                skipped.append(f"{member.display_name} (권한 없음)")
+            except Exception as e:
+                skipped.append(f"{member.display_name} ({e})")
+
+        summary = f"닉네임 {count_nick}명, 역할 {count_role}명 변경했어요"
+        if created_roles:
+            summary += f"\n새로 만든 역할: {', '.join(created_roles)}"
+        if skipped:
+            summary += f"\n실패작들: {', '.join(skipped)}"
+
+        await msg.edit(content=summary)
+
     @commands.command(name="등업")
     @commands.has_permissions(administrator=True)
     async def promotion(self, ctx):
