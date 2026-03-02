@@ -149,7 +149,7 @@ class PromotionCommand(BaseCommand):
         try:
             next_students = self._load_students(2026)
         except FileNotFoundError:
-            await ctx.send("2026년 학생 명렬표 파일(`2026_전체학생명렬_flat.json`)을 찾을 수 없습니다.")
+            await ctx.send("명렬표 파일(`2026_전체학생명렬_flat.json`)을 찾을 수 없습니다.")
             return
 
         students_by_name: dict[str, list] = {}
