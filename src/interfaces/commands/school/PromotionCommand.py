@@ -162,6 +162,7 @@ class PromotionCommand(BaseCommand):
 
         count_nick = 0
         count_role = 0
+        count_already = 0
         skipped: list[str] = []
 
         for member in guild.members:
@@ -204,10 +205,20 @@ class PromotionCommand(BaseCommand):
                 f"{new_grade}학년 {gender_suffix}",
             ]
 
+            member_role_names = {r.name for r in member.roles}
+            nick_done = member.display_name == new_nick
+            old_roles_cleared = not any(rname in member_role_names for rname in old_role_names)
+            new_roles_set = all(rname in member_role_names for rname in new_role_names)
+
+            if nick_done and old_roles_cleared and new_roles_set:
+                count_already += 1
+                continue
+
             roles_to_remove = [r for r in member.roles if r.name in old_role_names]
             roles_to_add = [
                 r for rname in new_role_names
                 if (r := discord.utils.get(guild.roles, name=rname)) is not None
+                and r not in member.roles
             ]
 
             try:
@@ -229,6 +240,8 @@ class PromotionCommand(BaseCommand):
                 skipped.append(f"{member.display_name} ({e})")
 
         summary = f"닉네임 {count_nick}명, 역할 {count_role}명 변경했어요"
+        if count_already:
+            summary += f"\n{count_already}명 건너뜀"
         if skipped:
             summary += f"\n실패작들: {', '.join(skipped)}"
 

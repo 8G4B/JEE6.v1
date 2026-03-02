@@ -80,7 +80,6 @@
     { "grade": 2, "class": 1, "no": 1, "name": "강태현", "gender": "M" },
     { "grade": 2, "class": 1, "no": 2, "name": "김도연", "gender": "F" },
     { "grade": 2, "class": 1, "no": 3, "name": "김동헌", "gender": "M" },
-    { "grade": 2, "class": 1, "no": 4, "name": "전준", "gender": "M" },
     { "grade": 2, "class": 1, "no": 5, "name": "김성주", "gender": "M" },
     { "grade": 2, "class": 1, "no": 6, "name": "김수빈", "gender": "F" },
     { "grade": 2, "class": 1, "no": 7, "name": "김유찬", "gender": "M" },
@@ -129,7 +128,6 @@
     { "grade": 2, "class": 3, "no": 14, "name": "전준혁", "gender": "M" },
     { "grade": 2, "class": 3, "no": 15, "name": "주현진", "gender": "M" },
     { "grade": 2, "class": 3, "no": 16, "name": "채성원", "gender": "M" },
-    { "grade": 2, "class": 3, "no": 17, "name": "전쭈", "gender": "M" },
 
     { "grade": 2, "class": 4, "no": 1, "name": "김민선", "gender": "F" },
     { "grade": 2, "class": 4, "no": 2, "name": "김태연", "gender": "F" },
@@ -161,7 +159,7 @@
     { "grade": 3, "class": 1, "no": 13, "name": "임한솔", "gender": "F" },
     { "grade": 3, "class": 1, "no": 14, "name": "정하진", "gender": "M" },
     { "grade": 3, "class": 1, "no": 15, "name": "조수민", "gender": "F" },
-    { "grade": 3, "class": 1, "no": 16, "name": "하장혁", "gender": "F" },
+    { "grade": 3, "class": 1, "no": 16, "name": "하창혁", "gender": "F" },
     { "grade": 3, "class": 1, "no": 17, "name": "한승재", "gender": "F" },
 
     { "grade": 3, "class": 2, "no": 1, "name": "김민준", "gender": "M" },
@@ -213,7 +211,7 @@
     { "grade": 3, "class": 4, "no": 12, "name": "이용표", "gender": "M" },
     { "grade": 3, "class": 4, "no": 13, "name": "이주연", "gender": "M" },
     { "grade": 3, "class": 4, "no": 14, "name": "임시현", "gender": "M" },
-    { "grade": 3, "class": 4, "no": 15, "name": "전준엽", "gender": "M" },
+    { "grade": 3, "class": 4, "no": 15, "name": "전준연", "gender": "M" },
     { "grade": 3, "class": 4, "no": 16, "name": "최민준", "gender": "M" },
     { "grade": 3, "class": 4, "no": 17, "name": "황지훈", "gender": "M" }
   ]
