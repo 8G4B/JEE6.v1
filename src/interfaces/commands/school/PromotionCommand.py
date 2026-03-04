@@ -72,7 +72,7 @@ class PromotionCommand(BaseCommand):
 
         msg = await ctx.send("역할 부여 중입니다...")
 
-        student_nick_pattern = re.compile(r"^[1-3][1-4]\d{2}\s+.+$")
+        student_nick_pattern = re.compile(r"^([1-3])([1-4])\d{2}\s+.+$")
         role_cache: dict[str, discord.Role] = {}
         created_roles: list[str] = []
 
@@ -84,7 +84,28 @@ class PromotionCommand(BaseCommand):
             if member.bot:
                 continue
 
-            if student_nick_pattern.match(member.display_name):
+            nick_match = student_nick_pattern.match(member.display_name)
+            if nick_match:
+                grade = int(nick_match.group(1))
+                cls = int(nick_match.group(2))
+                target_role_names = [
+                    "재학생",
+                    f"{grade}학년",
+                    f"{grade}학년 {cls}반",
+                ]
+                try:
+                    roles_to_add = []
+                    for rname in target_role_names:
+                        role_obj = await self._get_or_create_role(guild, rname, role_cache, created_roles)
+                        if role_obj not in member.roles:
+                            roles_to_add.append(role_obj)
+                    if roles_to_add:
+                        await member.add_roles(*roles_to_add)
+                    count_done += 1
+                except discord.Forbidden:
+                    skipped.append(f"{member.display_name} (권한 없음)")
+                except Exception as e:
+                    skipped.append(f"{member.display_name} ({e})")
                 continue
 
             name = member.display_name
