@@ -14,3 +14,4 @@ openai
 riotwatcher
 flake8
 black
+spotipy

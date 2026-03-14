@@ -21,6 +21,15 @@ class BaseConfig:
     RIOT_API_KEY = os.getenv("RIOT_API_KEY")
     GPT_API_KEY = os.getenv("GPT_API_KEY")
 
+    SPOTIFY_CLIENT_ID = os.getenv("SPOTIFY_CLIENT_ID")
+    SPOTIFY_CLIENT_SECRET = os.getenv("SPOTIFY_CLIENT_SECRET")
+    SPOTIFY_PLAYLIST_ID = [
+        pid.strip()
+        for pid in os.getenv("SPOTIFY_PLAYLIST_ID", "").split(",")
+        if pid.strip()
+    ]
+    SPOTIFY_REFRESH_TOKEN = os.getenv("SPOTIFY_REFRESH_TOKEN")
+
     LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
 
     ENABLE_MANAGEMENT_COMMANDS = os.getenv("M", "True").lower() in ("true", "1", "yes")
