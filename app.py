@@ -17,6 +17,7 @@ from features.alarm.Anmauija import Anmauija
 from features.alarm.Jaseub import Jaseub
 from features.commands.Justice import Justice
 from features.commands.Clean import Clean
+from features.commands.Mention import Mention
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -37,6 +38,7 @@ async def setup():
     await bot.add_cog(Valo(bot))
     await bot.add_cog(Justice(bot))
     await bot.add_cog(Clean(bot))
+    await bot.add_cog(Mention(bot))
 
 @bot.event
 async def on_ready():
