@@ -1,8 +1,10 @@
 import random
 import logging
 import asyncio
+import time
 import spotipy
 from spotipy.oauth2 import SpotifyClientCredentials, SpotifyOAuth
+from spotipy.cache_handler import MemoryCacheHandler
 from src.config.settings.base import BaseConfig
 
 logger = logging.getLogger(__name__)
@@ -14,13 +16,22 @@ class SpotifyService:
 
     def _create_client(self) -> spotipy.Spotify:
         if BaseConfig.SPOTIFY_REFRESH_TOKEN:
+            cache_handler = MemoryCacheHandler(token_info={
+                "access_token": None,
+                "token_type": "Bearer",
+                "expires_in": 3600,
+                "refresh_token": BaseConfig.SPOTIFY_REFRESH_TOKEN,
+                "scope": "playlist-read-private playlist-read-collaborative",
+                "expires_at": 0,
+            })
             auth_manager = SpotifyOAuth(
                 client_id=BaseConfig.SPOTIFY_CLIENT_ID,
                 client_secret=BaseConfig.SPOTIFY_CLIENT_SECRET,
                 redirect_uri="http://127.0.0.1:8888/callback",
                 scope="playlist-read-private playlist-read-collaborative",
+                cache_handler=cache_handler,
+                open_browser=False,
             )
-            auth_manager.refresh_access_token(BaseConfig.SPOTIFY_REFRESH_TOKEN)
             return spotipy.Spotify(auth_manager=auth_manager)
 
         return spotipy.Spotify(
