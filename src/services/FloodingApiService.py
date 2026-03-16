@@ -25,11 +25,9 @@ class FloodingApiService:
 
     async def request_music(self, discord_user_id: str, music_url: str) -> None:
         token, _ = await self._resolve(discord_user_id)
-        await self._client.request_with_cookie(
-            "POST",
-            "/api/music",
-            session_cookie=token,
-            cookie_name="accessToken",
+        await self._client.post_with_bearer(
+            "/music",
+            access_token=token,
             json={"music_url": music_url},
         )
 
