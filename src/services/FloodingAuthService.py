@@ -4,10 +4,9 @@ import logging
 from datetime import datetime
 from typing import Optional
 
-from src.clients.FloodingApiClient import BaseApiClient
+from src.clients.FloodingApiClient import AuthenticationError, BaseApiClient, ExternalApiError, UserNotLinkedError
 from src.repositories.UserLinkRepository import UserLinkRepository
 from src.schemas.FloodingAuth import FloodingUserProfile, LinkStatus, TokenInfo
-from src.utils.errors import AuthenticationError, ExternalApiError, UserNotLinkedError
 
 logger = logging.getLogger(__name__)
 

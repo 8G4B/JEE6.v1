@@ -2,10 +2,9 @@ from __future__ import annotations
 
 import logging
 
-from src.clients.FloodingApiClient import AuthenticatedApiClient
+from src.clients.FloodingApiClient import AuthenticatedApiClient, UserNotLinkedError
 from src.repositories.UserLinkRepository import UserLinkRepository
 from src.schemas.FloodingResponse import UserStatus
-from src.utils.errors import UserNotLinkedError
 
 logger = logging.getLogger(__name__)
 

@@ -4,8 +4,8 @@ import logging
 import discord
 from discord.ext import commands
 
+from src.clients.FloodingApiClient import BotBaseError
 from src.interfaces.commands.Base import BaseCommand
-from src.utils.errors import BotBaseError
 from src.utils.time.datetimeFormatter import format_time
 
 logger = logging.getLogger(__name__)

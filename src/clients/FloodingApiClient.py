@@ -7,16 +7,50 @@ from typing import Any, Optional
 
 import aiohttp
 
-from src.utils.errors import (
-    AuthenticationError,
-    AuthorizationError,
-    ExternalApiError,
-    ExternalApiUnavailableError,
-    NotFoundError,
-    RateLimitError,
-)
-
 logger = logging.getLogger(__name__)
+
+
+class BotBaseError(Exception):
+    def __init__(self, user_message: str = "오류가 발생했습니다."):
+        self.user_message = user_message
+        super().__init__(user_message)
+
+
+class ExternalApiError(BotBaseError):
+    def __init__(self, status: int = 0, user_message: str = "API 오류가 발생했습니다.", data: Any = None):
+        self.status = status
+        self.data = data
+        super().__init__(user_message)
+
+
+class AuthenticationError(BotBaseError):
+    def __init__(self, user_message: str = "인증에 실패했습니다. 다시 로그인해주세요."):
+        super().__init__(user_message)
+
+
+class AuthorizationError(BotBaseError):
+    def __init__(self, user_message: str = "접근 권한이 없습니다."):
+        super().__init__(user_message)
+
+
+class NotFoundError(BotBaseError):
+    def __init__(self, user_message: str = "요청한 정보를 찾을 수 없습니다."):
+        super().__init__(user_message)
+
+
+class RateLimitError(BotBaseError):
+    def __init__(self, user_message: str = "요청이 너무 많습니다. 잠시 후 다시 시도해주세요."):
+        super().__init__(user_message)
+
+
+class ExternalApiUnavailableError(BotBaseError):
+    def __init__(self, user_message: str = "플러딩 서비스에 연결할 수 없습니다."):
+        super().__init__(user_message)
+
+
+class UserNotLinkedError(BotBaseError):
+    def __init__(self, user_message: str = "플러딩 계정이 연동되지 않았습니다. `!플러딩.로그인`으로 연동해주세요."):
+        super().__init__(user_message)
 
 
 @dataclass
