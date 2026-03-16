@@ -53,7 +53,7 @@ class UserLinkRepository(SQLAlchemyRawRepository):
                     for k, v in kwargs.items():
                         setattr(link, k, v)
                 session.commit()
-                session.refresh(link)
+                session.expunge(link)
                 return link
         except Exception as e:
             logger.error("upsert error: %s", e)
