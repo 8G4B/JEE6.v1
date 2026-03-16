@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import logging
+from datetime import datetime
+from zoneinfo import ZoneInfo
 
 from src.clients.FloodingApiClient import AuthenticatedApiClient
-from src.schemas.FloodingResponse import UserStatus
+from src.schemas.FloodingResponse import MusicItem, UserStatus
 
 logger = logging.getLogger(__name__)
 
@@ -29,6 +31,27 @@ class FloodingApiService:
             access_token=token,
             json={"music_url": music_url},
         )
+
+    async def get_music_list(self, discord_user_id: str) -> list[MusicItem]:
+        token = await self._auth_service.get_valid_token(discord_user_id)
+        today = datetime.now(ZoneInfo("Asia/Seoul")).strftime("%Y-%m-%d")
+        resp = await self._client.get_with_bearer(
+            "/music",
+            access_token=token,
+            params={"date": today, "type": "LATEST"},
+        )
+        return [
+            MusicItem(
+                music_id=item["music_id"],
+                music_url=item["music_url"],
+                music_name=item["music_name"],
+                thumbnail_image_url=item["thumbnail_image_url"],
+                like_count=item["like_count"],
+                proposer_name=item["proposer"]["name"],
+                proposer_school_number=item["proposer"]["school_number"],
+            )
+            for item in (resp.data or {}).get("music_list", [])
+        ]
 
     def _to_user_status(self, data: dict) -> UserStatus:
         student = data.get("student_info") or {}

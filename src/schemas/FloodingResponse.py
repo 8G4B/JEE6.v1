@@ -9,8 +9,6 @@ T = TypeVar("T")
 
 @dataclass
 class StandardResponse(Generic[T]):
-    """플러딩 API 응답을 표준화한 내부 DTO."""
-
     success: bool
     data: Optional[T] = None
     message: Optional[str] = None
@@ -23,5 +21,16 @@ class UserStatus:
     name: str
     status: str
     extra: dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass
+class MusicItem:
+    music_id: str
+    music_url: str
+    music_name: str
+    thumbnail_image_url: str
+    like_count: int
+    proposer_name: str
+    proposer_school_number: str
 
 
