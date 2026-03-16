@@ -63,3 +63,21 @@ class FloodingAuthCommand(BaseCommand):
         except Exception as e:
             logger.error(f"플러딩 연동해제 오류: {e}")
             await ctx.reply(f"❌ 오류가 발생했습니다: {e}")
+
+    @commands.command(name="플러딩.상태", description="플러딩 연동 상태를 확인합니다.")
+    async def link_status(self, ctx: commands.Context) -> None:
+        try:
+            status = await self._auth_service.get_link_status(str(ctx.author.id))
+            if not status.is_linked:
+                await ctx.reply("❌ 연동된 플러딩 계정이 없습니다. `!플러딩.로그인 <이메일> <비밀번호>`로 연동해주세요.")
+                return
+            embed = discord.Embed(title="🔗 플러딩 연동 상태", color=discord.Color.blue())
+            embed.add_field(name="플러딩 계정 ID", value=status.flooding_user_id, inline=False)
+            if status.linked_at:
+                embed.add_field(name="연동 일시", value=format_time(status.linked_at), inline=True)
+            if status.token_expires_at:
+                embed.add_field(name="토큰 만료", value=format_time(status.token_expires_at), inline=True)
+            await ctx.reply(embed=embed)
+        except Exception as e:
+            logger.error(f"플러딩 연동상태 오류: {e}")
+            await ctx.reply(f"❌ 오류가 발생했습니다: {e}")

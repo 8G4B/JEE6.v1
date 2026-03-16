@@ -38,7 +38,6 @@ class FloodingCommand(BaseCommand):
 
     @commands.command(name="플러딩.음악신청", aliases=["플러딩.음악"], description="유튜브 URL로 음악을 신청합니다.")
     async def request_music(self, ctx: commands.Context, music_url: str) -> None:
-        """사용법: !플러딩.음악신청 <유튜브 URL>"""
         key = f"music:{ctx.author.id}"
         if key in self._in_progress:
             await ctx.reply("⏳ 이미 처리 중입니다.")
