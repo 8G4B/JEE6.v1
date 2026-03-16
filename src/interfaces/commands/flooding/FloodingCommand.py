@@ -11,13 +11,10 @@ logger = logging.getLogger(__name__)
 
 
 class FloodingCommand(BaseCommand):
-    def __init__(self, bot, container):
-        super().__init__(bot, container)
+    def __init__(self, bot, api_service):
+        super().__init__(bot, None)
+        self._api_service = api_service
         self._in_progress: set[str] = set()
-
-    @property
-    def _api_service(self):
-        return self.container.flooding_api_service()
 
     @commands.command(name="플러딩.내정보", description="플러딩에서 내 정보를 조회합니다.")
     async def me(self, ctx: commands.Context) -> None:

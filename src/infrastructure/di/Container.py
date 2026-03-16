@@ -119,9 +119,13 @@ class Container(containers.DeclarativeContainer):
     )
 
     flooding_auth_command = providers.Factory(
-        FloodingAuthCommand, bot=bot, container=providers.Self()
+        FloodingAuthCommand,
+        bot=bot,
+        auth_service=flooding_auth_service,
     )
 
     flooding_command = providers.Factory(
-        FloodingCommand, bot=bot, container=providers.Self()
+        FloodingCommand,
+        bot=bot,
+        api_service=flooding_api_service,
     )

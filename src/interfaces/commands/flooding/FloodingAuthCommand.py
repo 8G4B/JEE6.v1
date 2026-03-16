@@ -12,13 +12,10 @@ logger = logging.getLogger(__name__)
 
 
 class FloodingAuthCommand(BaseCommand):
-    def __init__(self, bot, container):
-        super().__init__(bot, container)
+    def __init__(self, bot, auth_service):
+        super().__init__(bot, None)
+        self._auth_service = auth_service
         self._in_progress: set[str] = set()
-
-    @property
-    def _auth_service(self):
-        return self.container.flooding_auth_service()
 
     @commands.command(name="플러딩.로그인", description="플러딩 계정을 Discord와 연동합니다. !플러딩.로그인 <이메일(@gsm.hs.kr)> <비밀번호>")
     async def link(self, ctx: commands.Context, email: str = None, password: str = None) -> None:
