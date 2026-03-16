@@ -22,9 +22,15 @@ class FloodingAuthCommand(BaseCommand):
 
     @commands.command(name="플러딩.로그인", description="플러딩 계정을 Discord와 연동합니다. !플러딩.로그인 <이메일(@gsm.hs.kr)> <비밀번호>")
     async def link(self, ctx: commands.Context, email: str, password: str) -> None:
+        if ctx.guild is not None:
+            try:
+                await ctx.message.delete()
+            except (discord.Forbidden, discord.NotFound):
+                pass
+
         key = f"link:{ctx.author.id}"
         if key in self._in_progress:
-            await ctx.reply("⏳ 이미 처리 중입니다.")
+            await ctx.author.send("⏳ 이미 처리 중입니다.")
             return
 
         self._in_progress.add(key)
@@ -40,12 +46,12 @@ class FloodingAuthCommand(BaseCommand):
                 description=f"플러딩 **{profile.display_name or profile.username}** 계정과 연동되었습니다.",
                 color=discord.Color.green(),
             )
-            await ctx.reply(embed=embed)
+            await ctx.author.send(embed=embed)
         except BotBaseError as e:
-            await ctx.reply(f"❌ {e.user_message}")
+            await ctx.author.send(f"❌ {e.user_message}")
         except Exception as e:
             logger.error(f"플러딩 연동 오류: {e}")
-            await ctx.reply(f"❌ 오류가 발생했습니다: {e}")
+            await ctx.author.send(f"❌ 오류가 발생했습니다: {e}")
         finally:
             self._in_progress.discard(key)
 
