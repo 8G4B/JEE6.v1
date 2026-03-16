@@ -18,11 +18,14 @@ class UserLinkRepository(SQLAlchemyRawRepository):
     async def get_by_discord_id(self, discord_user_id: str) -> Optional[UserLink]:
         try:
             with get_db_session() as session:
-                return (
+                link = (
                     session.query(self.model)
                     .filter_by(discord_user_id=discord_user_id)
                     .first()
                 )
+                if link is not None:
+                    session.expunge(link)
+                return link
         except Exception as e:
             logger.error("get_by_discord_id error: %s", e)
             return None
