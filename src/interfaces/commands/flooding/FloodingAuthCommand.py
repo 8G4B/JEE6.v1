@@ -21,7 +21,10 @@ class FloodingAuthCommand(BaseCommand):
         return self.container.flooding_auth_service()
 
     @commands.command(name="플러딩.로그인", description="플러딩 계정을 Discord와 연동합니다. !플러딩.로그인 <이메일(@gsm.hs.kr)> <비밀번호>")
-    async def link(self, ctx: commands.Context, email: str, password: str) -> None:
+    async def link(self, ctx: commands.Context, email: str = None, password: str = None) -> None:
+        if email is None or password is None:
+            await ctx.reply("사용법: `!플러딩.로그인 <이메일(@gsm.hs.kr)> <비밀번호>`")
+            return
         if ctx.guild is not None:
             try:
                 await ctx.message.delete()
