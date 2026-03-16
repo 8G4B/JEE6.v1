@@ -42,7 +42,10 @@ class FloodingCommand(BaseCommand):
             async with ctx.typing():
                 items = await self._api_service.get_music_list(str(ctx.author.id))
         except BotBaseError as e:
-            await ctx.reply(embed=FloodingEmbed.error(e.user_message))
+            from src.clients.FloodingApiClient import ExternalApiError
+            detail = f"\n`{e.data}`" if isinstance(e, ExternalApiError) and e.data else ""
+            logger.error(f"플러딩 API 오류: {e.user_message}{detail}")
+            await ctx.reply(embed=FloodingEmbed.error(f"{e.user_message}{detail}"))
             return
         except Exception as e:
             logger.error(f"플러딩 음악목록 오류: {e}")
