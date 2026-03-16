@@ -36,9 +36,8 @@ class FloodingApiService:
         token = await self._auth_service.get_valid_token(discord_user_id)
         today = datetime.now(ZoneInfo("Asia/Seoul")).strftime("%Y-%m-%d")
         resp = await self._client.get_with_bearer(
-            "/music",
+            f"/music?date={today}&type=LATEST",
             access_token=token,
-            params={"date": today, "type": "LATEST"},
         )
         return [
             MusicItem(
