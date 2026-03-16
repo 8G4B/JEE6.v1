@@ -81,8 +81,10 @@ class BaseApiClient:
         if self._session and not self._session.closed:
             await self._session.close()
 
-    def _build_headers(self, extra: Optional[dict] = None) -> dict[str, str]:
-        h = {"Content-Type": "application/json", "Accept": "application/json"}
+    def _build_headers(self, extra: Optional[dict] = None, method: str = "POST") -> dict[str, str]:
+        h = {"Accept": "application/json"}
+        if method.upper() not in ("GET", "DELETE", "HEAD"):
+            h["Content-Type"] = "application/json"
         if extra:
             h.update(extra)
         return h
@@ -98,7 +100,7 @@ class BaseApiClient:
         cookies: Optional[dict] = None,
     ) -> ApiResponse:
         url = f"{self._base_url}{path}"
-        merged = self._build_headers(headers)
+        merged = self._build_headers(headers, method)
         session = await self._get_session()
         last_exc: Exception = RuntimeError("No attempts")
 
