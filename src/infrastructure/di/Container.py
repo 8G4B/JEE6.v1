@@ -3,14 +3,19 @@ from src.repositories.UserBalanceRepository import UserBalanceRepository
 from src.repositories.JusticeRepository import JusticeRepository
 from src.repositories.PeriodicCleanRepository import PeriodicCleanRepository
 from src.repositories.ChannelSlowModeRepository import ChannelSlowModeRepository
+from src.repositories.UserLinkRepository import UserLinkRepository
 from src.services.UserService import UserService
 from src.services.TimeService import TimeService
 from src.services.ChannelService import ChannelService
 from src.services.JusticeService import JusticeService
 from src.services.SlowModeService import SlowModeService
+from src.services.FloodingAuthService import FloodingAuthService
+from src.services.FloodingApiService import FloodingApiService
+from src.clients.FloodingApiClient import BaseApiClient, AuthenticatedApiClient
 from src.domain.models.UserBalance import UserBalance
 from src.domain.models.PeriodicClean import PeriodicClean
 from src.domain.models.ChannelSlowMode import ChannelSlowMode
+from src.domain.models.UserLink import UserLink
 from src.config.settings.Base import BaseConfig
 from src.interfaces.commands.channel import ChannelCommands
 from src.interfaces.commands.information.TimeCommand import TimeCommands
@@ -22,6 +27,8 @@ from src.interfaces.commands.gambling.GamblingCommand import GamblingCommands
 from src.interfaces.commands.gambling.GamblingGames import GamblingGames
 from src.interfaces.commands.gambling.GamblingCardGames import GamblingCardGames
 from src.interfaces.commands.channel.SlowModeCommand import SlowModeCommand
+from src.interfaces.commands.flooding.FloodingAuthCommand import FloodingAuthCommand
+from src.interfaces.commands.flooding.FloodingCommand import FloodingCommand
 
 
 class Container(containers.DeclarativeContainer):
@@ -80,4 +87,41 @@ class Container(containers.DeclarativeContainer):
 
     slow_mode_command = providers.Factory(
         SlowModeCommand, bot=bot, container=providers.Self()
+    )
+
+    user_link_repository = providers.Factory(UserLinkRepository, model=UserLink)
+
+    flooding_base_client = providers.Singleton(
+        BaseApiClient,
+        base_url=BaseConfig.EXTERNAL_API_BASE_URL,
+        timeout=BaseConfig.EXTERNAL_API_TIMEOUT,
+        max_retries=BaseConfig.EXTERNAL_API_MAX_RETRIES,
+    )
+
+    flooding_auth_client = providers.Singleton(
+        AuthenticatedApiClient,
+        base_url=BaseConfig.EXTERNAL_API_BASE_URL,
+        timeout=BaseConfig.EXTERNAL_API_TIMEOUT,
+        max_retries=BaseConfig.EXTERNAL_API_MAX_RETRIES,
+    )
+
+    flooding_auth_service = providers.Factory(
+        FloodingAuthService,
+        client=flooding_base_client,
+        user_link_repo=user_link_repository,
+        auth_type=BaseConfig.EXTERNAL_AUTH_TYPE,
+    )
+
+    flooding_api_service = providers.Factory(
+        FloodingApiService,
+        client=flooding_auth_client,
+        user_link_repo=user_link_repository,
+    )
+
+    flooding_auth_command = providers.Factory(
+        FloodingAuthCommand, bot=bot, container=providers.Self()
+    )
+
+    flooding_command = providers.Factory(
+        FloodingCommand, bot=bot, container=providers.Self()
     )

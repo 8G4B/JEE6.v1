@@ -30,6 +30,12 @@ class BaseConfig:
     ]
     SPOTIFY_REFRESH_TOKEN = os.getenv("SPOTIFY_REFRESH_TOKEN")
 
+    EXTERNAL_API_BASE_URL = os.getenv("FLOODING_API_BASE_URL", "")
+    EXTERNAL_API_TIMEOUT = float(os.getenv("FLOODING_API_TIMEOUT", "10.0"))
+    EXTERNAL_API_MAX_RETRIES = int(os.getenv("FLOODING_API_MAX_RETRIES", "3"))
+
+    EXTERNAL_AUTH_TYPE = os.getenv("FLOODING_AUTH_TYPE", "bearer")
+
     LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
 
     ENABLE_MANAGEMENT_COMMANDS = os.getenv("M", "True").lower() in ("true", "1", "yes")

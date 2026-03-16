@@ -65,6 +65,10 @@ class Bot(commands.Bot):
         await self.add_cog(MentionCommand(self, self.container))
         await self.add_cog(SpotifyCommand(self, self.container))
 
+        if BaseConfig.EXTERNAL_API_BASE_URL:
+            await self.add_cog(self.container.flooding_auth_command())
+            await self.add_cog(self.container.flooding_command())
+
     async def on_ready(self):
         print(f"Logged in as {self.user.name} (ID: {self.user.id})")
         print(f"Connected to {len(self.guilds)} guilds")
