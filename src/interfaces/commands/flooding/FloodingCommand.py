@@ -33,7 +33,7 @@ class FloodingCommand(BaseCommand):
             logger.error(f"플러딩 내정보 오류: {e}")
             await ctx.reply(embed=FloodingEmbed.error(f"오류가 발생했습니다: {e}"))
 
-    @commands.command(name="플러딩.음악신청", aliases=["플러딩.음악"], description="유튜브 URL로 음악을 신청합니다.")
+    @commands.command(name="플러딩.음악신청", aliases=["플러딩.기상음악신청"], description="유튜브 URL로 음악을 신청합니다.")
     async def request_music(self, ctx: commands.Context, music_url: str = None) -> None:
         if music_url is None:
             await ctx.reply(embed=FloodingEmbed.info("사용법", "`!플러딩.음악신청 <유튜브 URL>`"))
