@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import logging
-import discord
 from discord.ext import commands
 
 from src.clients.FloodingApiClient import BotBaseError
