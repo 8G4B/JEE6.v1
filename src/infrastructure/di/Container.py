@@ -115,7 +115,7 @@ class Container(containers.DeclarativeContainer):
     flooding_api_service = providers.Factory(
         FloodingApiService,
         client=flooding_auth_client,
-        user_link_repo=user_link_repository,
+        auth_service=flooding_auth_service,
     )
 
     flooding_auth_command = providers.Factory(

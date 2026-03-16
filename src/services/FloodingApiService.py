@@ -2,8 +2,7 @@ from __future__ import annotations
 
 import logging
 
-from src.clients.FloodingApiClient import AuthenticatedApiClient, UserNotLinkedError
-from src.repositories.UserLinkRepository import UserLinkRepository
+from src.clients.FloodingApiClient import AuthenticatedApiClient
 from src.schemas.FloodingResponse import UserStatus
 
 logger = logging.getLogger(__name__)
@@ -13,29 +12,23 @@ class FloodingApiService:
     def __init__(
         self,
         client: AuthenticatedApiClient,
-        user_link_repo: UserLinkRepository,
+        auth_service,
     ) -> None:
         self._client = client
-        self._repo = user_link_repo
+        self._auth_service = auth_service
 
     async def get_user_status(self, discord_user_id: str) -> UserStatus:
-        token, _ = await self._resolve(discord_user_id)
+        token = await self._auth_service.get_valid_token(discord_user_id)
         resp = await self._client.get_with_bearer("/user/myself", access_token=token)
         return self._to_user_status(resp.data)
 
     async def request_music(self, discord_user_id: str, music_url: str) -> None:
-        token, _ = await self._resolve(discord_user_id)
+        token = await self._auth_service.get_valid_token(discord_user_id)
         await self._client.post_with_bearer(
             "/music",
             access_token=token,
             json={"music_url": music_url},
         )
-
-    async def _resolve(self, discord_user_id: str):
-        link = await self._repo.get_by_discord_id(discord_user_id)
-        if link is None or not link.is_active or not link.access_token:
-            raise UserNotLinkedError()
-        return link.access_token, link
 
     def _to_user_status(self, data: dict) -> UserStatus:
         student = data.get("student_info") or {}
@@ -60,4 +53,3 @@ class FloodingApiService:
             status=data.get("gender", ""),
             extra=extra,
         )
-
