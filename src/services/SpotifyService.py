@@ -57,7 +57,7 @@ class SpotifyService:
                 playlist_id,
                 limit=1,
                 offset=offset,
-                fields="items(track(id,name,artists,album(name,images),external_urls,duration_ms))",
+                fields="items(track(id,name,artists(id,name),album(name,images),external_urls,duration_ms))",
             )
 
             items = result.get("items", [])
@@ -74,6 +74,12 @@ class SpotifyService:
             duration_ms = track.get("duration_ms", 0)
             minutes, seconds = divmod(duration_ms // 1000, 60)
 
+            genres = []
+            if track["artists"]:
+                artist_id = track["artists"][0]["id"]
+                artist_info = self._sp.artist(artist_id)
+                genres = artist_info.get("genres", [])
+
             return {
                 "name": track["name"],
                 "artists": artists,
@@ -81,6 +87,7 @@ class SpotifyService:
                 "url": track["external_urls"]["spotify"],
                 "image": album_img,
                 "duration": f"{minutes}:{seconds:02d}",
+                "genres": genres,
             }
         except Exception as e:
             logger.error(f"Spotify API 오류: {e}")

@@ -40,7 +40,11 @@ class SpotifyCommand(BaseCommand):
             description=f"**{track['artists']}**\n앨범: {track['album']}",
             color=discord.Color.from_rgb(30, 215, 96),  # Spotify green
         )
-        embed.set_footer(text=f"⏱ {track['duration']}")
+        genre_text = ", ".join(track["genres"][:2]) if track.get("genres") else ""
+        footer = f"⏱ {track['duration']}"
+        if genre_text:
+            footer += f"  |  {genre_text}"
+        embed.set_footer(text=footer)
         if track["image"]:
             embed.set_thumbnail(url=track["image"])
 
