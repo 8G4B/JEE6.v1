@@ -1,8 +1,7 @@
 import logging
 import random
-import asyncio
+import aiohttp
 from datetime import datetime, timedelta
-from typing import Optional
 from langchain_groq import ChatGroq
 from langchain_core.tools import tool
 from langchain_core.messages import SystemMessage, HumanMessage
@@ -16,7 +15,7 @@ from src.services.SpotifyService import SpotifyService
 
 logger = logging.getLogger(__name__)
 
-SYSTEM_PROMPT = """너는 디스코드 봇 JEE6의 자연어 처리 엔진이야.
+SYSTEM_PROMPT = """너는 디스코드 봇 JEE6이야.
 사용자의 자연어 메시지를 분석해서 적절한 도구(tool)를 호출해.
 
 사용 가능한 기능:
@@ -32,7 +31,60 @@ SYSTEM_PROMPT = """너는 디스코드 봇 JEE6의 자연어 처리 엔진이야
 - 어떤 도구에도 해당하지 않는 일반 대화나 질문이면 도구 없이 직접 한국어로 답변해.
 - 답변은 간결하게.
 - 롤/발로란트 조회 시 닉네임#태그가 없으면 사용자에게 요청해.
+- 사용자가 자살 또는 자해에 대한 언급을 하면 한강 수온을 조회해.
+- 사용자가 도박에 대한 언급을 하면 이는 실제 도박이 아니래 미니게임 도박 명령어를 뜻하는거야.
 """
+
+
+@tool
+def get_meal(meal_type: str = "auto", day: str = "today") -> str:
+    """급식 조회. meal_type: breakfast/lunch/dinner/auto, day: today/tomorrow"""
+    return "ok"
+
+
+@tool
+def get_water_temp() -> str:
+    """한강 수온 조회"""
+    return "ok"
+
+
+@tool
+def get_time() -> str:
+    """현재 시간 조회"""
+    return "ok"
+
+
+@tool
+def get_lol_tier(riot_id: str) -> str:
+    """롤 티어 조회. riot_id: 닉네임#태그"""
+    return "ok"
+
+
+@tool
+def get_lol_history(riot_id: str) -> str:
+    """롤 최근 전적 조회. riot_id: 닉네임#태그"""
+    return "ok"
+
+
+@tool
+def get_valo_tier(riot_id: str) -> str:
+    """발로란트 티어 조회. riot_id: 닉네임#태그"""
+    return "ok"
+
+
+@tool
+def get_valo_history(riot_id: str) -> str:
+    """발로란트 최근 전적 조회. riot_id: 닉네임#태그"""
+    return "ok"
+
+
+@tool
+def get_music() -> str:
+    """Spotify 랜덤 곡 추천"""
+    return "ok"
+
+
+TOOLS = [get_meal, get_water_temp, get_time, get_lol_tier, get_lol_history, get_valo_tier, get_valo_history, get_music]
 
 
 class LangService:
@@ -50,203 +102,119 @@ class LangService:
         self.valo_service = ValoService()
         self.spotify_service = SpotifyService()
 
-        self.tools = [
-            self._make_get_meal_tool(),
-            self._make_get_water_temp_tool(),
-            self._make_get_time_tool(),
-            self._make_get_lol_tier_tool(),
-            self._make_get_lol_history_tool(),
-            self._make_get_valo_tier_tool(),
-            self._make_get_valo_history_tool(),
-            self._make_get_music_tool(),
-        ]
+        self.llm_with_tools = self.llm.bind_tools(TOOLS)
 
-        self.llm_with_tools = self.llm.bind_tools(self.tools)
+    async def _execute_tool(self, tool_name: str, tool_args: dict) -> dict:
+        """Tool 호출 결과를 구조화된 dict로 반환. type 필드로 embed 종류 결정."""
+        try:
+            if tool_name == "get_meal":
+                return await self._exec_meal(tool_args)
+            elif tool_name == "get_water_temp":
+                return await self._exec_water()
+            elif tool_name == "get_time":
+                return self._exec_time()
+            elif tool_name == "get_lol_tier":
+                return await self._exec_lol_tier(tool_args)
+            elif tool_name == "get_lol_history":
+                return await self._exec_lol_history(tool_args)
+            elif tool_name == "get_valo_tier":
+                return await self._exec_valo_tier(tool_args)
+            elif tool_name == "get_valo_history":
+                return await self._exec_valo_history(tool_args)
+            elif tool_name == "get_music":
+                return await self._exec_music()
+        except Exception as e:
+            logger.error(f"Tool 실행 오류 ({tool_name}): {e}", exc_info=True)
+            return {"type": "error", "message": str(e)}
 
-    def _make_get_meal_tool(self):
-        meal_service = self.meal_service
+        return {"type": "text", "content": "알 수 없는 명령입니다."}
 
-        @tool
-        async def get_meal(meal_type: str = "auto", day: str = "today") -> str:
-            """급식을 조회합니다.
+    async def _exec_meal(self, args: dict) -> dict:
+        meal_type = args.get("meal_type", "auto")
+        day = args.get("day", "today")
+        now = datetime.now()
 
-            Args:
-                meal_type: 'breakfast', 'lunch', 'dinner', or 'auto' (시간에 따라 자동)
-                day: 'today' or 'tomorrow'
-            """
-            now = datetime.now()
+        if meal_type == "auto":
+            title, menu, cal_info = await self.meal_service.get_current_meal(now)
+        else:
             if day == "tomorrow":
                 date_str = (now + timedelta(days=1)).strftime("%Y%m%d")
             else:
                 date_str = now.strftime("%Y%m%d")
+            code_map = {"breakfast": "1", "lunch": "2", "dinner": "3"}
+            title_map = {
+                "breakfast": "🍳 아침" if day == "today" else "🍳 내일 아침",
+                "lunch": "🍚 점심" if day == "today" else "🍚 내일 점심",
+                "dinner": "🍖 저녁" if day == "today" else "🍖 내일 저녁",
+            }
+            title, menu, cal_info = await self.meal_service.get_meal_by_type(
+                date_str, code_map.get(meal_type, "2"), title_map.get(meal_type, "급식")
+            )
 
-            if meal_type == "auto":
-                title, menu, cal_info = await meal_service.get_current_meal(now)
-            else:
-                code_map = {"breakfast": "1", "lunch": "2", "dinner": "3"}
-                title_map = {
-                    "breakfast": "🍳 아침" if day == "today" else "🍳 내일 아침",
-                    "lunch": "🍚 점심" if day == "today" else "🍚 내일 점심",
-                    "dinner": "🍖 저녁" if day == "today" else "🍖 내일 저녁",
-                }
-                code = code_map.get(meal_type, "2")
-                title_text = title_map.get(meal_type, "급식")
-                title, menu, cal_info = await meal_service.get_meal_by_type(
-                    date_str, code, title_text
-                )
+        if title and menu:
+            return {"type": "meal", "title": title, "menu": menu, "cal_info": cal_info or ""}
+        return {"type": "error", "message": "급식 정보를 가져올 수 없습니다."}
 
-            if title and menu:
-                result = f"**{title}**\n{menu}"
-                if cal_info:
-                    result += f"\n({cal_info})"
-                return result
-            return "급식 정보를 가져올 수 없습니다."
+    async def _exec_water(self) -> dict:
+        result = await self.water_service.get_han_river_temp()
+        if result:
+            hour, minute, temp = result
+            return {"type": "water", "hour": hour, "minute": minute, "temp": temp}
+        return {"type": "error", "message": "한강 수온 정보를 가져올 수 없습니다."}
 
-        return get_meal
+    def _exec_time(self) -> dict:
+        dt = self.time_service.get_current_datetime()
+        return {"type": "time", "datetime": dt}
 
-    def _make_get_water_temp_tool(self):
-        water_service = self.water_service
+    async def _exec_lol_tier(self, args: dict) -> dict:
+        riot_id = args.get("riot_id", "")
+        async with aiohttp.ClientSession() as session:
+            account = await self.lol_service.get_account_info(session, riot_id)
+            solo_rank, tier = await self.lol_service.get_tier_info(session, account["puuid"])
+            return {
+                "type": "lol_tier",
+                "riot_id": riot_id,
+                "solo_rank": solo_rank,
+                "tier": tier,
+            }
 
-        @tool
-        async def get_water_temp() -> str:
-            """한강 수온을 조회합니다."""
-            result = await water_service.get_han_river_temp()
-            if result:
-                hour, minute, temp = result
-                return f"🌊 한강 수온: **{temp}°C** (측정 시각: {hour}시 {minute}분)"
-            return "한강 수온 정보를 가져올 수 없습니다."
+    async def _exec_lol_history(self, args: dict) -> dict:
+        riot_id = args.get("riot_id", "")
+        async with aiohttp.ClientSession() as session:
+            account = await self.lol_service.get_account_info(session, riot_id)
+            matches = await self.lol_service.get_match_history(session, account["puuid"])
+            return {"type": "lol_history", "riot_id": riot_id, "matches": matches}
 
-        return get_water_temp
+    async def _exec_valo_tier(self, args: dict) -> dict:
+        riot_id = args.get("riot_id", "")
+        async with aiohttp.ClientSession() as session:
+            account = await self.valo_service.get_account_info(session, riot_id)
+            rank_data, tier = await self.valo_service.get_rank_info(session, account["puuid"])
+            return {"type": "valo_tier", "riot_id": riot_id, "tier": tier}
 
-    def _make_get_time_tool(self):
-        time_service = self.time_service
+    async def _exec_valo_history(self, args: dict) -> dict:
+        riot_id = args.get("riot_id", "")
+        async with aiohttp.ClientSession() as session:
+            account = await self.valo_service.get_account_info(session, riot_id)
+            matches = await self.valo_service.get_match_history(session, account["puuid"])
+            return {"type": "valo_history", "riot_id": riot_id, "matches": matches}
 
-        @tool
-        def get_time() -> str:
-            """현재 시간을 조회합니다."""
-            return f"🕐 {time_service.get_current_time()}"
+    async def _exec_music(self) -> dict:
+        playlist_ids = BaseConfig.SPOTIFY_PLAYLIST_ID
+        if not playlist_ids:
+            return {"type": "error", "message": "Spotify 설정이 되어있지 않습니다."}
+        playlist_id = random.choice(playlist_ids)
+        track = await self.spotify_service.get_random_track(playlist_id)
+        if track:
+            return {"type": "music", "track": track}
+        return {"type": "error", "message": "곡을 가져오는데 실패했습니다."}
 
-        return get_time
+    async def process_message(self, user_message: str) -> dict:
+        """자연어 메시지를 처리하고 구조화된 결과를 반환.
 
-    def _make_get_lol_tier_tool(self):
-        lol_service = self.lol_service
-
-        @tool
-        async def get_lol_tier(riot_id: str) -> str:
-            """롤(League of Legends) 티어를 조회합니다.
-
-            Args:
-                riot_id: 라이엇 ID (예: 'Hide on bush#KR1')
-            """
-            import aiohttp
-            try:
-                async with aiohttp.ClientSession() as session:
-                    account = await lol_service.get_account_info(session, riot_id)
-                    solo_rank, tier = await lol_service.get_tier_info(session, account["puuid"])
-                    if solo_rank:
-                        return (
-                            f"🎮 **{riot_id}** 롤 랭크\n"
-                            f"티어: **{solo_rank['tier']} {solo_rank['rank']}** ({solo_rank['leaguePoints']}LP)\n"
-                            f"전적: {solo_rank['wins']}승 {solo_rank['losses']}패"
-                        )
-                    return f"🎮 **{riot_id}**: {tier}"
-            except ValueError as e:
-                return str(e)
-
-        return get_lol_tier
-
-    def _make_get_lol_history_tool(self):
-        lol_service = self.lol_service
-
-        @tool
-        async def get_lol_history(riot_id: str) -> str:
-            """롤(League of Legends) 최근 전적을 조회합니다.
-
-            Args:
-                riot_id: 라이엇 ID (예: 'Hide on bush#KR1')
-            """
-            import aiohttp
-            try:
-                async with aiohttp.ClientSession() as session:
-                    account = await lol_service.get_account_info(session, riot_id)
-                    matches = await lol_service.get_match_history(session, account["puuid"])
-                    lines = [f"🎮 **{riot_id}** 최근 전적"]
-                    for m in matches:
-                        lines.append(f"{m['name']}\n{m['value']}")
-                    return "\n".join(lines)
-            except ValueError as e:
-                return str(e)
-
-        return get_lol_history
-
-    def _make_get_valo_tier_tool(self):
-        valo_service = self.valo_service
-
-        @tool
-        async def get_valo_tier(riot_id: str) -> str:
-            """발로란트(Valorant) 티어를 조회합니다.
-
-            Args:
-                riot_id: 라이엇 ID (예: 'Player#KR1')
-            """
-            import aiohttp
-            try:
-                async with aiohttp.ClientSession() as session:
-                    account = await valo_service.get_account_info(session, riot_id)
-                    rank_data, tier = await valo_service.get_rank_info(session, account["puuid"])
-                    return f"🎯 **{riot_id}** 발로란트 랭크: **{tier}**"
-            except ValueError as e:
-                return str(e)
-
-        return get_valo_tier
-
-    def _make_get_valo_history_tool(self):
-        valo_service = self.valo_service
-
-        @tool
-        async def get_valo_history(riot_id: str) -> str:
-            """발로란트(Valorant) 최근 전적을 조회합니다.
-
-            Args:
-                riot_id: 라이엇 ID (예: 'Player#KR1')
-            """
-            import aiohttp
-            try:
-                async with aiohttp.ClientSession() as session:
-                    account = await valo_service.get_account_info(session, riot_id)
-                    matches = await valo_service.get_match_history(session, account["puuid"])
-                    lines = [f"🎯 **{riot_id}** 최근 전적"]
-                    for m in matches:
-                        lines.append(f"{m['name']}\n{m['value']}")
-                    return "\n".join(lines)
-            except ValueError as e:
-                return str(e)
-
-        return get_valo_history
-
-    def _make_get_music_tool(self):
-        spotify_service = self.spotify_service
-
-        @tool
-        async def get_music() -> str:
-            """Spotify에서 랜덤 곡을 추천합니다."""
-            playlist_ids = BaseConfig.SPOTIFY_PLAYLIST_ID
-            if not playlist_ids:
-                return "Spotify 설정이 되어있지 않습니다."
-            playlist_id = random.choice(playlist_ids)
-            track = await spotify_service.get_random_track(playlist_id)
-            if track:
-                genres = ", ".join(track["genres"][:2]) if track.get("genres") else ""
-                result = f"🎵 **{track['name']}**\n아티스트: {track['artists']}\n앨범: {track['album']}\n길이: {track['duration']}"
-                if genres:
-                    result += f"\n장르: {genres}"
-                result += f"\n{track['url']}"
-                return result
-            return "곡을 가져오는데 실패했습니다."
-
-        return get_music
-
-    async def process_message(self, user_message: str) -> str:
+        Returns:
+            {"type": "tool_type", ...data} 또는 {"type": "text", "content": "..."}
+        """
         try:
             messages = [
                 SystemMessage(content=SYSTEM_PROMPT),
@@ -256,28 +224,14 @@ class LangService:
             response = await self.llm_with_tools.ainvoke(messages)
 
             if not response.tool_calls:
-                return response.content
+                return {"type": "text", "content": response.content}
 
-            results = []
-            for tool_call in response.tool_calls:
-                tool_name = tool_call["name"]
-                tool_args = tool_call["args"]
-
-                tool_fn = None
-                for t in self.tools:
-                    if t.name == tool_name:
-                        tool_fn = t
-                        break
-
-                if tool_fn:
-                    result = await tool_fn.ainvoke(tool_args)
-                    results.append(str(result))
-
-            return "\n\n".join(results) if results else response.content
+            first_call = response.tool_calls[0]
+            return await self._execute_tool(first_call["name"], first_call["args"])
 
         except Exception as e:
             logger.error(f"LangService 처리 중 오류: {e}", exc_info=True)
-            return f"처리 중 오류가 발생했습니다: {e}"
+            return {"type": "error", "message": f"처리 중 오류가 발생했습니다: {e}"}
 
     async def ask_question(self, question: str) -> str:
         try:
@@ -285,10 +239,8 @@ class LangService:
                 SystemMessage(content="너는 친절한 한국어 AI 어시스턴트야. 간결하고 정확하게 답변해."),
                 HumanMessage(content=question),
             ]
-
             response = await self.llm.ainvoke(messages)
             return response.content
-
         except Exception as e:
             logger.error(f"질문 처리 중 오류: {e}", exc_info=True)
             return f"질문 처리 중 오류가 발생했습니다: {e}"

@@ -5,6 +5,11 @@ from src.interfaces.commands.Base import BaseCommand
 from src.services.LangService import LangService
 from src.infrastructure.database.Session import get_db_session
 from src.config.settings.base import BaseConfig
+from src.utils.embeds.MealEmbed import MealEmbed
+from src.utils.embeds.WaterEmbed import WaterEmbed
+from src.utils.embeds.TimeEmbed import TimeEmbed
+from src.utils.embeds.LolEmbed import LolEmbed
+from src.utils.embeds.ValoEmbed import ValoEmbed
 
 logger = logging.getLogger(__name__)
 
@@ -27,6 +32,79 @@ class LangCommand(BaseCommand):
             logger.info(f"자연어 모드 활성 채널 {len(self._enabled_channels)}개 로드")
         except Exception as e:
             logger.error(f"자연어 모드 채널 로드 실패: {e}")
+
+    def _build_response(self, result: dict) -> dict:
+        """구조화된 결과를 embed 또는 content로 변환. {"embed": ...} 또는 {"content": ...} 반환."""
+        t = result.get("type")
+
+        if t == "meal":
+            embed = MealEmbed.create_meal_embed(result["title"], result["menu"], result.get("cal_info", ""))
+            return {"embed": embed}
+
+        if t == "water":
+            embed = WaterEmbed.create_water_embed(result["hour"], result["minute"], result["temp"])
+            return {"embed": embed}
+
+        if t == "time":
+            embed = TimeEmbed.create_time_embed(result["datetime"])
+            return {"embed": embed}
+
+        if t == "lol_tier":
+            solo_rank = result.get("solo_rank")
+            riot_id = result["riot_id"]
+            tier = result["tier"]
+            if solo_rank:
+                desc = (
+                    f"**{solo_rank['tier']} {solo_rank['rank']}** ({solo_rank['leaguePoints']}LP)\n"
+                    f"{solo_rank['wins']}승 {solo_rank['losses']}패"
+                )
+            else:
+                desc = tier
+            embed = LolEmbed.create_tier_embed(f"🎮 {riot_id}", desc, tier)
+            return {"embed": embed}
+
+        if t == "lol_history":
+            embed = LolEmbed.create_history_embed(f"🎮 {result['riot_id']} 최근 전적", result["matches"])
+            return {"embed": embed}
+
+        if t == "valo_tier":
+            embed = ValoEmbed.create_tier_embed(f"🎯 {result['riot_id']}", result["tier"], result["tier"])
+            return {"embed": embed}
+
+        if t == "valo_history":
+            embed = ValoEmbed.create_history_embed(f"🎯 {result['riot_id']} 최근 전적", result["matches"])
+            return {"embed": embed}
+
+        if t == "music":
+            track = result["track"]
+            embed = discord.Embed(
+                title=track["name"],
+                url=track["url"],
+                description=f"**{track['artists']}**\n앨범: {track['album']}",
+                color=discord.Color.from_rgb(30, 215, 96),
+            )
+            genre_text = ", ".join(track["genres"][:2]) if track.get("genres") else ""
+            footer = f"⏱ {track['duration']}"
+            if genre_text:
+                footer += f"  |  {genre_text}"
+            embed.set_footer(text=footer)
+            if track.get("image"):
+                embed.set_thumbnail(url=track["image"])
+            return {"embed": embed}
+
+        if t == "error":
+            embed = discord.Embed(
+                title="❗ 오류",
+                description=result.get("message", "알 수 없는 오류"),
+                color=discord.Color.red(),
+            )
+            return {"embed": embed}
+
+        # type == "text" (일반 대화)
+        content = result.get("content", "")
+        if not content:
+            return {}
+        return {"content": content}
 
     @commands.command(
         name="lang",
@@ -83,8 +161,8 @@ class LangCommand(BaseCommand):
         async with ctx.typing():
             answer = await self.lang_service.ask_question(question)
 
-        if len(answer) > 2000:
-            answer = answer[:1997] + "..."
+        if len(answer) > 4096:
+            answer = answer[:4093] + "..."
 
         embed = discord.Embed(
             title="🤖 AI 답변",
@@ -117,12 +195,19 @@ class LangCommand(BaseCommand):
         logger.info(f"lang_process({message.guild.name}, {message.channel.name}, {message.author.name}, {content[:50]})")
 
         async with message.channel.typing():
-            response = await self.lang_service.process_message(content)
+            result = await self.lang_service.process_message(content)
 
+        if not result:
+            return
+
+        response = self._build_response(result)
         if not response:
             return
 
-        if len(response) > 2000:
-            response = response[:1997] + "..."
-
-        await message.reply(response, mention_author=False)
+        if "embed" in response:
+            await message.reply(embed=response["embed"], mention_author=False)
+        elif "content" in response:
+            text = response["content"]
+            if len(text) > 2000:
+                text = text[:1997] + "..."
+            await message.reply(text, mention_author=False)
