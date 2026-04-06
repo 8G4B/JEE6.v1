@@ -16,14 +16,13 @@ COPY assets/ ./assets/
 
 ENV PYTHONPATH=/app
 ENV PYTHONUNBUFFERED=1
-
 ENV TZ=Asia/Seoul
-RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
-EXPOSE 8000
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
 RUN touch /app/discord.log && \
     chmod 777 /app/discord.log
 
 USER root
 CMD ["python", "-m", "src.main"]
+
