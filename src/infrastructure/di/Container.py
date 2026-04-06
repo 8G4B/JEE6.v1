@@ -29,6 +29,9 @@ from src.interfaces.commands.gambling.GamblingCardGames import GamblingCardGames
 from src.interfaces.commands.channel.SlowModeCommand import SlowModeCommand
 from src.interfaces.commands.flooding.FloodingAuthCommand import FloodingAuthCommand
 from src.interfaces.commands.flooding.FloodingCommand import FloodingCommand
+from src.domain.models.ChannelLang import ChannelLang
+from src.repositories.ChannelLangRepository import ChannelLangRepository
+from src.interfaces.commands.lang.LangCommand import LangCommand
 
 
 class Container(containers.DeclarativeContainer):
@@ -128,4 +131,12 @@ class Container(containers.DeclarativeContainer):
         FloodingCommand,
         bot=bot,
         api_service=flooding_api_service,
+    )
+
+    channel_lang_repository = providers.Factory(
+        ChannelLangRepository, model=ChannelLang
+    )
+
+    lang_command = providers.Factory(
+        LangCommand, bot=bot, container=providers.Self()
     )
