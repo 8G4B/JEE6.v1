@@ -4,6 +4,7 @@ import time
 import aiohttp
 from datetime import datetime, timedelta
 from langchain_groq import ChatGroq
+from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.tools import tool
 from langchain_core.messages import SystemMessage, HumanMessage
 from src.config.settings.base import BaseConfig
@@ -17,51 +18,85 @@ from src.services.SpotifyService import SpotifyService
 logger = logging.getLogger(__name__)
 
 
-class GroqKeyRotator:
-    def __init__(self, api_keys: list[str], model: str):
-        self._keys = api_keys
-        self._model = model
-        self._current_index = 0
-        self._blocked_until: dict[int, float] = {}
+class LLMSlot:
 
-    @property
-    def current_key(self) -> str:
-        return self._keys[self._current_index]
+    def __init__(self, provider: str, api_key: str, model: str):
+        self.provider = provider
+        self.api_key = api_key
+        self.model = model
+        self.blocked_until: float = 0
 
-    def _find_available_key(self) -> int | None:
-        now = time.time()
-        n = len(self._keys)
+    def is_available(self) -> bool:
+        return time.time() >= self.blocked_until
+
+    def mark_blocked(self, cooldown: float = 120):
+        self.blocked_until = time.time() + cooldown
+
+    def create_llm(self, **kwargs):
+        if self.provider == "groq":
+            return ChatGroq(api_key=self.api_key, model=self.model, **kwargs)
+        elif self.provider == "gemini":
+            return ChatGoogleGenerativeAI(
+                google_api_key=self.api_key, model=self.model, **kwargs
+            )
+
+    def __repr__(self):
+        return f"{self.provider}({self.model})"
+
+
+class LLMRotator:
+
+    def __init__(self):
+        self._slots: list[LLMSlot] = []
+        self._current = 0
+
+        for key in BaseConfig.GROQ_API_KEYS:
+            self._slots.append(LLMSlot("groq", key, BaseConfig.GROQ_MODEL))
+
+        for key in BaseConfig.GEMINI_API_KEYS:
+            self._slots.append(LLMSlot("gemini", key, BaseConfig.GEMINI_MODEL))
+
+        if not self._slots:
+            raise ValueError("GROQ_API_KEY 또는 GEMINI_API_KEY가 설정되지 않았습니다.")
+
+        logger.info(
+            f"LLM 로테이션 초기화: {len(self._slots)}개 슬롯 "
+            f"(Groq {len(BaseConfig.GROQ_API_KEYS)}개, Gemini {len(BaseConfig.GEMINI_API_KEYS)}개)"
+        )
+
+    def _find_available(self) -> int | None:
+        n = len(self._slots)
         for offset in range(n):
-            idx = (self._current_index + offset) % n
-            if self._blocked_until.get(idx, 0) <= now:
+            idx = (self._current + offset) % n
+            if self._slots[idx].is_available():
                 return idx
         return None
 
-    def mark_rate_limited(self, cooldown_seconds: float = 120):
-        self._blocked_until[self._current_index] = time.time() + cooldown_seconds
-        logger.warning(
-            f"Groq 키 #{self._current_index} rate limited, "
-            f"{cooldown_seconds}초 차단"
-        )
-        available = self._find_available_key()
+    def mark_rate_limited(self, cooldown: float = 120):
+        slot = self._slots[self._current]
+        slot.mark_blocked(cooldown)
+        logger.warning(f"LLM 슬롯 #{self._current} ({slot}) rate limited, {cooldown}초 차단")
+
+        available = self._find_available()
         if available is not None:
-            self._current_index = available
-            logger.info(f"Groq 키 #{self._current_index}로 전환")
+            self._current = available
+            logger.info(f"LLM 슬롯 #{self._current} ({self._slots[self._current]})로 전환")
         else:
-            logger.error("모든 Groq API 키가 rate limited 상태")
+            logger.error("모든 LLM 슬롯이 rate limited 상태")
 
     def all_blocked(self) -> bool:
-        now = time.time()
-        return all(
-            self._blocked_until.get(i, 0) > now
-            for i in range(len(self._keys))
-        )
+        return all(not s.is_available() for s in self._slots)
 
-    def create_llm(self, **kwargs) -> ChatGroq:
-        available = self._find_available_key()
+    def create_llm(self, **kwargs):
+        available = self._find_available()
         if available is not None:
-            self._current_index = available
-        return ChatGroq(api_key=self.current_key, model=self._model, **kwargs)
+            self._current = available
+        return self._slots[self._current].create_llm(**kwargs)
+
+    @property
+    def slot_count(self) -> int:
+        return len(self._slots)
+
 
 SYSTEM_PROMPT = """너는 디스코드 봇 JEE6이야.
 사용자의 자연어 메시지를 분석해서 적절한 도구(tool)를 호출해.
@@ -137,13 +172,11 @@ TOOLS = [get_meal, get_water_temp, get_time, get_lol_tier, get_lol_history, get_
 
 
 class LangService:
-    _rotator: GroqKeyRotator | None = None
+    _rotator: LLMRotator | None = None
 
     def __init__(self):
         if LangService._rotator is None:
-            LangService._rotator = GroqKeyRotator(
-                BaseConfig.GROQ_API_KEYS, BaseConfig.GROQ_MODEL
-            )
+            LangService._rotator = LLMRotator()
         self.rotator = LangService._rotator
         self.meal_service = MealService()
         self.water_service = WaterService()
@@ -152,15 +185,14 @@ class LangService:
         self.valo_service = ValoService()
         self.spotify_service = SpotifyService()
 
-    def _get_llm_with_tools(self) -> ChatGroq:
+    def _get_llm_with_tools(self):
         llm = self.rotator.create_llm(temperature=0, max_tokens=1024)
         return llm.bind_tools(TOOLS)
 
-    def _get_llm(self) -> ChatGroq:
+    def _get_llm(self):
         return self.rotator.create_llm(temperature=0, max_tokens=1024)
 
-    async def _execute_tool(self, tool_name: str, tool_args: dict) -> dict:
-        """Tool 호출 결과를 구조화된 dict로 반환. type 필드로 embed 종류 결정."""
+    async def _execute_tool(self, tool_name: str, tool_args: dict) -> dict:ㅊ
         try:
             if tool_name == "get_meal":
                 return await self._exec_meal(tool_args)
@@ -265,23 +297,21 @@ class LangService:
         return {"type": "error", "message": "곡을 가져오는데 실패했습니다."}
 
     async def _invoke_with_retry(self, messages, use_tools=False):
-        """LLM 호출. 429 발생 시 다른 키로 전환 후 재시도."""
-        max_retries = len(self.rotator._keys)
+        max_retries = self.rotator.slot_count
         for attempt in range(max_retries):
             try:
                 llm = self._get_llm_with_tools() if use_tools else self._get_llm()
                 return await llm.ainvoke(messages)
             except Exception as e:
-                if "429" in str(e) or "rate_limit" in str(e).lower():
+                if "429" in str(e) or "rate_limit" in str(e).lower() or "resource_exhausted" in str(e).lower():
                     self.rotator.mark_rate_limited()
                     if self.rotator.all_blocked():
                         raise
-                    logger.info(f"429 재시도 {attempt + 1}/{max_retries}")
+                    logger.info(f"Rate limit 재시도 {attempt + 1}/{max_retries}")
                     continue
                 raise
 
     async def process_message(self, user_message: str) -> dict:
-        """자연어 메시지를 처리하고 구조화된 결과를 반환."""
         try:
             messages = [
                 SystemMessage(content=SYSTEM_PROMPT),
