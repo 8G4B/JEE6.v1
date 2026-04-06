@@ -192,7 +192,7 @@ class LangService:
     def _get_llm(self):
         return self.rotator.create_llm(temperature=0, max_tokens=1024)
 
-    async def _execute_tool(self, tool_name: str, tool_args: dict) -> dict:ㅊ
+    async def _execute_tool(self, tool_name: str, tool_args: dict) -> dict:
         try:
             if tool_name == "get_meal":
                 return await self._exec_meal(tool_args)
