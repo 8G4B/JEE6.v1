@@ -207,7 +207,9 @@ class LangCommand(BaseCommand):
         if "embed" in response:
             await message.reply(embed=response["embed"], mention_author=False)
         elif "content" in response:
-            text = response["content"]
+            text = response["content"].strip()
+            if not text or text == "IGNORE":
+                return
             if len(text) > 2000:
                 text = text[:1997] + "..."
             await message.reply(text, mention_author=False)
