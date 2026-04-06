@@ -1,18 +1,11 @@
 import logging
 import random
-import time
 import aiohttp
 from datetime import datetime, timedelta
-from langchain_groq import ChatGroq
-from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_openai import ChatOpenAI
 from langchain_core.tools import tool
 from langchain_core.messages import SystemMessage, HumanMessage
 from src.config.settings.base import BaseConfig
-
-try:
-    from google.genai.errors import ClientError as GoogleClientError
-except ImportError:
-    GoogleClientError = Exception  # Fallback
 from src.services.MealService import MealService
 from src.services.WaterService import WaterService
 from src.services.TimeService import TimeService
@@ -21,87 +14,6 @@ from src.services.ValoService import ValoService
 from src.services.SpotifyService import SpotifyService
 
 logger = logging.getLogger(__name__)
-
-
-class LLMSlot:
-
-    def __init__(self, provider: str, api_key: str, model: str):
-        self.provider = provider
-        self.api_key = api_key
-        self.model = model
-        self.blocked_until: float = 0
-
-    def is_available(self) -> bool:
-        return time.time() >= self.blocked_until
-
-    def mark_blocked(self, cooldown: float = 120):
-        self.blocked_until = time.time() + cooldown
-
-    def create_llm(self, **kwargs):
-        if self.provider == "groq":
-            return ChatGroq(api_key=self.api_key, model=self.model, **kwargs)
-        elif self.provider == "gemini":
-            return ChatGoogleGenerativeAI(
-                google_api_key=self.api_key, model=self.model, **kwargs
-            )
-
-    def __repr__(self):
-        return f"{self.provider}({self.model})"
-
-
-class LLMRotator:
-
-    def __init__(self):
-        self._slots: list[LLMSlot] = []
-        self._current = 0
-
-        for key in BaseConfig.GROQ_API_KEYS:
-            self._slots.append(LLMSlot("groq", key, BaseConfig.GROQ_MODEL))
-
-        for key in BaseConfig.GEMINI_API_KEYS:
-            self._slots.append(LLMSlot("gemini", key, BaseConfig.GEMINI_MODEL))
-
-        if not self._slots:
-            raise ValueError("GROQ_API_KEY 또는 GEMINI_API_KEY가 설정되지 않았습니다.")
-
-        logger.info(
-            f"LLM 로테이션 초기화: {len(self._slots)}개 슬롯 "
-            f"(Groq {len(BaseConfig.GROQ_API_KEYS)}개, Gemini {len(BaseConfig.GEMINI_API_KEYS)}개)"
-        )
-
-    def _find_available(self) -> int | None:
-        n = len(self._slots)
-        for offset in range(n):
-            idx = (self._current + offset) % n
-            if self._slots[idx].is_available():
-                return idx
-        return None
-
-    def mark_rate_limited(self, cooldown: float = 120):
-        slot = self._slots[self._current]
-        slot.mark_blocked(cooldown)
-        logger.warning(f"LLM 슬롯 #{self._current} ({slot}) rate limited, {cooldown}초 차단")
-
-        available = self._find_available()
-        if available is not None:
-            self._current = available
-            logger.info(f"LLM 슬롯 #{self._current} ({self._slots[self._current]})로 전환")
-        else:
-            logger.error("모든 LLM 슬롯이 rate limited 상태")
-
-    def all_blocked(self) -> bool:
-        return all(not s.is_available() for s in self._slots)
-
-    def create_llm(self, **kwargs):
-        available = self._find_available()
-        if available is not None:
-            self._current = available
-        return self._slots[self._current].create_llm(**kwargs)
-
-    @property
-    def slot_count(self) -> int:
-        return len(self._slots)
-
 
 SYSTEM_PROMPT = """너는 디스코드 봇 JEE6이야.
 사용자의 자연어 메시지를 분석해서 적절한 도구(tool)를 호출해.
@@ -177,12 +89,16 @@ TOOLS = [get_meal, get_water_temp, get_time, get_lol_tier, get_lol_history, get_
 
 
 class LangService:
-    _rotator: LLMRotator | None = None
-
     def __init__(self):
-        if LangService._rotator is None:
-            LangService._rotator = LLMRotator()
-        self.rotator = LangService._rotator
+        self.llm = ChatOpenAI(
+            model=BaseConfig.VLLM_MODEL,
+            api_key="not-needed",  # vLLM은 API 키를 요구하지 않음
+            base_url=BaseConfig.VLLM_BASE_URL,
+            temperature=0,
+            max_tokens=1024,
+        )
+        self.llm_with_tools = self.llm.bind_tools(TOOLS)
+
         self.meal_service = MealService()
         self.water_service = WaterService()
         self.time_service = TimeService()
@@ -190,14 +106,10 @@ class LangService:
         self.valo_service = ValoService()
         self.spotify_service = SpotifyService()
 
-    def _get_llm_with_tools(self):
-        llm = self.rotator.create_llm(temperature=0, max_tokens=1024)
-        return llm.bind_tools(TOOLS)
-
-    def _get_llm(self):
-        return self.rotator.create_llm(temperature=0, max_tokens=1024)
+        logger.info(f"LangService 초기화: vLLM {BaseConfig.VLLM_BASE_URL}")
 
     async def _execute_tool(self, tool_name: str, tool_args: dict) -> dict:
+        """Tool 호출 결과를 구조화된 dict로 반환."""
         try:
             if tool_name == "get_meal":
                 return await self._exec_meal(tool_args)
@@ -301,38 +213,15 @@ class LangService:
             return {"type": "music", "track": track}
         return {"type": "error", "message": "곡을 가져오는데 실패했습니다."}
 
-    async def _invoke_with_retry(self, messages, use_tools=False):
-        max_retries = self.rotator.slot_count
-        for attempt in range(max_retries):
-            try:
-                llm = self._get_llm_with_tools() if use_tools else self._get_llm()
-                return await llm.ainvoke(messages)
-            except GoogleClientError as e:
-                # Google GenAI ClientError (429, quota exceeded)
-                if e.code == 429 or "resource_exhausted" in str(e).lower():
-                    self.rotator.mark_rate_limited()
-                    if self.rotator.all_blocked():
-                        raise
-                    logger.info(f"Rate limit 재시도 {attempt + 1}/{max_retries}")
-                    continue
-                raise
-            except Exception as e:
-                if "429" in str(e) or "rate_limit" in str(e).lower() or "resource_exhausted" in str(e).lower():
-                    self.rotator.mark_rate_limited()
-                    if self.rotator.all_blocked():
-                        raise
-                    logger.info(f"Rate limit 재시도 {attempt + 1}/{max_retries}")
-                    continue
-                raise
-
     async def process_message(self, user_message: str) -> dict:
+        """자연어 메시지를 처리하고 구조화된 결과를 반환."""
         try:
             messages = [
                 SystemMessage(content=SYSTEM_PROMPT),
                 HumanMessage(content=user_message),
             ]
 
-            response = await self._invoke_with_retry(messages, use_tools=True)
+            response = await self.llm_with_tools.ainvoke(messages)
 
             if not response.tool_calls:
                 return {"type": "text", "content": response.content}
@@ -350,7 +239,7 @@ class LangService:
                 SystemMessage(content="너는 친절한 한국어 AI 어시스턴트야. 간결하고 정확하게 답변해."),
                 HumanMessage(content=question),
             ]
-            response = await self._invoke_with_retry(messages, use_tools=False)
+            response = await self.llm.ainvoke(messages)
             return response.content
         except Exception as e:
             logger.error(f"질문 처리 중 오류: {e}", exc_info=True)
