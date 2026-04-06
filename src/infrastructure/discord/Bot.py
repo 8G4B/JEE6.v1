@@ -66,7 +66,7 @@ class Bot(commands.Bot):
         await self.add_cog(MentionCommand(self, self.container))
         await self.add_cog(SpotifyCommand(self, self.container))
 
-        if BaseConfig.ENABLE_LANG_COMMANDS and BaseConfig.GROQ_API_KEY:
+        if BaseConfig.ENABLE_LANG_COMMANDS and BaseConfig.GROQ_API_KEYS:
             await self.add_cog(LangCommand(self, self.container))
 
         if BaseConfig.EXTERNAL_API_BASE_URL:
