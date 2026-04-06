@@ -2,8 +2,9 @@ import json
 import logging
 import asyncio
 import aiohttp
+import time
 from datetime import datetime, timedelta
-from typing import Optional, List, Tuple
+from typing import Optional, List, Tuple, Dict
 from sqlalchemy import select
 from src.config.settings.mealSettings import (
     MEAL_API_KEY,
@@ -18,9 +19,13 @@ from src.domain.models.Meal import Meal
 logger = logging.getLogger(__name__)
 
 TIMEOUT = aiohttp.ClientTimeout(total=30, connect=5)
+CACHE_TTL = 3600
 
 
 class MealService:
+    _meal_cache: Dict[str, List] = {}
+    _meal_cache_time: Dict[str, float] = {}
+
     base_url = "https://open.neis.go.kr/hub/mealServiceDietInfo"
     params = {
         "key": MEAL_API_KEY,
@@ -43,19 +48,29 @@ class MealService:
             await MealService._session.close()
 
     async def get_meal_info(self, date: str) -> Optional[List]:
+        if (
+            date in MealService._meal_cache
+            and time.time() - MealService._meal_cache_time[date] < CACHE_TTL
+        ):
+            logger.debug(f"메모리 캐시 hit for {date}")
+            return MealService._meal_cache[date]
+
         try:
             with get_db_session() as session:
                 stmt = select(Meal).where(Meal.date == date)
                 result = session.execute(stmt).scalars().all()
                 if result:
                     logger.debug(f"DB hit for {date}")
-                    meals = []
-                    for row in result:
-                        meals.append({
+                    meals = [
+                        {
                             "MMEAL_SC_CODE": row.meal_code,
                             "DDISH_NM": row.menu,
-                            "CAL_INFO": row.cal_info
-                        })
+                            "CAL_INFO": row.cal_info,
+                        }
+                        for row in result
+                    ]
+                    MealService._meal_cache[date] = meals
+                    MealService._meal_cache_time[date] = time.time()
                     return meals
         except Exception as e:
             logger.error(f"DB Error: {e}")
@@ -104,6 +119,9 @@ class MealService:
                         }
                         for m in all_meals if m["MLSV_YMD"] == target_date
                     ]
+                    if target_meals:
+                        MealService._meal_cache[target_date] = target_meals
+                        MealService._meal_cache_time[target_date] = time.time()
                     return target_meals if target_meals else None
 
                 logger.warning(f"No meal info returned for {target_date} (week search)")

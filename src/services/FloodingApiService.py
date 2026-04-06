@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import time
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
@@ -8,6 +9,9 @@ from src.clients.FloodingApiClient import AuthenticatedApiClient
 from src.schemas.FloodingResponse import MusicItem, UserStatus
 
 logger = logging.getLogger(__name__)
+
+USER_STATUS_TTL = 300
+MUSIC_LIST_TTL = 600
 
 
 class FloodingApiService:
@@ -18,11 +22,20 @@ class FloodingApiService:
     ) -> None:
         self._client = client
         self._auth_service = auth_service
+        self._user_status_cache: dict[str, tuple[float, UserStatus]] = {}
+        self._music_list_cache: dict[str, tuple[float, list[MusicItem]]] = {}
 
     async def get_user_status(self, discord_user_id: str) -> UserStatus:
+        if discord_user_id in self._user_status_cache:
+            cache_time, cached = self._user_status_cache[discord_user_id]
+            if time.time() - cache_time < USER_STATUS_TTL:
+                logger.debug(f"유저 상태 캐시 사용: {discord_user_id}")
+                return cached
         token = await self._auth_service.get_valid_token(discord_user_id)
         resp = await self._client.get_with_bearer("/user/myself", access_token=token)
-        return self._to_user_status(resp.data)
+        result = self._to_user_status(resp.data)
+        self._user_status_cache[discord_user_id] = (time.time(), result)
+        return result
 
     async def request_music(self, discord_user_id: str, music_url: str) -> None:
         token = await self._auth_service.get_valid_token(discord_user_id)
@@ -33,13 +46,19 @@ class FloodingApiService:
         )
 
     async def get_music_list(self, discord_user_id: str) -> list[MusicItem]:
-        token = await self._auth_service.get_valid_token(discord_user_id)
         today = datetime.now(ZoneInfo("Asia/Seoul")).strftime("%Y-%m-%d")
+        cache_key = f"{discord_user_id}:{today}"
+        if cache_key in self._music_list_cache:
+            cache_time, cached = self._music_list_cache[cache_key]
+            if time.time() - cache_time < MUSIC_LIST_TTL:
+                logger.debug(f"음악 목록 캐시 사용: {discord_user_id} {today}")
+                return cached
+        token = await self._auth_service.get_valid_token(discord_user_id)
         resp = await self._client.get_with_bearer(
             f"/music?date={today}&type=LATEST",
             access_token=token,
         )
-        return [
+        result = [
             MusicItem(
                 music_id=item["music_id"],
                 music_url=item["music_url"],
@@ -51,6 +70,8 @@ class FloodingApiService:
             )
             for item in (resp.data or {}).get("music_list", [])
         ]
+        self._music_list_cache[cache_key] = (time.time(), result)
+        return result
 
     def _to_user_status(self, data: dict) -> UserStatus:
         student = data.get("student_info") or {}

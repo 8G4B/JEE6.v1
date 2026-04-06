@@ -18,6 +18,8 @@ class ValoService:
         self.val_url = VALO_AP_URL
         self.account_cache = {}
         self.match_cache = {}
+        self.rank_cache = {}
+        self.match_history_cache = {}
         self.cache_timeout = 600
 
     async def get_account_info(
@@ -55,6 +57,11 @@ class ValoService:
         self, session: aiohttp.ClientSession, puuid: str
     ) -> List[Dict]:
         logger.info(f"발로란트 전적 정보 요청: {puuid}")
+        if puuid in self.match_history_cache:
+            cache_time, cached_data = self.match_history_cache[puuid]
+            if time.time() - cache_time < self.cache_timeout:
+                logger.debug(f"발로란트 전적 캐시 사용: {puuid}")
+                return cached_data
         try:
             matches_url = f"{self.val_url}/val/match/v1/matchlists/by-puuid/{puuid}"
             async with session.get(matches_url, headers=self.headers) as response:
@@ -102,6 +109,7 @@ class ValoService:
                             "value": f"- **{kills}/{deaths}/{assists}** (KDA: {kda})\n- 점수: {player['stats']['score']}",
                         }
                     )
+            self.match_history_cache[puuid] = (time.time(), formatted_matches)
             return formatted_matches
         except Exception as e:
             logger.error(f"발로란트 전적 정보 요청 중 오류: {e}")
@@ -111,6 +119,11 @@ class ValoService:
         self, session: aiohttp.ClientSession, puuid: str
     ) -> Tuple[Optional[Dict], str]:
         logger.info(f"발로란트 티어 정보 요청: {puuid}")
+        if puuid in self.rank_cache:
+            cache_time, cached_data = self.rank_cache[puuid]
+            if time.time() - cache_time < self.cache_timeout:
+                logger.debug(f"발로란트 티어 캐시 사용: {puuid}")
+                return cached_data
         try:
             rank_url = f"{self.val_url}/val/ranked/v1/by-puuid/{puuid}"
             async with session.get(rank_url, headers=self.headers) as response:
@@ -123,6 +136,7 @@ class ValoService:
                     return None, "UNRANKED"
                 tier = rank_data["currenttierpatched"]
                 logger.debug(f"티어 정보 요청 성공: {puuid}, {tier}")
+                self.rank_cache[puuid] = (time.time(), (rank_data, tier))
                 return rank_data, tier
         except Exception as e:
             logger.error(f"발로란트 티어 정보 요청 중 오류: {e}")

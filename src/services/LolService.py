@@ -24,7 +24,10 @@ class LolService:
         self.account_cache = {}
         self.tier_cache = {}
         self.match_cache = {}
+        self.rotation_cache = None
+        self.rotation_cache_time = 0.0
         self.cache_timeout = 600
+        self.rotation_cache_timeout = 3600
 
     def _get_champion_data(self) -> Dict:
         try:
@@ -200,6 +203,9 @@ class LolService:
 
     async def get_rotation(self, session: aiohttp.ClientSession) -> List[Dict]:
         logger.info("롤 로테이션 정보 요청")
+        if self.rotation_cache is not None and time.time() - self.rotation_cache_time < self.rotation_cache_timeout:
+            logger.debug("롤 로테이션 캐시 사용")
+            return self.rotation_cache
         try:
             rotation_url = f"{self.base_url}/lol/platform/v3/champion-rotations"
             async with session.get(rotation_url, headers=self.headers) as response:
@@ -215,6 +221,8 @@ class LolService:
                             {"kr_name": champ_info["name"], "en_name": champ_name}
                         )
                         break
+            self.rotation_cache = champion_info
+            self.rotation_cache_time = time.time()
             return champion_info
         except Exception as e:
             logger.error(f"로테이션 정보 요청 중 오류: {e}")

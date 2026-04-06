@@ -11,6 +11,10 @@ logger = logging.getLogger(__name__)
 
 
 class SpotifyService:
+    _playlist_total_cache: dict[str, tuple[float, int]] = {}
+    _artist_genres_cache: dict[str, tuple[float, list]] = {}
+    CACHE_TTL = 3600
+
     def __init__(self):
         self._sp = self._create_client()
 
@@ -47,8 +51,20 @@ class SpotifyService:
 
     def _fetch_random_track(self, playlist_id: str) -> dict | None:
         try:
-            result = self._sp.playlist_tracks(playlist_id, limit=1, fields="total")
-            total = result["total"]
+            now = time.time()
+            if playlist_id in SpotifyService._playlist_total_cache:
+                cache_time, cached_total = SpotifyService._playlist_total_cache[playlist_id]
+                if now - cache_time < SpotifyService.CACHE_TTL:
+                    total = cached_total
+                else:
+                    result = self._sp.playlist_tracks(playlist_id, limit=1, fields="total")
+                    total = result["total"]
+                    SpotifyService._playlist_total_cache[playlist_id] = (now, total)
+            else:
+                result = self._sp.playlist_tracks(playlist_id, limit=1, fields="total")
+                total = result["total"]
+                SpotifyService._playlist_total_cache[playlist_id] = (now, total)
+
             if total == 0:
                 return None
 
@@ -77,8 +93,18 @@ class SpotifyService:
             genres = []
             if track["artists"]:
                 artist_id = track["artists"][0]["id"]
-                artist_info = self._sp.artist(artist_id)
-                genres = artist_info.get("genres", [])
+                if artist_id in SpotifyService._artist_genres_cache:
+                    cache_time, cached_genres = SpotifyService._artist_genres_cache[artist_id]
+                    if time.time() - cache_time < SpotifyService.CACHE_TTL:
+                        genres = cached_genres
+                    else:
+                        artist_info = self._sp.artist(artist_id)
+                        genres = artist_info.get("genres", [])
+                        SpotifyService._artist_genres_cache[artist_id] = (time.time(), genres)
+                else:
+                    artist_info = self._sp.artist(artist_id)
+                    genres = artist_info.get("genres", [])
+                    SpotifyService._artist_genres_cache[artist_id] = (time.time(), genres)
 
             return {
                 "name": track["name"],
