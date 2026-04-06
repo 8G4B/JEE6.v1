@@ -19,7 +19,11 @@ class BaseConfig:
     )
 
     RIOT_API_KEY = os.getenv("RIOT_API_KEY")
-    GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+    GROQ_API_KEYS = [
+        k.strip()
+        for k in os.getenv("GROQ_API_KEY", "").split(",")
+        if k.strip()
+    ]
     GROQ_MODEL = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
 
     SPOTIFY_CLIENT_ID = os.getenv("SPOTIFY_CLIENT_ID")

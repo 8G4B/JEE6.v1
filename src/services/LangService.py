@@ -1,5 +1,6 @@
 import logging
 import random
+import time
 import aiohttp
 from datetime import datetime, timedelta
 from langchain_groq import ChatGroq
@@ -14,6 +15,53 @@ from src.services.ValoService import ValoService
 from src.services.SpotifyService import SpotifyService
 
 logger = logging.getLogger(__name__)
+
+
+class GroqKeyRotator:
+    def __init__(self, api_keys: list[str], model: str):
+        self._keys = api_keys
+        self._model = model
+        self._current_index = 0
+        self._blocked_until: dict[int, float] = {}
+
+    @property
+    def current_key(self) -> str:
+        return self._keys[self._current_index]
+
+    def _find_available_key(self) -> int | None:
+        now = time.time()
+        n = len(self._keys)
+        for offset in range(n):
+            idx = (self._current_index + offset) % n
+            if self._blocked_until.get(idx, 0) <= now:
+                return idx
+        return None
+
+    def mark_rate_limited(self, cooldown_seconds: float = 120):
+        self._blocked_until[self._current_index] = time.time() + cooldown_seconds
+        logger.warning(
+            f"Groq 키 #{self._current_index} rate limited, "
+            f"{cooldown_seconds}초 차단"
+        )
+        available = self._find_available_key()
+        if available is not None:
+            self._current_index = available
+            logger.info(f"Groq 키 #{self._current_index}로 전환")
+        else:
+            logger.error("모든 Groq API 키가 rate limited 상태")
+
+    def all_blocked(self) -> bool:
+        now = time.time()
+        return all(
+            self._blocked_until.get(i, 0) > now
+            for i in range(len(self._keys))
+        )
+
+    def create_llm(self, **kwargs) -> ChatGroq:
+        available = self._find_available_key()
+        if available is not None:
+            self._current_index = available
+        return ChatGroq(api_key=self.current_key, model=self._model, **kwargs)
 
 SYSTEM_PROMPT = """너는 디스코드 봇 JEE6이야.
 사용자의 자연어 메시지를 분석해서 적절한 도구(tool)를 호출해.
@@ -89,13 +137,14 @@ TOOLS = [get_meal, get_water_temp, get_time, get_lol_tier, get_lol_history, get_
 
 
 class LangService:
+    _rotator: GroqKeyRotator | None = None
+
     def __init__(self):
-        self.llm = ChatGroq(
-            api_key=BaseConfig.GROQ_API_KEY,
-            model=BaseConfig.GROQ_MODEL,
-            temperature=0,
-            max_tokens=1024,
-        )
+        if LangService._rotator is None:
+            LangService._rotator = GroqKeyRotator(
+                BaseConfig.GROQ_API_KEYS, BaseConfig.GROQ_MODEL
+            )
+        self.rotator = LangService._rotator
         self.meal_service = MealService()
         self.water_service = WaterService()
         self.time_service = TimeService()
@@ -103,7 +152,12 @@ class LangService:
         self.valo_service = ValoService()
         self.spotify_service = SpotifyService()
 
-        self.llm_with_tools = self.llm.bind_tools(TOOLS)
+    def _get_llm_with_tools(self) -> ChatGroq:
+        llm = self.rotator.create_llm(temperature=0, max_tokens=1024)
+        return llm.bind_tools(TOOLS)
+
+    def _get_llm(self) -> ChatGroq:
+        return self.rotator.create_llm(temperature=0, max_tokens=1024)
 
     async def _execute_tool(self, tool_name: str, tool_args: dict) -> dict:
         """Tool 호출 결과를 구조화된 dict로 반환. type 필드로 embed 종류 결정."""
@@ -210,19 +264,31 @@ class LangService:
             return {"type": "music", "track": track}
         return {"type": "error", "message": "곡을 가져오는데 실패했습니다."}
 
-    async def process_message(self, user_message: str) -> dict:
-        """자연어 메시지를 처리하고 구조화된 결과를 반환.
+    async def _invoke_with_retry(self, messages, use_tools=False):
+        """LLM 호출. 429 발생 시 다른 키로 전환 후 재시도."""
+        max_retries = len(self.rotator._keys)
+        for attempt in range(max_retries):
+            try:
+                llm = self._get_llm_with_tools() if use_tools else self._get_llm()
+                return await llm.ainvoke(messages)
+            except Exception as e:
+                if "429" in str(e) or "rate_limit" in str(e).lower():
+                    self.rotator.mark_rate_limited()
+                    if self.rotator.all_blocked():
+                        raise
+                    logger.info(f"429 재시도 {attempt + 1}/{max_retries}")
+                    continue
+                raise
 
-        Returns:
-            {"type": "tool_type", ...data} 또는 {"type": "text", "content": "..."}
-        """
+    async def process_message(self, user_message: str) -> dict:
+        """자연어 메시지를 처리하고 구조화된 결과를 반환."""
         try:
             messages = [
                 SystemMessage(content=SYSTEM_PROMPT),
                 HumanMessage(content=user_message),
             ]
 
-            response = await self.llm_with_tools.ainvoke(messages)
+            response = await self._invoke_with_retry(messages, use_tools=True)
 
             if not response.tool_calls:
                 return {"type": "text", "content": response.content}
@@ -240,7 +306,7 @@ class LangService:
                 SystemMessage(content="너는 친절한 한국어 AI 어시스턴트야. 간결하고 정확하게 답변해."),
                 HumanMessage(content=question),
             ]
-            response = await self.llm.ainvoke(messages)
+            response = await self._invoke_with_retry(messages, use_tools=False)
             return response.content
         except Exception as e:
             logger.error(f"질문 처리 중 오류: {e}", exc_info=True)
