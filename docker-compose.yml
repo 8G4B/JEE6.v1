@@ -15,6 +15,26 @@ services:
       timeout: 20s
       retries: 10
 
+  vllm:
+    image: vllm/vllm-openai:latest
+    container_name: jee6_vllm
+    restart: unless-stopped
+    environment:
+      - MODEL_NAME=meta-llama/Meta-Llama-3-8B-Instruct
+      - CUDA_VISIBLE_DEVICES=0
+      - VLLM_ATTENTION_BACKEND=auto
+    ports:
+      - "8000:8000"
+    volumes:
+      - vllm_cache:/root/.cache
+    networks:
+      - jee6_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/v1/models"]
+      timeout: 20s
+      retries: 10
+      start_period: 60s
+
   discord_bot:
     build:
       context: .
@@ -29,13 +49,18 @@ services:
       - DB_NAME=hammer
       - DB_USER=root
       - DB_PASSWORD=1234
+      - VLLM_BASE_URL=http://vllm:8000/v1
     depends_on:
       mariadb:
         condition: service_healthy
+      vllm:
+        condition: service_healthy
     networks:
       - jee6_network
+
 volumes:
   mariadb_data:
+  vllm_cache:
 
 networks:
   jee6_network:
