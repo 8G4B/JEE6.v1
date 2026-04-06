@@ -19,19 +19,8 @@ class BaseConfig:
     )
 
     RIOT_API_KEY = os.getenv("RIOT_API_KEY")
-    GROQ_API_KEYS = [
-        k.strip()
-        for k in os.getenv("GROQ_API_KEY", "").split(",")
-        if k.strip()
-    ]
-    GROQ_MODEL = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
-
-    GEMINI_API_KEYS = [
-        k.strip()
-        for k in os.getenv("GEMINI_API_KEY", "").split(",")
-        if k.strip()
-    ]
-    GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
+    VLLM_BASE_URL = os.getenv("VLLM_BASE_URL", "http://localhost:8000/v1")
+    VLLM_MODEL = os.getenv("VLLM_MODEL", "meta-llama/Meta-Llama-3-8B-Instruct")
 
     SPOTIFY_CLIENT_ID = os.getenv("SPOTIFY_CLIENT_ID")
     SPOTIFY_CLIENT_SECRET = os.getenv("SPOTIFY_CLIENT_SECRET")
