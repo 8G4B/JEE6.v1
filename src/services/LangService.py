@@ -8,6 +8,11 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.tools import tool
 from langchain_core.messages import SystemMessage, HumanMessage
 from src.config.settings.base import BaseConfig
+
+try:
+    from google.genai.errors import ClientError as GoogleClientError
+except ImportError:
+    GoogleClientError = Exception  # Fallback
 from src.services.MealService import MealService
 from src.services.WaterService import WaterService
 from src.services.TimeService import TimeService
@@ -302,6 +307,15 @@ class LangService:
             try:
                 llm = self._get_llm_with_tools() if use_tools else self._get_llm()
                 return await llm.ainvoke(messages)
+            except GoogleClientError as e:
+                # Google GenAI ClientError (429, quota exceeded)
+                if e.code == 429 or "resource_exhausted" in str(e).lower():
+                    self.rotator.mark_rate_limited()
+                    if self.rotator.all_blocked():
+                        raise
+                    logger.info(f"Rate limit 재시도 {attempt + 1}/{max_retries}")
+                    continue
+                raise
             except Exception as e:
                 if "429" in str(e) or "rate_limit" in str(e).lower() or "resource_exhausted" in str(e).lower():
                     self.rotator.mark_rate_limited()
