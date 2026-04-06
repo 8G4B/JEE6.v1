@@ -10,7 +10,10 @@ python-dateutil==2.8.2
 pytz==2023.3.post1
 mysql-connector-python==8.2.0
 requests
-openai
+groq
+langchain>=0.3.0
+langchain-groq>=0.2.0
+langchain-core>=0.3.0
 riotwatcher
 flake8
 black

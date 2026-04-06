@@ -22,6 +22,7 @@ from src.interfaces.commands.school.GraduationCommand import GraduationCommand
 from src.interfaces.commands.school.PromotionCommand import PromotionCommand
 from src.interfaces.commands.MentionCommand import MentionCommand
 from src.interfaces.commands.music.SpotifyCommand import SpotifyCommand
+from src.interfaces.commands.lang.LangCommand import LangCommand
 
 logger = logging.getLogger(__name__)
 
@@ -64,6 +65,9 @@ class Bot(commands.Bot):
         await self.add_cog(PromotionCommand(self, self.container))
         await self.add_cog(MentionCommand(self, self.container))
         await self.add_cog(SpotifyCommand(self, self.container))
+
+        if BaseConfig.ENABLE_LANG_COMMANDS and BaseConfig.GROQ_API_KEY:
+            await self.add_cog(LangCommand(self, self.container))
 
         if BaseConfig.EXTERNAL_API_BASE_URL:
             await self.add_cog(self.container.flooding_auth_command())

@@ -19,7 +19,8 @@ class BaseConfig:
     )
 
     RIOT_API_KEY = os.getenv("RIOT_API_KEY")
-    GPT_API_KEY = os.getenv("GPT_API_KEY")
+    GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+    GROQ_MODEL = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
 
     SPOTIFY_CLIENT_ID = os.getenv("SPOTIFY_CLIENT_ID")
     SPOTIFY_CLIENT_SECRET = os.getenv("SPOTIFY_CLIENT_SECRET")
@@ -40,5 +41,6 @@ class BaseConfig:
 
     ENABLE_MANAGEMENT_COMMANDS = os.getenv("M", "True").lower() in ("true", "1", "yes")
     ENABLE_GAMBLING_COMMANDS = os.getenv("G", "True").lower() in ("true", "1", "yes")
+    ENABLE_LANG_COMMANDS = os.getenv("L", "True").lower() in ("true", "1", "yes")
 
     PREFIX = "!"
