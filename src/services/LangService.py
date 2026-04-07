@@ -415,10 +415,61 @@ class LangService:
         except Exception as e:
             return {"type": "error", "message": f"플러딩 프로필 조회 실패: {e}"}
 
-    # --- 메인 처리 ---
+    def _save_feedback(self, context: dict, user_message: str,
+                       llm_raw: str, parsed: dict, result: dict = None,
+                       tool_error: str = None, signal: str = None,
+                       signal_detail: str = None):
+        try:
+            from src.infrastructure.database.Session import get_db_session
+            from src.domain.models.LangFeedback import LangFeedback
+
+            if parsed.get("ignore"):
+                action = "ignore"
+            elif "reply" in parsed:
+                action = "reply"
+            elif "tool" in parsed:
+                action = "tool"
+            else:
+                action = "parse_error"
+
+            tool_name = parsed.get("tool")
+            tool_args_str = json.dumps(parsed.get("args", {}), ensure_ascii=False) if tool_name else None
+
+            tool_success = None
+            result_type = None
+            if result is not None:
+                result_type = result.get("type")
+                tool_success = result_type != "error"
+            elif tool_error:
+                tool_success = False
+
+            feedback = LangFeedback(
+                guild_id=context.get("server_id", 0),
+                channel_id=context.get("channel_id", 0),
+                user_id=context.get("user_id", 0),
+                user_message=user_message[:2000],
+                llm_raw_response=llm_raw[:2000] if llm_raw else None,
+                parsed_action=action,
+                tool_name=tool_name,
+                tool_args=tool_args_str,
+                tool_success=tool_success,
+                tool_error=str(tool_error)[:500] if tool_error else None,
+                result_type=result_type,
+                signal=signal,
+                signal_detail=signal_detail,
+            )
+
+            with get_db_session() as db:
+                db.add(feedback)
+
+        except Exception as e:
+            logger.warning(f"피드백 저장 실패: {e}")
+
 
     async def process_message(self, user_message: str, context: dict = None) -> dict:
-        """자연어 메시지를 처리. None 반환 시 IGNORE."""
+        llm_raw = None
+        parsed = {}
+
         try:
             messages = [
                 SystemMessage(content=SYSTEM_PROMPT),
@@ -426,23 +477,35 @@ class LangService:
             ]
 
             response = await self.llm.ainvoke(messages)
-            parsed = self._parse_llm_response(response.content)
+            llm_raw = response.content
+            parsed = self._parse_llm_response(llm_raw)
 
             if parsed.get("ignore"):
+                self._save_feedback(context or {}, user_message, llm_raw, parsed)
                 return None
 
             if "reply" in parsed:
-                return {"type": "text", "content": parsed["reply"]}
+                result = {"type": "text", "content": parsed["reply"]}
+                self._save_feedback(context or {}, user_message, llm_raw, parsed, result)
+                return result
 
             if "tool" in parsed:
                 tool_name = parsed["tool"]
                 tool_args = parsed.get("args", {})
-                return await self._execute_tool(tool_name, tool_args, context)
+                try:
+                    result = await self._execute_tool(tool_name, tool_args, context)
+                    self._save_feedback(context or {}, user_message, llm_raw, parsed, result)
+                    return result
+                except Exception as e:
+                    self._save_feedback(context or {}, user_message, llm_raw, parsed, tool_error=str(e))
+                    raise
 
+            self._save_feedback(context or {}, user_message, llm_raw, parsed)
             return None
 
         except Exception as e:
             logger.error(f"LangService 처리 중 오류: {e}", exc_info=True)
+            self._save_feedback(context or {}, user_message, llm_raw, parsed, tool_error=str(e))
             return {"type": "error", "message": f"처리 중 오류가 발생했습니다: {e}"}
 
     async def ask_question(self, question: str) -> str:
