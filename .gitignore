@@ -3,20 +3,12 @@ discord.log
 
 *.log
 *.logs
-.sh
 run.sh
 
 venv/
 
-.idea/
-
 __pycache__/
 .vscode/
 .idea/
-.cursor
-.pytest_cache
-
-ecs-task-definition-generated.json
-ecs-service-definition-updated.json
-*-generated.json
-*-updated.json
+.cursor/
+.pytest_cache/
