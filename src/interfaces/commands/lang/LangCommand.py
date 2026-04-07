@@ -10,6 +10,7 @@ from src.utils.embeds.WaterEmbed import WaterEmbed
 from src.utils.embeds.TimeEmbed import TimeEmbed
 from src.utils.embeds.LolEmbed import LolEmbed
 from src.utils.embeds.ValoEmbed import ValoEmbed
+from src.utils.embeds.GamblingEmbed import GamblingEmbed
 
 logger = logging.getLogger(__name__)
 
@@ -20,6 +21,18 @@ class LangCommand(BaseCommand):
         self.lang_service = LangService()
         self._enabled_channels: set[int] = set()
         self._cache_loaded = False
+        self._gambling_wired = False
+
+    def _wire_gambling_service(self):
+        if self._gambling_wired:
+            return
+        try:
+            from src.services.GamblingService import GamblingService
+            self.lang_service.set_gambling_service(GamblingService())
+            self._gambling_wired = True
+        except Exception as e:
+            logger.warning(f"GamblingService 연동 실패: {e}")
+            self._gambling_wired = True
 
     def _load_enabled_channels(self):
         if self._cache_loaded:
@@ -29,6 +42,7 @@ class LangCommand(BaseCommand):
                 repo = self.container.channel_lang_repository(db=db)
                 self._enabled_channels = repo.get_all_enabled_channel_ids()
             self._cache_loaded = True
+            self._wire_gambling_service()
             logger.info(f"자연어 모드 활성 채널 {len(self._enabled_channels)}개 로드")
         except Exception as e:
             logger.error(f"자연어 모드 채널 로드 실패: {e}")
@@ -90,6 +104,25 @@ class LangCommand(BaseCommand):
             embed.set_footer(text=footer)
             if track.get("image"):
                 embed.set_thumbnail(url=track["image"])
+            return {"embed": embed}
+
+        if t == "balance":
+            embed = GamblingEmbed.create_balance_embed(
+                result.get("author_name", "유저"), result["balance"]
+            )
+            return {"embed": embed}
+
+        if t == "ranking":
+            rankings = result.get("rankings", [])
+            if not rankings:
+                return {"content": "랭킹 데이터가 없습니다."}
+            lines = []
+            for i, (name, balance) in enumerate(rankings[:10], 1):
+                medal = {1: "🥇", 2: "🥈", 3: "🥉"}.get(i, f"**{i}.**")
+                lines.append(f"{medal} {name}: {balance:,}원")
+            embed = GamblingEmbed.create_ranking_embed(
+                "🏆 도박 랭킹 TOP 10", "\n".join(lines)
+            )
             return {"embed": embed}
 
         if t == "error":
@@ -194,8 +227,15 @@ class LangCommand(BaseCommand):
 
         logger.info(f"lang_process({message.guild.name}, {message.channel.name}, {message.author.name}, {content[:50]})")
 
+        context = {
+            "user_id": message.author.id,
+            "server_id": message.guild.id,
+            "author_name": message.author.display_name,
+            "bot": self.bot,
+        }
+
         async with message.channel.typing():
-            result = await self.lang_service.process_message(content)
+            result = await self.lang_service.process_message(content, context)
 
         if not result:
             return
