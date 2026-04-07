@@ -19,52 +19,35 @@ logger = logging.getLogger(__name__)
 TOOL_DEFINITIONS = """
 사용 가능한 도구 목록:
 
-1. get_meal
-   - 설명: 급식 조회
-   - 파라미터:
-     - meal_type: "breakfast" | "lunch" | "dinner" | "auto" (기본값: "auto")
-     - day: "today" | "tomorrow" (기본값: "today")
+[급식]
+1. get_meal — 급식 조회
+   - meal_type: "breakfast" | "lunch" | "dinner" | "auto" (기본값: "auto")
+   - day: "today" | "tomorrow" (기본값: "today")
 
-2. get_water_temp
-   - 설명: 한강 수온 조회
-   - 파라미터: 없음
+[정보]
+2. get_water_temp — 한강 수온 조회 (파라미터 없음)
+3. get_time — 현재 시간 조회 (파라미터 없음)
+4. get_info — 봇 정보/상태 조회 (파라미터 없음)
 
-3. get_time
-   - 설명: 현재 시간 조회
-   - 파라미터: 없음
+[게임 전적]
+5. get_lol_tier — 롤 티어 조회 (riot_id: "닉네임#태그" 필수)
+6. get_lol_history — 롤 최근 전적 조회 (riot_id: "닉네임#태그" 필수)
+7. get_lol_rotation — 롤 금주 무료 챔피언 로테이션 조회 (파라미터 없음)
+8. get_valo_tier — 발로란트 티어 조회 (riot_id: "닉네임#태그" 필수)
+9. get_valo_history — 발로란트 최근 전적 조회 (riot_id: "닉네임#태그" 필수)
 
-4. get_lol_tier
-   - 설명: 롤(League of Legends) 티어 조회
-   - 파라미터:
-     - riot_id: "닉네임#태그" (필수)
+[음악]
+10. get_music — Spotify 랜덤 곡 추천 (파라미터 없음)
 
-5. get_lol_history
-   - 설명: 롤 최근 전적 조회
-   - 파라미터:
-     - riot_id: "닉네임#태그" (필수)
+[도박]
+11. get_balance — 내 잔액 조회 (파라미터 없음)
+12. get_ranking — 도박 랭킹 TOP 10 조회 (파라미터 없음)
+13. do_work — 노동으로 돈 벌기 (파라미터 없음)
+14. get_jackpot — 현재 잭팟 금액 조회 (파라미터 없음)
 
-6. get_valo_tier
-   - 설명: 발로란트 티어 조회
-   - 파라미터:
-     - riot_id: "닉네임#태그" (필수)
-
-7. get_valo_history
-   - 설명: 발로란트 최근 전적 조회
-   - 파라미터:
-     - riot_id: "닉네임#태그" (필수)
-
-8. get_music
-   - 설명: Spotify 랜덤 곡 추천
-   - 파라미터: 없음
-
-9. get_balance
-   - 설명: 도박 잔액 조회
-   - 파라미터: 없음
-   - 참고: 유저의 현재 잔액을 알려줌
-
-10. get_ranking
-    - 설명: 도박 랭킹 조회
-    - 파라미터: 없음
+[플러딩]
+15. get_flooding_music — 오늘의 기상 음악 목록 조회 (파라미터 없음)
+16. get_flooding_profile — 플러딩 내 정보 조회 (파라미터 없음)
 """
 
 SYSTEM_PROMPT = f"""너는 디스코드 봇 JEE6이야.
@@ -89,6 +72,7 @@ SYSTEM_PROMPT = f"""너는 디스코드 봇 JEE6이야.
 - 롤/발로란트 조회 시 닉네임#태그가 없으면 reply로 요청해.
 - 자살/자해 언급 시 get_water_temp를 호출해.
 - 도박 언급은 실제 도박이 아니라 미니게임 도박 명령어를 뜻하는 거야.
+- "돈 벌기", "일하기", "노동" 등은 do_work를 호출해.
 """
 
 
@@ -110,11 +94,17 @@ class LangService:
         self.spotify_service = SpotifyService()
 
         self._gambling_service = None
+        self._flooding_api_service = None
+        self._flooding_auth_service = None
 
         logger.info(f"LangService 초기화: vLLM {BaseConfig.VLLM_BASE_URL}")
 
     def set_gambling_service(self, gambling_service):
         self._gambling_service = gambling_service
+
+    def set_flooding_services(self, api_service, auth_service):
+        self._flooding_api_service = api_service
+        self._flooding_auth_service = auth_service
 
     def _parse_llm_response(self, text: str) -> dict:
         text = text.strip()
@@ -132,31 +122,39 @@ class LangService:
 
     async def _execute_tool(self, tool_name: str, tool_args: dict, context: dict = None) -> dict:
         try:
-            if tool_name == "get_meal":
-                return await self._exec_meal(tool_args)
-            elif tool_name == "get_water_temp":
-                return await self._exec_water()
-            elif tool_name == "get_time":
-                return self._exec_time()
-            elif tool_name == "get_lol_tier":
-                return await self._exec_lol_tier(tool_args)
-            elif tool_name == "get_lol_history":
-                return await self._exec_lol_history(tool_args)
-            elif tool_name == "get_valo_tier":
-                return await self._exec_valo_tier(tool_args)
-            elif tool_name == "get_valo_history":
-                return await self._exec_valo_history(tool_args)
-            elif tool_name == "get_music":
-                return await self._exec_music()
-            elif tool_name == "get_balance":
-                return self._exec_balance(context)
-            elif tool_name == "get_ranking":
-                return await self._exec_ranking(context)
+            executors = {
+                "get_meal": lambda: self._exec_meal(tool_args),
+                "get_water_temp": lambda: self._exec_water(),
+                "get_time": lambda: self._exec_time(),
+                "get_info": lambda: self._exec_info(context),
+                "get_lol_tier": lambda: self._exec_lol_tier(tool_args),
+                "get_lol_history": lambda: self._exec_lol_history(tool_args),
+                "get_lol_rotation": lambda: self._exec_lol_rotation(),
+                "get_valo_tier": lambda: self._exec_valo_tier(tool_args),
+                "get_valo_history": lambda: self._exec_valo_history(tool_args),
+                "get_music": lambda: self._exec_music(),
+                "get_balance": lambda: self._exec_balance(context),
+                "get_ranking": lambda: self._exec_ranking(context),
+                "do_work": lambda: self._exec_work(context),
+                "get_jackpot": lambda: self._exec_jackpot(context),
+                "get_flooding_music": lambda: self._exec_flooding_music(context),
+                "get_flooding_profile": lambda: self._exec_flooding_profile(context),
+            }
+
+            executor = executors.get(tool_name)
+            if not executor:
+                return {"type": "text", "content": "알 수 없는 명령입니다."}
+
+            result = executor()
+            if hasattr(result, "__await__"):
+                return await result
+            return result
+
         except Exception as e:
             logger.error(f"Tool 실행 오류 ({tool_name}): {e}", exc_info=True)
             return {"type": "error", "message": str(e)}
 
-        return {"type": "text", "content": "알 수 없는 명령입니다."}
+    # --- 급식 ---
 
     async def _exec_meal(self, args: dict) -> dict:
         meal_type = args.get("meal_type", "auto")
@@ -184,6 +182,8 @@ class LangService:
             return {"type": "meal", "title": title, "menu": menu, "cal_info": cal_info or ""}
         return {"type": "error", "message": "급식 정보를 가져올 수 없습니다."}
 
+    # --- 정보 ---
+
     async def _exec_water(self) -> dict:
         result = await self.water_service.get_han_river_temp()
         if result:
@@ -194,6 +194,18 @@ class LangService:
     def _exec_time(self) -> dict:
         dt = self.time_service.get_current_datetime()
         return {"type": "time", "datetime": dt}
+
+    def _exec_info(self, context: dict) -> dict:
+        bot = context.get("bot") if context else None
+        latency = round(bot.latency * 1000) if bot else 0
+        guild_count = len(bot.guilds) if bot else 0
+        return {
+            "type": "info",
+            "latency": latency,
+            "guild_count": guild_count,
+        }
+
+    # --- 게임 전적 ---
 
     async def _exec_lol_tier(self, args: dict) -> dict:
         riot_id = args.get("riot_id", "")
@@ -214,6 +226,11 @@ class LangService:
             matches = await self.lol_service.get_match_history(session, account["puuid"])
             return {"type": "lol_history", "riot_id": riot_id, "matches": matches}
 
+    async def _exec_lol_rotation(self) -> dict:
+        async with aiohttp.ClientSession() as session:
+            rotation = await self.lol_service.get_rotation(session)
+            return {"type": "lol_rotation", "champions": rotation}
+
     async def _exec_valo_tier(self, args: dict) -> dict:
         riot_id = args.get("riot_id", "")
         async with aiohttp.ClientSession() as session:
@@ -228,6 +245,8 @@ class LangService:
             matches = await self.valo_service.get_match_history(session, account["puuid"])
             return {"type": "valo_history", "riot_id": riot_id, "matches": matches}
 
+    # --- 음악 ---
+
     async def _exec_music(self) -> dict:
         playlist_ids = BaseConfig.SPOTIFY_PLAYLIST_ID
         if not playlist_ids:
@@ -238,32 +257,96 @@ class LangService:
             return {"type": "music", "track": track}
         return {"type": "error", "message": "곡을 가져오는데 실패했습니다."}
 
+    # --- 도박 ---
+
+    def _get_gambling(self):
+        if not self._gambling_service:
+            return None
+        return self._gambling_service
+
     def _exec_balance(self, context: dict) -> dict:
-        if not self._gambling_service or not context:
+        gs = self._get_gambling()
+        if not gs or not context:
             return {"type": "error", "message": "도박 기능을 사용할 수 없습니다."}
         user_id = context.get("user_id")
         server_id = context.get("server_id")
-        if not user_id or not server_id:
-            return {"type": "error", "message": "유저 정보를 확인할 수 없습니다."}
-        balance = self._gambling_service.get_balance(user_id, server_id)
+        balance = gs.get_balance(user_id, server_id)
         return {
             "type": "balance",
             "balance": balance,
-            "user_id": user_id,
             "author_name": context.get("author_name", "유저"),
         }
 
     async def _exec_ranking(self, context: dict) -> dict:
-        if not self._gambling_service or not context:
+        gs = self._get_gambling()
+        if not gs or not context:
             return {"type": "error", "message": "도박 기능을 사용할 수 없습니다."}
-        server_id = context.get("server_id")
-        bot = context.get("bot")
-        if not server_id or not bot:
-            return {"type": "error", "message": "서버 정보를 확인할 수 없습니다."}
-        rankings = await self._gambling_service.get_cached_rankings(server_id, bot)
+        rankings = await gs.get_cached_rankings(context["server_id"], context["bot"])
         return {"type": "ranking", "rankings": rankings}
 
+    def _exec_work(self, context: dict) -> dict:
+        gs = self._get_gambling()
+        if not gs or not context:
+            return {"type": "error", "message": "도박 기능을 사용할 수 없습니다."}
+        user_id = context["user_id"]
+        server_id = context["server_id"]
+
+        remaining = gs.check_cooldown(user_id, "work")
+        if remaining:
+            return {"type": "cooldown", "remaining": remaining}
+
+        from src.config.settings.gamblingSettings import GamblingSettings
+        import secrets
+        reward = secrets.randbelow(
+            GamblingSettings.WORK_REWARD_RANGE[1] - GamblingSettings.WORK_REWARD_RANGE[0] + 1
+        ) + GamblingSettings.WORK_REWARD_RANGE[0]
+
+        gs.add_balance(user_id, server_id, reward)
+        gs.set_cooldown(user_id, "work")
+        balance = gs.get_balance(user_id, server_id)
+
+        return {
+            "type": "work",
+            "reward": reward,
+            "balance": balance,
+            "author_name": context.get("author_name", "유저"),
+        }
+
+    def _exec_jackpot(self, context: dict) -> dict:
+        gs = self._get_gambling()
+        if not gs or not context:
+            return {"type": "error", "message": "도박 기능을 사용할 수 없습니다."}
+        amount = gs.get_jackpot(context["server_id"])
+        return {"type": "jackpot", "amount": amount}
+
+    # --- 플러딩 ---
+
+    async def _exec_flooding_music(self, context: dict) -> dict:
+        if not self._flooding_api_service or not context:
+            return {"type": "error", "message": "플러딩 서비스를 사용할 수 없습니다."}
+        try:
+            result = await self._flooding_api_service.get_music_list(
+                context["user_id"]
+            )
+            return {"type": "flooding_music", "data": result}
+        except Exception as e:
+            return {"type": "error", "message": f"플러딩 음악 조회 실패: {e}"}
+
+    async def _exec_flooding_profile(self, context: dict) -> dict:
+        if not self._flooding_api_service or not context:
+            return {"type": "error", "message": "플러딩 서비스를 사용할 수 없습니다."}
+        try:
+            result = await self._flooding_api_service.get_user_status(
+                context["user_id"]
+            )
+            return {"type": "flooding_profile", "data": result}
+        except Exception as e:
+            return {"type": "error", "message": f"플러딩 프로필 조회 실패: {e}"}
+
+    # --- 메인 처리 ---
+
     async def process_message(self, user_message: str, context: dict = None) -> dict:
+        """자연어 메시지를 처리. None 반환 시 IGNORE."""
         try:
             messages = [
                 SystemMessage(content=SYSTEM_PROMPT),
