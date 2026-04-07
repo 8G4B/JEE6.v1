@@ -20,7 +20,7 @@ class BaseConfig:
 
     RIOT_API_KEY = os.getenv("RIOT_API_KEY")
     VLLM_BASE_URL = os.getenv("VLLM_BASE_URL", "http://localhost:8000/v1")
-    VLLM_MODEL = os.getenv("VLLM_MODEL", "Qwen/Qwen2.5-7B-Instruct-AWQ")
+    VLLM_MODEL = os.getenv("VLLM_MODEL", "meta-llama/Meta-Llama-3-8B-Instruct")
 
     SPOTIFY_CLIENT_ID = os.getenv("SPOTIFY_CLIENT_ID")
     SPOTIFY_CLIENT_SECRET = os.getenv("SPOTIFY_CLIENT_SECRET")
