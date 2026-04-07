@@ -22,6 +22,7 @@ class LangCommand(BaseCommand):
         self._enabled_channels: set[int] = set()
         self._cache_loaded = False
         self._services_wired = False
+        self._last_ignored: dict[int, dict[int, object]] = {}  # channel_id -> {user_id -> timestamp}
 
     def _wire_services(self):
         if self._services_wired:
@@ -286,10 +287,16 @@ class LangCommand(BaseCommand):
         if not message.guild:
             return
 
-        if message.content.startswith(BaseConfig.PREFIX):
-            return
-
         self._load_enabled_channels()
+
+        # "!" 명령어 사용 → 자연어 채널에서 cmd_fallback 신호 수집
+        if message.content.startswith(BaseConfig.PREFIX):
+            if message.channel.id in self._enabled_channels:
+                self._record_signal(
+                    message, "cmd_fallback",
+                    message.content[:100],
+                )
+            return
 
         if message.channel.id not in self._enabled_channels:
             return
@@ -303,17 +310,24 @@ class LangCommand(BaseCommand):
         context = {
             "user_id": message.author.id,
             "server_id": message.guild.id,
+            "channel_id": message.channel.id,
             "author_name": message.author.display_name,
             "bot": self.bot,
         }
 
-        # LLM 호출 (typing 없이 — IGNORE 시 입력 중 표시 방지)
         result = await self.lang_service.process_message(content, context)
 
         if not result:
+            # IGNORE 후 같은 유저가 10초 내 재시도 → "ignored_then_retry" 신호
+            self._last_ignored.setdefault(message.channel.id, {})[message.author.id] = message.created_at
             return
 
-        # 실제 응답이 있을 때만 typing 표시 후 응답 전송
+        # 이전에 IGNORE된 유저가 재시도했다면 신호 기록
+        last = self._last_ignored.get(message.channel.id, {}).get(message.author.id)
+        if last and (message.created_at - last).total_seconds() < 15:
+            self._record_signal(message, "ignored_then_retry", content[:100])
+        self._last_ignored.get(message.channel.id, {}).pop(message.author.id, None)
+
         response = self._build_response(result)
         if not response:
             return
@@ -327,3 +341,23 @@ class LangCommand(BaseCommand):
             if len(text) > 2000:
                 text = text[:1997] + "..."
             await message.reply(text, mention_author=False)
+
+    def _record_signal(self, message, signal: str, detail: str = None):
+        """암묵적 피드백 신호를 DB에 기록"""
+        try:
+            from src.infrastructure.database.Session import get_db_session
+            from src.domain.models.LangFeedback import LangFeedback
+
+            feedback = LangFeedback(
+                guild_id=message.guild.id,
+                channel_id=message.channel.id,
+                user_id=message.author.id,
+                user_message=message.content[:2000],
+                parsed_action="signal",
+                signal=signal,
+                signal_detail=detail,
+            )
+            with get_db_session() as db:
+                db.add(feedback)
+        except Exception as e:
+            logger.warning(f"피드백 신호 저장 실패: {e}")
