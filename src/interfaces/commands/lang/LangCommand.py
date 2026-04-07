@@ -271,11 +271,11 @@ class LangCommand(BaseCommand):
             answer = answer[:4093] + "..."
 
         embed = discord.Embed(
-            title="🤖 AI 답변",
+            title="🤖 A:",
             description=answer,
             color=discord.Color.blurple(),
         )
-        embed.set_footer(text=f"질문: {question[:100]}")
+        embed.set_footer(text=f"Q: {question[:100]}")
         await ctx.reply(embed=embed)
 
     @commands.Cog.listener()
