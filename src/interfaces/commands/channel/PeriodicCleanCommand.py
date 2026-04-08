@@ -259,13 +259,6 @@ class PeriodicCleanCommand(BaseCommand):
                     )
                     return
 
-                # disabled_records = repo.disable_by_name(
-                #     guild_id, channel_name_to_search
-                # )
-                # logger.info(
-                #     f"DB에서 {len(disabled_records)}개 비활"
-                # )
-
                 repo.disable_by_name(guild_id, channel_name_to_search)
 
                 cancelled_tasks = 0

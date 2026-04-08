@@ -22,7 +22,7 @@ class LangCommand(BaseCommand):
         self._enabled_channels: set[int] = set()
         self._cache_loaded = False
         self._services_wired = False
-        self._last_ignored: dict[int, dict[int, object]] = {}  # channel_id -> {user_id -> timestamp}
+        self._last_ignored: dict[int, dict[int, object]] = {}
 
     def _wire_services(self):
         if self._services_wired:
@@ -207,7 +207,6 @@ class LangCommand(BaseCommand):
             )
             return {"embed": embed}
 
-        # type == "text"
         content = result.get("content", "")
         if not content:
             return {}
@@ -289,7 +288,6 @@ class LangCommand(BaseCommand):
 
         self._load_enabled_channels()
 
-        # "!" 명령어 사용 → 자연어 채널에서 cmd_fallback 신호 수집
         if message.content.startswith(BaseConfig.PREFIX):
             if message.channel.id in self._enabled_channels:
                 self._record_signal(
@@ -318,11 +316,9 @@ class LangCommand(BaseCommand):
         result = await self.lang_service.process_message(content, context)
 
         if not result:
-            # IGNORE 후 같은 유저가 10초 내 재시도 → "ignored_then_retry" 신호
             self._last_ignored.setdefault(message.channel.id, {})[message.author.id] = message.created_at
             return
 
-        # 이전에 IGNORE된 유저가 재시도했다면 신호 기록
         last = self._last_ignored.get(message.channel.id, {}).get(message.author.id)
         if last and (message.created_at - last).total_seconds() < 15:
             self._record_signal(message, "ignored_then_retry", content[:100])

@@ -1,9 +1,8 @@
 from discord.ext import commands
 import logging
-from datetime import datetime, timedelta
 from src.interfaces.commands.Base import BaseCommand
 from src.utils.embeds.MealEmbed import MealEmbed
-from src.services.MealService import MealService
+from src.clients.ApiGatewayClient import ApiGatewayClient
 
 logger = logging.getLogger(__name__)
 
@@ -11,27 +10,22 @@ logger = logging.getLogger(__name__)
 class MealCommands(BaseCommand):
     def __init__(self, bot, container):
         super().__init__(bot, container)
-        self.meal_service = MealService()
+        self.api = ApiGatewayClient()
 
-    async def _handle_meal_command(
-        self, ctx, date: str, meal_code: str, title: str, error_message: str
-    ):
-        logger.info(
-            f"meal_command({ctx.guild.name}, {ctx.author.name}, {date}, {meal_code})"
-        )
-
+    async def _send_meal(self, ctx, meal_type: str, day: str):
         try:
-            title, menu, cal_info = await self.meal_service.get_meal_by_type(
-                date, meal_code, title
-            )
+            data = await self.api.get_meal(meal_type=meal_type, day=day)
 
-            if title and menu:
-                embed = MealEmbed.create_meal_embed(title, menu, cal_info)
+            if data.get("error"):
+                embed = MealEmbed.create_error_embed(data["error"])
+            elif data.get("menu"):
+                embed = MealEmbed.create_meal_embed(
+                    data["title"], data["menu"], data.get("cal_info", "")
+                )
             else:
-                embed = MealEmbed.create_error_embed(error_message)
+                embed = MealEmbed.create_error_embed("급식 정보를 가져올 수 없습니다.")
 
             await ctx.reply(embed=embed)
-
         except Exception as e:
             logger.error(e)
             await ctx.send(embed=MealEmbed.create_error_embed(e))
@@ -43,20 +37,7 @@ class MealCommands(BaseCommand):
     )
     async def meal(self, ctx):
         logger.info(f"meal({ctx.guild.name}, {ctx.author.name})")
-
-        try:
-            title, menu, cal_info = await self.meal_service.get_current_meal(datetime.now())
-
-            if title and menu:
-                embed = MealEmbed.create_meal_embed(title, menu, cal_info)
-            else:
-                embed = MealEmbed.create_error_embed("나이스 API 이슈")
-
-            await ctx.reply(embed=embed)
-
-        except Exception as e:
-            logger.error(e)
-            await ctx.send(embed=MealEmbed.create_error_embed(e))
+        await self._send_meal(ctx, "auto", "today")
 
     @commands.command(
         name="급식.아침",
@@ -64,13 +45,7 @@ class MealCommands(BaseCommand):
         description="아침 급식 조회",
     )
     async def breakfast(self, ctx):
-        await self._handle_meal_command(
-            ctx,
-            datetime.now().strftime("%Y%m%d"),
-            "1",
-            "🍳 아침",
-            "조식 정보를 가져올 수 없습니다.",
-        )
+        await self._send_meal(ctx, "breakfast", "today")
 
     @commands.command(
         name="급식.점심",
@@ -78,13 +53,7 @@ class MealCommands(BaseCommand):
         description="점심 급식 조회",
     )
     async def lunch(self, ctx):
-        await self._handle_meal_command(
-            ctx,
-            datetime.now().strftime("%Y%m%d"),
-            "2",
-            "🍚 점심",
-            "중식 정보를 가져올 수 없습니다.",
-        )
+        await self._send_meal(ctx, "lunch", "today")
 
     @commands.command(
         name="급식.저녁",
@@ -92,13 +61,7 @@ class MealCommands(BaseCommand):
         description="저녁 급식 조회",
     )
     async def dinner(self, ctx):
-        await self._handle_meal_command(
-            ctx,
-            datetime.now().strftime("%Y%m%d"),
-            "3",
-            "🍖 저녁",
-            "석식 정보를 가져올 수 없습니다.",
-        )
+        await self._send_meal(ctx, "dinner", "today")
 
     @commands.command(
         name="급식.내일아침",
@@ -106,13 +69,7 @@ class MealCommands(BaseCommand):
         description="내일 아침 급식 조회",
     )
     async def tomorrow_breakfast(self, ctx):
-        await self._handle_meal_command(
-            ctx,
-            (datetime.now() + timedelta(days=1)).strftime("%Y%m%d"),
-            "1",
-            "🍳 내일 아침",
-            "내일 조식 정보를 가져올 수 없습니다.",
-        )
+        await self._send_meal(ctx, "breakfast", "tomorrow")
 
     @commands.command(
         name="급식.내일점심",
@@ -120,13 +77,7 @@ class MealCommands(BaseCommand):
         description="내일 점심 급식 조회",
     )
     async def tomorrow_lunch(self, ctx):
-        await self._handle_meal_command(
-            ctx,
-            (datetime.now() + timedelta(days=1)).strftime("%Y%m%d"),
-            "2",
-            "🍚 내일 점심",
-            "내일 중식 정보를 가져올 수 없습니다.",
-        )
+        await self._send_meal(ctx, "lunch", "tomorrow")
 
     @commands.command(
         name="급식.내일저녁",
@@ -134,10 +85,4 @@ class MealCommands(BaseCommand):
         description="내일 저녁 급식 조회",
     )
     async def tomorrow_dinner(self, ctx):
-        await self._handle_meal_command(
-            ctx,
-            (datetime.now() + timedelta(days=1)).strftime("%Y%m%d"),
-            "3",
-            "🍖 내일 저녁",
-            "내일 석식 정보를 가져올 수 없습니다.",
-        )
+        await self._send_meal(ctx, "dinner", "tomorrow")

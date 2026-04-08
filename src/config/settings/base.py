@@ -37,6 +37,8 @@ class BaseConfig:
 
     EXTERNAL_AUTH_TYPE = os.getenv("FLOODING_AUTH_TYPE", "bearer")
 
+    API_GATEWAY_URL = os.getenv("API_GATEWAY_URL", "http://127.0.0.1:6974")
+
     LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
 
     ENABLE_MANAGEMENT_COMMANDS = os.getenv("M", "True").lower() in ("true", "1", "yes")

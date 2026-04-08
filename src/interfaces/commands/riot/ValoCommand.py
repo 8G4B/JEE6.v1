@@ -1,9 +1,8 @@
 from discord.ext import commands
 import logging
-import aiohttp
 from src.interfaces.commands.Base import BaseCommand
 from src.utils.embeds.ValoEmbed import ValoEmbed
-from src.services.ValoService import ValoService
+from src.clients.ApiGatewayClient import ApiGatewayClient
 
 logger = logging.getLogger(__name__)
 
@@ -11,18 +10,7 @@ logger = logging.getLogger(__name__)
 class ValoCommands(BaseCommand):
     def __init__(self, bot, container):
         super().__init__(bot, container)
-        self.valo_service = ValoService()
-        self.session = None
-        self._setup_session()
-
-    def _setup_session(self):
-        if self.session is None:
-            self.session = aiohttp.ClientSession()
-
-    async def cog_unload(self):
-        if self.session:
-            await self.session.close()
-            self.session = None
+        self.api = ApiGatewayClient()
 
     @commands.command(
         name="발로.티어",
@@ -32,25 +20,25 @@ class ValoCommands(BaseCommand):
     async def valo_tier(self, ctx, *, riot_id: str):
         logger.info(f"valo_tier({ctx.guild.name}, {ctx.author.name}, {riot_id})")
         try:
-            self._setup_session()
-            account_data = await self.valo_service.get_account_info(
-                self.session, riot_id
-            )
-            rank_info, tier = await self.valo_service.get_rank_info(
-                self.session, account_data["puuid"]
-            )
-            if not rank_info:
+            data = await self.api.get_valo_tier(riot_id)
+
+            if data.get("error"):
+                await ctx.reply(embed=ValoEmbed.create_error_embed(data["error"]))
+                return
+
+            rank_data = data.get("rank_data")
+            tier = data.get("tier", "UNRANKED")
+            account = data.get("account", {})
+            display_name = f"{account.get('gameName', '')}#{account.get('tagLine', '')}" if account else riot_id
+
+            if not rank_data:
                 description = "랭크 정보가 없습니다."
             else:
-                rating = rank_info.get("rankedRating", 0)
+                rating = rank_data.get("rankedRating", 0)
                 description = f"## {tier} - {rating}RP"
-            title = f"🇻 {account_data['gameName']}#{account_data['tagLine']}의 티어"
-            embed = ValoEmbed.create_tier_embed(title, description, tier)
 
-            # try:
-            #     rank_image = discord.File(f"assets/valo_rank/{tier}.png", filename=f"{tier}.png")
-            #     await ctx.reply(embed=embed, file=rank_image)
-            # except FileNotFoundError:
+            title = f"🇻 {display_name}의 티어"
+            embed = ValoEmbed.create_tier_embed(title, description, tier)
             await ctx.reply(embed=embed)
         except ValueError as e:
             await ctx.reply(embed=ValoEmbed.create_error_embed(str(e)))
@@ -68,17 +56,17 @@ class ValoCommands(BaseCommand):
     async def valo_history(self, ctx, *, riot_id: str):
         logger.info(f"valo_history({ctx.guild.name}, {ctx.author.name}, {riot_id})")
         try:
-            self._setup_session()
-            account_data = await self.valo_service.get_account_info(
-                self.session, riot_id
-            )
-            matches = await self.valo_service.get_match_history(
-                self.session, account_data["puuid"]
-            )
-            title = (
-                f"🇻 {account_data['gameName']}#{account_data['tagLine']}의 최근 5게임"
-            )
-            embed = ValoEmbed.create_history_embed(title, matches)
+            data = await self.api.get_valo_history(riot_id)
+
+            if data.get("error"):
+                await ctx.reply(embed=ValoEmbed.create_error_embed(data["error"]))
+                return
+
+            account = data.get("account", {})
+            display_name = f"{account.get('gameName', '')}#{account.get('tagLine', '')}" if account else riot_id
+
+            title = f"🇻 {display_name}의 최근 5게임"
+            embed = ValoEmbed.create_history_embed(title, data.get("matches", []))
             await ctx.reply(embed=embed)
         except ValueError as e:
             await ctx.reply(embed=ValoEmbed.create_error_embed(str(e)))

@@ -1,18 +1,11 @@
 import json
 import logging
-import random
 import re
-import aiohttp
-from datetime import datetime, timedelta
+from datetime import datetime
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import SystemMessage, HumanMessage
 from src.config.settings.base import BaseConfig
-from src.services.MealService import MealService
-from src.services.WaterService import WaterService
-from src.services.TimeService import TimeService
-from src.services.LolService import LolService
-from src.services.ValoService import ValoService
-from src.services.SpotifyService import SpotifyService
+from src.clients.ApiGatewayClient import ApiGatewayClient
 
 logger = logging.getLogger(__name__)
 
@@ -158,12 +151,7 @@ class LangService:
             max_tokens=512,
         )
 
-        self.meal_service = MealService()
-        self.water_service = WaterService()
-        self.time_service = TimeService()
-        self.lol_service = LolService()
-        self.valo_service = ValoService()
-        self.spotify_service = SpotifyService()
+        self.api = ApiGatewayClient()
 
         self._gambling_service = None
         self._flooding_api_service = None
@@ -226,46 +214,25 @@ class LangService:
             logger.error(f"Tool 실행 오류 ({tool_name}): {e}", exc_info=True)
             return {"type": "error", "message": str(e)}
 
-    # --- 급식 ---
-
     async def _exec_meal(self, args: dict) -> dict:
         meal_type = args.get("meal_type", "auto")
         day = args.get("day", "today")
-        now = datetime.now()
-
-        if meal_type == "auto":
-            title, menu, cal_info = await self.meal_service.get_current_meal(now)
-        else:
-            if day == "tomorrow":
-                date_str = (now + timedelta(days=1)).strftime("%Y%m%d")
-            else:
-                date_str = now.strftime("%Y%m%d")
-            code_map = {"breakfast": "1", "lunch": "2", "dinner": "3"}
-            title_map = {
-                "breakfast": "🍳 아침" if day == "today" else "🍳 내일 아침",
-                "lunch": "🍚 점심" if day == "today" else "🍚 내일 점심",
-                "dinner": "🍖 저녁" if day == "today" else "🍖 내일 저녁",
-            }
-            title, menu, cal_info = await self.meal_service.get_meal_by_type(
-                date_str, code_map.get(meal_type, "2"), title_map.get(meal_type, "급식")
-            )
-
-        if title and menu:
-            return {"type": "meal", "title": title, "menu": menu, "cal_info": cal_info or ""}
+        data = await self.api.get_meal(meal_type=meal_type, day=day)
+        if data.get("error"):
+            return {"type": "error", "message": data["error"]}
+        if data.get("menu"):
+            return {"type": "meal", "title": data["title"], "menu": data["menu"], "cal_info": data.get("cal_info", "")}
         return {"type": "error", "message": "급식 정보를 가져올 수 없습니다."}
 
-    # --- 정보 ---
-
     async def _exec_water(self) -> dict:
-        result = await self.water_service.get_han_river_temp()
-        if result:
-            hour, minute, temp = result
-            return {"type": "water", "hour": hour, "minute": minute, "temp": temp}
-        return {"type": "error", "message": "한강 수온 정보를 가져올 수 없습니다."}
+        data = await self.api.get_water_temp()
+        if data.get("error"):
+            return {"type": "error", "message": data["error"]}
+        return {"type": "water", "hour": data["hour"], "minute": data["minute"], "temp": data["temp"]}
 
-    def _exec_time(self) -> dict:
-        dt = self.time_service.get_current_datetime()
-        return {"type": "time", "datetime": dt}
+    async def _exec_time(self) -> dict:
+        data = await self.api.get_time()
+        return {"type": "time", "datetime": data.get("korean", datetime.now().strftime("%Y년 %m월 %d일 %H시 %M분 %S초"))}
 
     def _exec_info(self, context: dict) -> dict:
         bot = context.get("bot") if context else None
@@ -277,59 +244,50 @@ class LangService:
             "guild_count": guild_count,
         }
 
-    # --- 게임 전적 ---
-
     async def _exec_lol_tier(self, args: dict) -> dict:
         riot_id = args.get("riot_id", "")
-        async with aiohttp.ClientSession() as session:
-            account = await self.lol_service.get_account_info(session, riot_id)
-            solo_rank, tier = await self.lol_service.get_tier_info(session, account["puuid"])
-            return {
-                "type": "lol_tier",
-                "riot_id": riot_id,
-                "solo_rank": solo_rank,
-                "tier": tier,
-            }
+        data = await self.api.get_lol_tier(riot_id)
+        if data.get("error"):
+            return {"type": "error", "message": data["error"]}
+        return {
+            "type": "lol_tier",
+            "riot_id": riot_id,
+            "solo_rank": data.get("solo_rank"),
+            "tier": data.get("tier", "UNRANKED"),
+        }
 
     async def _exec_lol_history(self, args: dict) -> dict:
         riot_id = args.get("riot_id", "")
-        async with aiohttp.ClientSession() as session:
-            account = await self.lol_service.get_account_info(session, riot_id)
-            matches = await self.lol_service.get_match_history(session, account["puuid"])
-            return {"type": "lol_history", "riot_id": riot_id, "matches": matches}
+        data = await self.api.get_lol_history(riot_id)
+        if data.get("error"):
+            return {"type": "error", "message": data["error"]}
+        return {"type": "lol_history", "riot_id": riot_id, "matches": data.get("matches", [])}
 
     async def _exec_lol_rotation(self) -> dict:
-        async with aiohttp.ClientSession() as session:
-            rotation = await self.lol_service.get_rotation(session)
-            return {"type": "lol_rotation", "champions": rotation}
+        data = await self.api.get_lol_rotation()
+        if data.get("error"):
+            return {"type": "error", "message": data["error"]}
+        return {"type": "lol_rotation", "champions": data.get("champions", [])}
 
     async def _exec_valo_tier(self, args: dict) -> dict:
         riot_id = args.get("riot_id", "")
-        async with aiohttp.ClientSession() as session:
-            account = await self.valo_service.get_account_info(session, riot_id)
-            rank_data, tier = await self.valo_service.get_rank_info(session, account["puuid"])
-            return {"type": "valo_tier", "riot_id": riot_id, "tier": tier}
+        data = await self.api.get_valo_tier(riot_id)
+        if data.get("error"):
+            return {"type": "error", "message": data["error"]}
+        return {"type": "valo_tier", "riot_id": riot_id, "tier": data.get("tier", "UNRANKED")}
 
     async def _exec_valo_history(self, args: dict) -> dict:
         riot_id = args.get("riot_id", "")
-        async with aiohttp.ClientSession() as session:
-            account = await self.valo_service.get_account_info(session, riot_id)
-            matches = await self.valo_service.get_match_history(session, account["puuid"])
-            return {"type": "valo_history", "riot_id": riot_id, "matches": matches}
-
-    # --- 음악 ---
+        data = await self.api.get_valo_history(riot_id)
+        if data.get("error"):
+            return {"type": "error", "message": data["error"]}
+        return {"type": "valo_history", "riot_id": riot_id, "matches": data.get("matches", [])}
 
     async def _exec_music(self) -> dict:
-        playlist_ids = BaseConfig.SPOTIFY_PLAYLIST_ID
-        if not playlist_ids:
-            return {"type": "error", "message": "Spotify 설정이 되어있지 않습니다."}
-        playlist_id = random.choice(playlist_ids)
-        track = await self.spotify_service.get_random_track(playlist_id)
-        if track:
-            return {"type": "music", "track": track}
-        return {"type": "error", "message": "곡을 가져오는데 실패했습니다."}
-
-    # --- 도박 ---
+        data = await self.api.get_random_track()
+        if data.get("error"):
+            return {"type": "error", "message": data["error"]}
+        return {"type": "music", "track": data}
 
     def _get_gambling(self):
         if not self._gambling_service:
@@ -390,8 +348,6 @@ class LangService:
             return {"type": "error", "message": "도박 기능을 사용할 수 없습니다."}
         amount = gs.get_jackpot(context["server_id"])
         return {"type": "jackpot", "amount": amount}
-
-    # --- 플러딩 ---
 
     async def _exec_flooding_music(self, context: dict) -> dict:
         if not self._flooding_api_service or not context:
@@ -464,7 +420,6 @@ class LangService:
 
         except Exception as e:
             logger.warning(f"피드백 저장 실패: {e}")
-
 
     async def process_message(self, user_message: str, context: dict = None) -> dict:
         llm_raw = None

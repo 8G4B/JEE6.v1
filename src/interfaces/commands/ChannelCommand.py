@@ -274,13 +274,6 @@ class ChannelCommands(BaseCommand):
                     )
                     return
 
-                # disabled_records = repo.disable_by_name(
-                #     guild_id, channel_name_to_search
-                # )
-                # logger.info(
-                #     f"DB에서 {len(disabled_records)}개 비활"
-                # )
-
                 cancelled_tasks = 0
                 for record in records:
                     task_key = (guild_id, record.channel_id)

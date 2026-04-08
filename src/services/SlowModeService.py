@@ -18,7 +18,7 @@ class SlowModeService:
         else:
             dt = dt.astimezone(ZoneInfo("Asia/Seoul"))
 
-        weekday = dt.weekday()  # 0=월요일, 6=일요일
+        weekday = dt.weekday()
 
         if 0 <= weekday <= 3:
             return True

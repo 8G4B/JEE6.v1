@@ -4,8 +4,6 @@ import asyncio
 from typing import Dict, List, Tuple, Optional
 from datetime import datetime, timedelta
 
-# from functools import lru_cache
-
 from src.repositories.UserBalanceRepository import UserBalanceRepository
 from src.repositories.JackpotRepository import JackpotRepository
 from src.repositories.CooldownRepository import CooldownRepository
