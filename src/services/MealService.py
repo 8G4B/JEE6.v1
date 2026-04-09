@@ -77,6 +77,41 @@ class MealService:
 
         return await self._fetch_and_save_weekly_meals(date)
 
+    async def _fetch_all_weekly_rows(self, from_ymd: str, to_ymd: str) -> List:
+        session = MealService._session
+        if session is None or session.closed:
+            session = MealService._session = aiohttp.ClientSession(timeout=TIMEOUT)
+
+        all_rows = []
+        page = 1
+
+        while True:
+            params = self.params.copy()
+            params["pIndex"] = page
+            params["pSize"] = 100
+            params["MLSV_FROM_YMD"] = from_ymd
+            params["MLSV_TO_YMD"] = to_ymd
+
+            async with session.get(self.base_url, params=params) as response:
+                if response.status != 200:
+                    logger.warning(f"API returned status {response.status}")
+                    break
+                data = await response.json()
+
+                info = data.get("mealServiceDietInfo")
+                if not info or len(info) < 2:
+                    break
+
+                rows = info[1].get("row", [])
+                all_rows.extend(rows)
+
+                total_count = info[0].get("head", [{}])[0].get("list_total_count", 0)
+                if len(all_rows) >= total_count:
+                    break
+                page += 1
+
+        return all_rows
+
     async def _fetch_and_save_weekly_meals(self, target_date: str) -> Optional[List]:
         dt = datetime.strptime(target_date, "%Y%m%d")
         start_of_week = dt - timedelta(days=dt.weekday())
@@ -85,47 +120,38 @@ class MealService:
         from_ymd = start_of_week.strftime("%Y%m%d")
         to_ymd = end_of_week.strftime("%Y%m%d")
 
-        params = self.params.copy()
-        params["MLSV_FROM_YMD"] = from_ymd
-        params["MLSV_TO_YMD"] = to_ymd
-
         try:
             logger.debug(f"Requesting weekly meal info for {from_ymd} ~ {to_ymd}")
-            session = MealService._session
-            if session is None or session.closed:
-                session = MealService._session = aiohttp.ClientSession(timeout=TIMEOUT)
 
-            async with session.get(self.base_url, params=params) as response:
-                if response.status != 200:
-                    logger.warning(f"API returned status {response.status} for {target_date}")
-                    return None
-                data = await response.json()
+            if not MEAL_API_KEY:
+                logger.warning("MEAL_API_KEY가 설정되지 않았습니다. NEIS API가 pSize=5로 제한됩니다.")
 
-                if "mealServiceDietInfo" in data:
-                    all_meals = data["mealServiceDietInfo"][1]["row"]
-                    await self._save_meals_to_db(all_meals, from_ymd, to_ymd)
+            all_meals = await self._fetch_all_weekly_rows(from_ymd, to_ymd)
 
-                    target_meals = [
-                        {
-                            "MMEAL_SC_CODE": m["MMEAL_SC_CODE"],
-                            "DDISH_NM": "\n".join(
-                                f"- {dish.strip()}"
-                                for dish in m["DDISH_NM"]
-                                .replace("*", "")
-                                .split("<br/>")
-                                if dish.strip()
-                            ),
-                            "CAL_INFO": m.get("CAL_INFO", "").strip()
-                        }
-                        for m in all_meals if m["MLSV_YMD"] == target_date
-                    ]
-                    if target_meals:
-                        MealService._meal_cache[target_date] = target_meals
-                        MealService._meal_cache_time[target_date] = time.time()
-                    return target_meals if target_meals else None
+            if all_meals:
+                await self._save_meals_to_db(all_meals, from_ymd, to_ymd)
 
-                logger.warning(f"No meal info returned for {target_date} (week search)")
-                return None
+                target_meals = [
+                    {
+                        "MMEAL_SC_CODE": m["MMEAL_SC_CODE"],
+                        "DDISH_NM": "\n".join(
+                            f"- {dish.strip()}"
+                            for dish in m["DDISH_NM"]
+                            .replace("*", "")
+                            .split("<br/>")
+                            if dish.strip()
+                        ),
+                        "CAL_INFO": m.get("CAL_INFO", "").strip()
+                    }
+                    for m in all_meals if m["MLSV_YMD"] == target_date
+                ]
+                if target_meals:
+                    MealService._meal_cache[target_date] = target_meals
+                    MealService._meal_cache_time[target_date] = time.time()
+                return target_meals if target_meals else None
+
+            logger.warning(f"No meal info returned for {target_date} (week search)")
+            return None
 
         except (aiohttp.ClientError, asyncio.TimeoutError, json.JSONDecodeError, KeyError) as e:
             logger.error(f"Error fetching meal info: {e}")
