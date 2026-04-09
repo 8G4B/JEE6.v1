@@ -23,6 +23,7 @@ from src.interfaces.commands.school.PromotionCommand import PromotionCommand
 from src.interfaces.commands.MentionCommand import MentionCommand
 from src.interfaces.commands.music.SpotifyCommand import SpotifyCommand
 from src.interfaces.commands.lang.LangCommand import LangCommand
+from src.interfaces.commands.filter.ProfanityListener import ProfanityListener
 
 logger = logging.getLogger(__name__)
 
@@ -68,6 +69,9 @@ class Bot(commands.Bot):
 
         if BaseConfig.ENABLE_LANG_COMMANDS:
             await self.add_cog(LangCommand(self, self.container))
+
+        if BaseConfig.FILTER_API_URL:
+            await self.add_cog(ProfanityListener(self, self.container))
 
         if BaseConfig.EXTERNAL_API_BASE_URL:
             await self.add_cog(self.container.flooding_auth_command())
