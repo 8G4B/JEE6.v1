@@ -20,7 +20,7 @@ class BaseConfig:
 
     RIOT_API_KEY = os.getenv("RIOT_API_KEY")
     VLLM_BASE_URL = os.getenv("VLLM_BASE_URL", "http://localhost:8000/v1")
-    VLLM_MODEL = os.getenv("VLLM_MODEL", "meta-llama/Meta-Llama-3-8B-Instruct")
+    VLLM_MODEL = os.getenv("VLLM_MODEL", "Qwen/Qwen2.5-7B-Instruct-AWQ")
 
     SPOTIFY_CLIENT_ID = os.getenv("SPOTIFY_CLIENT_ID")
     SPOTIFY_CLIENT_SECRET = os.getenv("SPOTIFY_CLIENT_SECRET")
@@ -36,6 +36,9 @@ class BaseConfig:
     EXTERNAL_API_MAX_RETRIES = int(os.getenv("FLOODING_API_MAX_RETRIES", "3"))
 
     EXTERNAL_AUTH_TYPE = os.getenv("FLOODING_AUTH_TYPE", "bearer")
+
+    API_GATEWAY_URL = os.getenv("API_GATEWAY_URL", "http://127.0.0.1:6974")
+    FILTER_API_URL = os.getenv("FILTER_API_URL", "http://127.0.0.1:6975")
 
     LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
 
