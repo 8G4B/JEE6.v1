@@ -14,6 +14,8 @@ from src.utils.embeds.GamblingEmbed import GamblingEmbed
 
 logger = logging.getLogger(__name__)
 
+WRONG_EMOJI = "\u274C"  # ❌
+
 
 class LangCommand(BaseCommand):
     def __init__(self, bot, container):
@@ -23,6 +25,8 @@ class LangCommand(BaseCommand):
         self._cache_loaded = False
         self._services_wired = False
         self._last_ignored: dict[int, dict[int, object]] = {}
+        # bot_reply_id -> user_message text
+        self._reply_map: dict[int, str] = {}
 
     def _wire_services(self):
         if self._services_wired:
@@ -329,14 +333,56 @@ class LangCommand(BaseCommand):
             return
 
         if "embed" in response:
-            await message.reply(embed=response["embed"], mention_author=False)
+            reply = await message.reply(embed=response["embed"], mention_author=False)
+            self._track_reply(reply.id, content)
         elif "content" in response:
             text = response["content"].strip()
             if not text or text == "IGNORE":
                 return
             if len(text) > 2000:
                 text = text[:1997] + "..."
-            await message.reply(text, mention_author=False)
+            reply = await message.reply(text, mention_author=False)
+            self._track_reply(reply.id, content)
+
+    def _track_reply(self, reply_id: int, user_message: str):
+        self._reply_map[reply_id] = user_message
+        if len(self._reply_map) > 1000:
+            oldest = list(self._reply_map.keys())[:500]
+            for k in oldest:
+                del self._reply_map[k]
+
+    @commands.Cog.listener()
+    async def on_reaction_add(self, reaction, user):
+        if user.bot:
+            return
+        if str(reaction.emoji) != WRONG_EMOJI:
+            return
+
+        message = reaction.message
+        # Only process reactions on the bot's own replies
+        if message.author.id != self.bot.user.id:
+            return
+        if message.id not in self._reply_map:
+            return
+
+        user_message = self._reply_map.pop(message.id)
+        try:
+            from src.domain.models.LangFeedback import LangFeedback
+            feedback = LangFeedback(
+                guild_id=message.guild.id if message.guild else 0,
+                channel_id=message.channel.id,
+                user_id=user.id,
+                user_message=user_message[:2000],
+                parsed_action="signal",
+                signal="wrong_response",
+                signal_detail=f"사용자가 ❌ 리액션으로 오답 신고",
+                label="wrong",
+            )
+            with get_db_session() as db:
+                db.add(feedback)
+            logger.info(f"LLM 오답 피드백: {user_message[:30]}...")
+        except Exception as e:
+            logger.warning(f"오답 피드백 저장 실패: {e}")
 
     def _record_signal(self, message, signal: str, detail: str = None):
         """암묵적 피드백 신호를 DB에 기록"""
