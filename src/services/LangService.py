@@ -22,25 +22,12 @@ TOOL_DEFINITIONS = """
 3. get_time — 현재 시간 조회 (파라미터 없음)
 4. get_info — 봇 정보/상태 조회 (파라미터 없음)
 
-[게임 전적]
-5. get_lol_tier — 롤 티어 조회 (riot_id: "닉네임#태그" 필수)
-6. get_lol_history — 롤 최근 전적 조회 (riot_id: "닉네임#태그" 필수)
-7. get_lol_rotation — 롤 금주 무료 챔피언 로테이션 조회 (파라미터 없음)
-8. get_valo_tier — 발로란트 티어 조회 (riot_id: "닉네임#태그" 필수)
-9. get_valo_history — 발로란트 최근 전적 조회 (riot_id: "닉네임#태그" 필수)
-
 [음악]
-10. get_music — Spotify 랜덤 곡 추천 (파라미터 없음)
-
-[도박]
-11. get_balance — 내 잔액 조회 (파라미터 없음)
-12. get_ranking — 도박 랭킹 TOP 10 조회 (파라미터 없음)
-13. do_work — 노동으로 돈 벌기 (파라미터 없음)
-14. get_jackpot — 현재 잭팟 금액 조회 (파라미터 없음)
+5. get_music — Spotify 랜덤 곡 추천 (파라미터 없음)
 
 [플러딩]
-15. get_flooding_music — 오늘의 기상 음악 목록 조회 (파라미터 없음)
-16. get_flooding_profile — 플러딩 내 정보 조회 (파라미터 없음)
+6. get_flooding_music — 오늘의 기상 음악 목록 조회 (파라미터 없음)
+7. get_flooding_profile — 플러딩 내 정보 조회 (파라미터 없음)
 """
 
 FEW_SHOT_EXAMPLES = """
@@ -58,35 +45,20 @@ FEW_SHOT_EXAMPLES = """
 유저: 지금 몇시야
 응답: {"tool": "get_time", "args": {}}
 
-유저: Hide on bush#KR1 롤 티어
-응답: {"tool": "get_lol_tier", "args": {"riot_id": "Hide on bush#KR1"}}
-
-유저: Hide on bush#KR1 전적
-응답: {"tool": "get_lol_history", "args": {"riot_id": "Hide on bush#KR1"}}
-
 유저: 롤 티어 알려줘
-응답: {"reply": "닉네임#태그를 알려주세요! 예: Hide on bush#KR1"}
+응답: {"ignore": true}
 
-유저: 이번주 무료 챔피언 뭐야
-응답: {"tool": "get_lol_rotation", "args": {}}
+유저: 발로 전적 보여줘
+응답: {"ignore": true}
 
 유저: 노래 추천해줘
 응답: {"tool": "get_music", "args": {}}
 
-유저: 내 돈 얼마야
-응답: {"tool": "get_balance", "args": {}}
+유저: 돈 얼마야
+응답: {"ignore": true}
 
-유저: 랭킹 보여줘
-응답: {"tool": "get_ranking", "args": {}}
-
-유저: 돈 벌고 싶어
-응답: {"tool": "do_work", "args": {}}
-
-유저: 일하기
-응답: {"tool": "do_work", "args": {}}
-
-유저: 잭팟 얼마야
-응답: {"tool": "get_jackpot", "args": {}}
+유저: 도박하자
+응답: {"ignore": true}
 
 유저: 기상음악 뭐야
 응답: {"tool": "get_flooding_music", "args": {}}
@@ -133,10 +105,8 @@ SYSTEM_PROMPT = f"""너는 디스코드 봇 JEE6이야.
 - 반드시 위 JSON 형식 중 하나로만 응답해. 다른 텍스트는 절대 포함하지 마.
 - 대부분의 메시지는 유저끼리 대화이므로 ignore가 기본이다.
 - 봇에게 직접 기능을 요청하는 경우에만 도구를 호출하거나 reply해.
-- 롤/발로란트 조회 시 닉네임#태그가 없으면 reply로 요청해.
 - 자살/자해 언급 시 get_water_temp를 호출해.
-- 도박 관련 언급은 미니게임 도박 명령어를 뜻한다.
-- "돈 벌기", "일하기", "노동" 등은 do_work를 호출해.
+- 롤, 발로란트, 도박 관련 요청은 ignore해. 이 기능들은 !명령어로만 사용 가능하다.
 
 {FEW_SHOT_EXAMPLES}"""
 
@@ -187,16 +157,8 @@ class LangService:
                 "get_water_temp": lambda: self._exec_water(),
                 "get_time": lambda: self._exec_time(),
                 "get_info": lambda: self._exec_info(context),
-                "get_lol_tier": lambda: self._exec_lol_tier(tool_args),
-                "get_lol_history": lambda: self._exec_lol_history(tool_args),
                 "get_lol_rotation": lambda: self._exec_lol_rotation(),
-                "get_valo_tier": lambda: self._exec_valo_tier(tool_args),
-                "get_valo_history": lambda: self._exec_valo_history(tool_args),
                 "get_music": lambda: self._exec_music(),
-                "get_balance": lambda: self._exec_balance(context),
-                "get_ranking": lambda: self._exec_ranking(context),
-                "do_work": lambda: self._exec_work(context),
-                "get_jackpot": lambda: self._exec_jackpot(context),
                 "get_flooding_music": lambda: self._exec_flooding_music(context),
                 "get_flooding_profile": lambda: self._exec_flooding_profile(context),
             }
