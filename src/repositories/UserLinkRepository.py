@@ -5,7 +5,7 @@ from datetime import datetime
 from typing import Optional
 
 from src.domain.models.UserLink import UserLink
-from src.infrastructure.database.Session import get_db_session
+from src.infrastructure.database.session import get_db_session
 from src.repositories.SQLAlchemyRawRepository import SQLAlchemyRawRepository
 
 logger = logging.getLogger(__name__)
