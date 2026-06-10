@@ -1,6 +1,6 @@
 from typing import Set
 from src.domain.models.ChannelFilter import ChannelFilter
-from src.repositories.Base import BaseRepository
+from src.repositories.base import BaseRepository
 
 
 class ChannelFilterRepository(BaseRepository[ChannelFilter]):
