@@ -1,5 +1,5 @@
 import logging
-from src.config.settings.base import BaseConfig
+from src.config.settings.Base import BaseConfig
 
 
 def setup_logger():
