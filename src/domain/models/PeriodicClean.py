@@ -1,5 +1,5 @@
 from sqlalchemy import Column, BigInteger, Integer, Boolean, String
-from src.domain.models.Base import BaseModel
+from src.domain.models.base import BaseModel
 
 
 class PeriodicClean(BaseModel):
