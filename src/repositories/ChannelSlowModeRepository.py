@@ -1,6 +1,6 @@
 from typing import Optional, List
 from src.domain.models.ChannelSlowMode import ChannelSlowMode
-from src.repositories.Base import BaseRepository
+from src.repositories.base import BaseRepository
 
 
 class ChannelSlowModeRepository(BaseRepository[ChannelSlowMode]):
