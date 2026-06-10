@@ -16,8 +16,13 @@ class ApiGatewayClient:
             async with session.get(url, params=params) as resp:
                 return await resp.json()
 
-    async def get_meal(self, meal_type: str = "auto", day: str = "today") -> dict:
-        return await self._get("/meal/", {"meal_type": meal_type, "day": day})
+    async def get_meal(
+        self, meal_type: str = "auto", day: str = "today", date: str = None
+    ) -> dict:
+        params = {"meal_type": meal_type, "day": day}
+        if date:
+            params["date"] = date
+        return await self._get("/meal/", params)
 
     async def get_meal_image(self, date: str, meal_code: str) -> dict:
         return await self._get("/meal/image", {"date": date, "meal_code": meal_code})
