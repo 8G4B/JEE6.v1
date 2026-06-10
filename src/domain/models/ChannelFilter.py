@@ -1,5 +1,5 @@
 from sqlalchemy import Column, BigInteger, Boolean
-from src.domain.models.Base import BaseModel
+from src.domain.models.base import BaseModel
 
 
 class ChannelFilter(BaseModel):
