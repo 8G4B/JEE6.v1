@@ -4,7 +4,7 @@ import re
 from datetime import datetime
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import SystemMessage, HumanMessage
-from src.config.settings.base import BaseConfig
+from src.config.settings.Base import BaseConfig
 from src.clients.ApiGatewayClient import ApiGatewayClient
 
 logger = logging.getLogger(__name__)
@@ -338,7 +338,7 @@ class LangService:
                        tool_error: str = None, signal: str = None,
                        signal_detail: str = None):
         try:
-            from src.infrastructure.database.Session import get_db_session
+            from src.infrastructure.database.session import get_db_session
             from src.domain.models.LangFeedback import LangFeedback
 
             if parsed.get("ignore"):
