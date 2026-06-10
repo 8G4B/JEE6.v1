@@ -24,6 +24,8 @@ _IMG_MAX_SIDE = 1280
 _IMG_CACHE: dict[str, bytes] = {}
 _IMG_CACHE_MAX = 64
 _IMG_TIMEOUT = aiohttp.ClientTimeout(total=15)
+# 급식 사진 서버는 비브라우저 User-Agent(aiohttp 기본값 등)를 400으로 차단한다.
+_IMG_HEADERS = {"User-Agent": "Mozilla/5.0"}
 
 
 class MealCommands(BaseCommand):
@@ -126,7 +128,9 @@ class MealCommands(BaseCommand):
         if cached is not None:
             return cached
 
-        async with aiohttp.ClientSession(timeout=_IMG_TIMEOUT) as session:
+        async with aiohttp.ClientSession(
+            timeout=_IMG_TIMEOUT, headers=_IMG_HEADERS
+        ) as session:
             async with session.get(image_url) as resp:
                 if resp.status != 200:
                     logger.warning(f"급식 사진 다운로드 실패: HTTP {resp.status}")
