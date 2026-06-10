@@ -1,3 +1,3 @@
-from src.domain.models.Base import Base
+from src.domain.models.base import Base
 
 target_metadata = Base.metadata
