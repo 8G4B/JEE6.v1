@@ -1,5 +1,5 @@
 from sqlalchemy import Column, String, Text, UniqueConstraint
-from src.domain.models.Base import BaseModel
+from src.domain.models.base import BaseModel
 
 
 class Meal(BaseModel):
