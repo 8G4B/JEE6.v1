@@ -17,21 +17,37 @@ class MealCommands(BaseCommand):
             data = await self.api.get_meal(meal_type=meal_type, day=day)
 
             if data.get("error"):
-                embed = MealEmbed.create_error_embed(data["error"])
-            elif data.get("menu"):
-                embed = MealEmbed.create_meal_embed(
-                    data["title"],
-                    data["menu"],
-                    data.get("cal_info", ""),
-                    data.get("image_url", ""),
+                await ctx.reply(embed=MealEmbed.create_error_embed(data["error"]))
+                return
+            if not data.get("menu"):
+                await ctx.reply(
+                    embed=MealEmbed.create_error_embed("급식 정보를 가져올 수 없습니다.")
                 )
-            else:
-                embed = MealEmbed.create_error_embed("급식 정보를 가져올 수 없습니다.")
+                return
 
-            await ctx.reply(embed=embed)
+            embed = MealEmbed.create_meal_embed(
+                data["title"], data["menu"], data.get("cal_info", "")
+            )
+            # 급식을 먼저 보여주고, 사진은 기다리지 않는다.
+            msg = await ctx.reply(embed=embed)
+            await self._attach_meal_image(msg, embed, data)
         except Exception as e:
             logger.error(e)
             await ctx.send(embed=MealEmbed.create_error_embed(e))
+
+    async def _attach_meal_image(self, msg, embed, data: dict):
+        # 사진이 준비되면 메시지를 수정해 끼워넣는다. 실패해도 급식 메시지엔 영향 없음.
+        date, meal_code = data.get("date"), data.get("meal_code")
+        if not (date and meal_code):
+            return
+        try:
+            result = await self.api.get_meal_image(date, meal_code)
+            image_url = result.get("image_url")
+            if image_url:
+                embed.set_image(url=image_url)
+                await msg.edit(embed=embed)
+        except Exception as e:
+            logger.warning(f"급식 사진 첨부 실패: {e}")
 
     @commands.command(
         name="급식",
