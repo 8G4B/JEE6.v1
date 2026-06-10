@@ -1,6 +1,6 @@
 from datetime import datetime
 from sqlalchemy import Column, String, Text, DateTime, Boolean
-from src.domain.models.Base import BaseModel
+from src.domain.models.base import BaseModel
 
 
 class UserLink(BaseModel):
