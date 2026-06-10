@@ -1,6 +1,6 @@
 from typing import Optional, Set
 from src.domain.models.ChannelLang import ChannelLang
-from src.repositories.Base import BaseRepository
+from src.repositories.base import BaseRepository
 
 
 class ChannelLangRepository(BaseRepository[ChannelLang]):
