@@ -1,5 +1,5 @@
 from sqlalchemy import Column, BigInteger, Integer
-from src.domain.models.Base import Base
+from src.domain.models.base import Base
 
 
 class Jackpot(Base):
