@@ -3,10 +3,15 @@ import discord
 
 class MealEmbed:
     @staticmethod
-    def create_meal_embed(title: str, menu: str, cal_info: str = "") -> discord.Embed:
+    def create_meal_embed(
+        title: str, menu: str, cal_info: str = "", image_url: str = ""
+    ) -> discord.Embed:
         embed = discord.Embed(
             title=title, description=menu, color=discord.Color.orange()
         )
+
+        if image_url:
+            embed.set_image(url=image_url)
 
         if cal_info:
             embed.set_footer(text=f"{cal_info}")

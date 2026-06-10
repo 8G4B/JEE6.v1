@@ -20,7 +20,10 @@ class MealCommands(BaseCommand):
                 embed = MealEmbed.create_error_embed(data["error"])
             elif data.get("menu"):
                 embed = MealEmbed.create_meal_embed(
-                    data["title"], data["menu"], data.get("cal_info", "")
+                    data["title"],
+                    data["menu"],
+                    data.get("cal_info", ""),
+                    data.get("image_url", ""),
                 )
             else:
                 embed = MealEmbed.create_error_embed("급식 정보를 가져올 수 없습니다.")
