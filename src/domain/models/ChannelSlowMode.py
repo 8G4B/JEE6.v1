@@ -1,6 +1,6 @@
 from sqlalchemy import Column, BigInteger, Boolean, String, DateTime
 from datetime import datetime
-from src.domain.models.Base import BaseModel
+from src.domain.models.base import BaseModel
 
 
 class ChannelSlowMode(BaseModel):
