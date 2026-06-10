@@ -5,7 +5,7 @@ import time
 import spotipy
 from spotipy.oauth2 import SpotifyClientCredentials, SpotifyOAuth
 from spotipy.cache_handler import MemoryCacheHandler
-from src.config.settings.base import BaseConfig
+from src.config.settings.Base import BaseConfig
 
 logger = logging.getLogger(__name__)
 
