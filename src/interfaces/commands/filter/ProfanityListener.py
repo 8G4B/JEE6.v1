@@ -3,7 +3,7 @@ import aiohttp
 from discord.ext import commands
 from src.interfaces.commands.Base import BaseCommand
 from src.config.settings.Base import BaseConfig
-from src.infrastructure.database.Session import get_db_session
+from src.infrastructure.database.session import get_db_session
 from src.repositories.ChannelFilterRepository import ChannelFilterRepository
 from src.domain.models.ChannelFilter import ChannelFilter
 
