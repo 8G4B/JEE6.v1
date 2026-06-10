@@ -1,9 +1,14 @@
 from discord.ext import commands
 import logging
 import re
+import io
+import asyncio
+import aiohttp
+import discord
 from datetime import datetime
 from zoneinfo import ZoneInfo
 from typing import Optional
+from PIL import Image
 from src.interfaces.commands.Base import BaseCommand
 from src.utils.embeds.MealEmbed import MealEmbed
 from src.clients.ApiGatewayClient import ApiGatewayClient
@@ -12,6 +17,13 @@ logger = logging.getLogger(__name__)
 
 # -d / --date 플래그와 그 값(0610, 06-10, 2026-06-10 등)을 잡아낸다.
 _DATE_FLAG_RE = re.compile(r"(?:^|\s)(?:--date|-d)(?:[=\s]+(\S+))?")
+
+# 급식 사진 원본은 18MB대로 커서 Discord 임베드 프록시/업로드 한도에 걸린다.
+# 받아서 작게 리사이즈한 뒤 첨부로 올린다. URL 기준으로 결과(JPEG bytes)를 캐시.
+_IMG_MAX_SIDE = 1280
+_IMG_CACHE: dict[str, bytes] = {}
+_IMG_CACHE_MAX = 64
+_IMG_TIMEOUT = aiohttp.ClientTimeout(total=15)
 
 
 class MealCommands(BaseCommand):
@@ -96,11 +108,53 @@ class MealCommands(BaseCommand):
         try:
             result = await self.api.get_meal_image(date, meal_code)
             image_url = result.get("image_url")
-            if image_url:
-                embed.set_image(url=image_url)
-                await msg.edit(embed=embed)
+            if not image_url:
+                return
+
+            jpeg = await self._get_resized_image(image_url)
+            if not jpeg:
+                return
+
+            file = discord.File(io.BytesIO(jpeg), filename="meal.jpg")
+            embed.set_image(url="attachment://meal.jpg")
+            await msg.edit(embed=embed, attachments=[file])
         except Exception as e:
             logger.warning(f"급식 사진 첨부 실패: {e}")
+
+    async def _get_resized_image(self, image_url: str) -> Optional[bytes]:
+        cached = _IMG_CACHE.get(image_url)
+        if cached is not None:
+            return cached
+
+        async with aiohttp.ClientSession(timeout=_IMG_TIMEOUT) as session:
+            async with session.get(image_url) as resp:
+                if resp.status != 200:
+                    logger.warning(f"급식 사진 다운로드 실패: HTTP {resp.status}")
+                    return None
+                raw = await resp.read()
+
+        # PIL 디코딩/리사이즈는 블로킹이므로 executor에서 처리한다.
+        jpeg = await asyncio.get_event_loop().run_in_executor(
+            None, self._resize_to_jpeg, raw
+        )
+        if jpeg:
+            if len(_IMG_CACHE) >= _IMG_CACHE_MAX:
+                _IMG_CACHE.pop(next(iter(_IMG_CACHE)))
+            _IMG_CACHE[image_url] = jpeg
+        return jpeg
+
+    @staticmethod
+    def _resize_to_jpeg(raw: bytes) -> Optional[bytes]:
+        try:
+            img = Image.open(io.BytesIO(raw))
+            img = img.convert("RGB")
+            img.thumbnail((_IMG_MAX_SIDE, _IMG_MAX_SIDE))
+            buf = io.BytesIO()
+            img.save(buf, format="JPEG", quality=85)
+            return buf.getvalue()
+        except Exception as e:
+            logger.warning(f"급식 사진 리사이즈 실패: {e}")
+            return None
 
     @commands.command(
         name="급식",
