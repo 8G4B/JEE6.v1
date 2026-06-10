@@ -1,6 +1,6 @@
 import logging
 import aiohttp
-from src.config.settings.base import BaseConfig
+from src.config.settings.Base import BaseConfig
 
 logger = logging.getLogger(__name__)
 
