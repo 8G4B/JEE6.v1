@@ -3,8 +3,8 @@ import discord
 from discord.ext import commands
 from src.interfaces.commands.Base import BaseCommand
 from src.services.LangService import LangService
-from src.infrastructure.database.Session import get_db_session
-from src.config.settings.base import BaseConfig
+from src.infrastructure.database.session import get_db_session
+from src.config.settings.Base import BaseConfig
 from src.utils.embeds.MealEmbed import MealEmbed
 from src.utils.embeds.WaterEmbed import WaterEmbed
 from src.utils.embeds.TimeEmbed import TimeEmbed
@@ -387,7 +387,7 @@ class LangCommand(BaseCommand):
     def _record_signal(self, message, signal: str, detail: str = None):
         """암묵적 피드백 신호를 DB에 기록"""
         try:
-            from src.infrastructure.database.Session import get_db_session
+            from src.infrastructure.database.session import get_db_session
             from src.domain.models.LangFeedback import LangFeedback
 
             feedback = LangFeedback(
