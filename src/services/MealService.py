@@ -13,7 +13,7 @@ from src.config.settings.mealSettings import (
     NO_MEAL,
     MEAL_TIMES,
 )
-from src.infrastructure.database.Session import get_db_session
+from src.infrastructure.database.session import get_db_session
 from src.domain.models.Meal import Meal
 
 logger = logging.getLogger(__name__)
