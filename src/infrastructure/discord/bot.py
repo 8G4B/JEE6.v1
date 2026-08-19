@@ -20,6 +20,7 @@ from src.config.settings.Base import BaseConfig
 from src.services.MealService import MealService
 from src.interfaces.commands.school.GraduationCommand import GraduationCommand
 from src.interfaces.commands.school.PromotionCommand import PromotionCommand
+from src.interfaces.commands.school.HomeCommand import HomeCommand
 from src.interfaces.commands.MentionCommand import MentionCommand
 from src.interfaces.commands.music.SpotifyCommand import SpotifyCommand
 from src.interfaces.commands.lang.LangCommand import LangCommand
@@ -68,6 +69,7 @@ class Bot(commands.Bot):
         await self.add_cog(ReleaseCommand(self, self.container))
         await self.add_cog(GraduationCommand(self, self.container))
         await self.add_cog(PromotionCommand(self, self.container))
+        await self.add_cog(HomeCommand(self, self.container))
         await self.add_cog(MentionCommand(self, self.container))
         await self.add_cog(SpotifyCommand(self, self.container))
 
