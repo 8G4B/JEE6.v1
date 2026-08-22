@@ -12,6 +12,7 @@ from PIL import Image
 from src.interfaces.commands.Base import BaseCommand
 from src.utils.embeds.MealEmbed import MealEmbed
 from src.clients.ApiGatewayClient import ApiGatewayClient
+from src.clients.HttpClient import get_http_session
 
 logger = logging.getLogger(__name__)
 
@@ -88,7 +89,9 @@ class MealCommands(BaseCommand):
                 return
             if not data.get("menu"):
                 await ctx.reply(
-                    embed=MealEmbed.create_error_embed("급식 정보를 가져올 수 없습니다.")
+                    embed=MealEmbed.create_error_embed(
+                        "급식 정보를 가져올 수 없습니다."
+                    )
                 )
                 return
 
@@ -128,14 +131,14 @@ class MealCommands(BaseCommand):
         if cached is not None:
             return cached
 
-        async with aiohttp.ClientSession(
-            timeout=_IMG_TIMEOUT, headers=_IMG_HEADERS
-        ) as session:
-            async with session.get(image_url) as resp:
-                if resp.status != 200:
-                    logger.warning(f"급식 사진 다운로드 실패: HTTP {resp.status}")
-                    return None
-                raw = await resp.read()
+        session = await get_http_session()
+        async with session.get(
+            image_url, timeout=_IMG_TIMEOUT, headers=_IMG_HEADERS
+        ) as resp:
+            if resp.status != 200:
+                logger.warning(f"급식 사진 다운로드 실패: HTTP {resp.status}")
+                return None
+            raw = await resp.read()
 
         # PIL 디코딩/리사이즈는 블로킹이므로 executor에서 처리한다.
         jpeg = await asyncio.get_event_loop().run_in_executor(

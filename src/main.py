@@ -6,6 +6,7 @@ from src.config.settings.Base import BaseConfig
 from src.infrastructure.database.connection import init_db, test_connection
 from src.infrastructure.database.session import create_tables
 from src.infrastructure.metrics import start_metrics_server
+from src.clients.HttpClient import close_http_session
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
@@ -37,6 +38,8 @@ async def main():
     except Exception as e:
         logger.error(f"Error during startup: {e}", exc_info=True)
         raise
+    finally:
+        await close_http_session()
 
 
 if __name__ == "__main__":

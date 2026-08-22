@@ -1,6 +1,7 @@
 import logging
 import aiohttp
 from src.config.settings.Base import BaseConfig
+from src.clients.HttpClient import get_http_session
 
 logger = logging.getLogger(__name__)
 
@@ -12,9 +13,9 @@ class ApiGatewayClient:
 
     async def _get(self, path: str, params: dict = None) -> dict:
         url = f"{self.base_url}{path}"
-        async with aiohttp.ClientSession(timeout=self._timeout) as session:
-            async with session.get(url, params=params) as resp:
-                return await resp.json()
+        session = await get_http_session()
+        async with session.get(url, params=params, timeout=self._timeout) as resp:
+            return await resp.json()
 
     async def get_meal(
         self, meal_type: str = "auto", day: str = "today", date: str = None
