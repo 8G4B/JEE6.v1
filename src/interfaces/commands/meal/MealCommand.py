@@ -40,6 +40,7 @@ class MealCommands(BaseCommand):
         self._meal_cache: dict[tuple[str, str, Optional[str]], tuple[float, dict]] = {}
         self._meal_cache_lock = asyncio.Lock()
         self._refresh_task: Optional[asyncio.Task] = None
+        self._image_tasks: set[asyncio.Task] = set()
 
     async def cog_load(self) -> None:
         try:
@@ -53,9 +54,11 @@ class MealCommands(BaseCommand):
         )
 
     async def cog_unload(self) -> None:
-        if self._refresh_task:
-            self._refresh_task.cancel()
-            await asyncio.gather(self._refresh_task, return_exceptions=True)
+        tasks = [task for task in [self._refresh_task, *self._image_tasks] if task]
+        for task in tasks:
+            task.cancel()
+        if tasks:
+            await asyncio.gather(*tasks, return_exceptions=True)
 
     async def _refresh_meal(
         self,
@@ -93,6 +96,14 @@ class MealCommands(BaseCommand):
                 raise
             except Exception:
                 logger.warning("기본 급식 응답 캐시 갱신 실패", exc_info=True)
+
+    def _attach_meal_image_in_background(self, msg, embed, data: dict) -> None:
+        task = asyncio.create_task(
+            self._attach_meal_image(msg, embed, data),
+            name="attach-meal-image",
+        )
+        self._image_tasks.add(task)
+        task.add_done_callback(self._image_tasks.discard)
 
     def _parse_date_option(self, options: str) -> Optional[str]:
         """명령 옵션에서 날짜를 뽑아 YYYYMMDD로 반환. 날짜 미지정이면 None, 잘못되면 ValueError."""
@@ -160,7 +171,7 @@ class MealCommands(BaseCommand):
             )
             # 급식을 먼저 보여주고, 사진은 기다리지 않는다.
             msg = await ctx.reply(embed=embed)
-            await self._attach_meal_image(msg, embed, data)
+            self._attach_meal_image_in_background(msg, embed, data)
         except Exception as e:
             logger.error(e)
             await ctx.send(embed=MealEmbed.create_error_embed(e))
@@ -201,9 +212,7 @@ class MealCommands(BaseCommand):
             raw = await resp.read()
 
         # PIL 디코딩/리사이즈는 블로킹이므로 executor에서 처리한다.
-        jpeg = await asyncio.get_event_loop().run_in_executor(
-            None, self._resize_to_jpeg, raw
-        )
+        jpeg = await asyncio.to_thread(self._resize_to_jpeg, raw)
         if jpeg:
             if len(_IMG_CACHE) >= _IMG_CACHE_MAX:
                 _IMG_CACHE.pop(next(iter(_IMG_CACHE)))
