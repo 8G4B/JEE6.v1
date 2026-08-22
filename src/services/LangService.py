@@ -1,3 +1,4 @@
+import asyncio
 import json
 import logging
 import re
@@ -114,13 +115,17 @@ SYSTEM_PROMPT = f"""너는 디스코드 봇 JEE6이야.
 
 class LangService:
     def __init__(self):
-        self.llm = ChatOpenAI(
-            model=BaseConfig.VLLM_MODEL,
-            api_key="not-needed",
-            base_url=BaseConfig.VLLM_BASE_URL,
-            temperature=0,
-            max_tokens=512,
-        )
+        common_llm_options = {
+            "model": BaseConfig.VLLM_MODEL,
+            "api_key": "not-needed",
+            "base_url": BaseConfig.VLLM_BASE_URL,
+            "temperature": 0,
+            "timeout": 30,
+            "max_retries": 1,
+        }
+        self.router_llm = ChatOpenAI(**common_llm_options, max_tokens=64)
+        self.answer_llm = ChatOpenAI(**common_llm_options, max_tokens=512)
+        self._llm_semaphore = asyncio.Semaphore(8)
 
         self.api = ApiGatewayClient()
 
@@ -448,7 +453,8 @@ class LangService:
                 HumanMessage(content=user_message),
             ]
 
-            response = await self.llm.ainvoke(messages)
+            async with self._llm_semaphore:
+                response = await self.router_llm.ainvoke(messages)
             llm_raw = response.content
             parsed = self._parse_llm_response(llm_raw)
 
@@ -496,7 +502,8 @@ class LangService:
                 ),
                 HumanMessage(content=question),
             ]
-            response = await self.llm.ainvoke(messages)
+            async with self._llm_semaphore:
+                response = await self.answer_llm.ainvoke(messages)
             return response.content
         except Exception as e:
             logger.error(f"질문 처리 중 오류: {e}", exc_info=True)
