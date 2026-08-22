@@ -7,6 +7,9 @@ from datetime import datetime, timedelta
 from src.repositories.UserBalanceRepository import UserBalanceRepository
 from src.repositories.JackpotRepository import JackpotRepository
 from src.repositories.CooldownRepository import CooldownRepository
+from src.repositories.GamblingTransactionRepository import (
+    GamblingTransactionRepository,
+)
 from src.config.settings.gamblingSettings import (
     INCOME_TAX_BRACKETS,
     SECURITIES_TRANSACTION_TAX_BRACKETS,
@@ -49,6 +52,7 @@ class GamblingService:
             cls._instance.user_balance_repo = UserBalanceRepository()
             cls._instance.jackpot_repo = JackpotRepository()
             cls._instance.cooldown_repo = CooldownRepository()
+            cls._instance.transaction_repo = GamblingTransactionRepository()
         return cls._instance
 
     async def _get_lock(self, user_id: int) -> asyncio.Lock:
@@ -76,6 +80,22 @@ class GamblingService:
     async def subtract_balance(self, user_id: int, server_id: int, amount: int) -> int:
         return await self.user_balance_repo.subtract_user_balance(
             user_id, server_id, amount
+        )
+
+    async def transfer(
+        self,
+        sender_id: int,
+        recipient_id: int,
+        server_id: int,
+        amount: int,
+        tax: int,
+    ) -> int | None:
+        return await self.transaction_repo.transfer(
+            sender_id,
+            recipient_id,
+            server_id,
+            amount,
+            tax,
         )
 
     async def get_jackpot(self, server_id: int) -> int:

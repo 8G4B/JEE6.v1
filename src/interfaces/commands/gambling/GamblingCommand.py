@@ -255,33 +255,29 @@ class GamblingCommands(BaseCommand):
 
         sender_lock = await self.gambling_service._get_lock(sender_id)
         recipient_lock = await self.gambling_service._get_lock(recipient_id)
+        first_lock, second_lock = (
+            (sender_lock, recipient_lock)
+            if sender_id < recipient_id
+            else (recipient_lock, sender_lock)
+        )
 
-        async with sender_lock:
-            async with recipient_lock:
-                sender_balance = await self.gambling_service.get_balance(
-                    sender_id, server_id
+        async with first_lock:
+            async with second_lock:
+                tax = self.gambling_service.calculate_gift_tax(amount_value)
+                sender_balance = await self.gambling_service.transfer(
+                    sender_id,
+                    recipient_id,
+                    server_id,
+                    amount_value,
+                    tax,
                 )
 
-                if amount_value > sender_balance:
+                if sender_balance is None:
                     await ctx.reply(
                         embed=GamblingEmbed.create_error_embed("돈이 부족해...")
                     )
                     return
 
-                tax = self.gambling_service.calculate_gift_tax(amount_value)
-                amount_after_tax = amount_value - tax
-
-                await self.gambling_service.subtract_balance(
-                    sender_id, server_id, amount_value
-                )
-                await self.gambling_service.add_balance(
-                    recipient_id, server_id, amount_after_tax
-                )
-                await self.gambling_service.add_jackpot(server_id, tax)
-
-                sender_balance = await self.gambling_service.get_balance(
-                    sender_id, server_id
-                )
                 embed = GamblingEmbed.create_transfer_embed(
                     ctx.author.name, recipient.name, amount_value, tax, sender_balance
                 )
