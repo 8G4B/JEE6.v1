@@ -4,6 +4,7 @@ from typing import Optional
 from src.domain.models.cooldown import Cooldown
 from src.repositories.SQLAlchemyRawRepository import SQLAlchemyRawRepository
 from src.infrastructure.database.session import get_db_session
+from src.infrastructure.database.async_utils import offload_db
 
 logger = logging.getLogger(__name__)
 
@@ -12,7 +13,8 @@ class CooldownRepository(SQLAlchemyRawRepository):
     def __init__(self, model=Cooldown):
         super().__init__(model)
 
-    async def get_cooldown(self, user_id: int, action_type: str) -> Optional[datetime]:
+    @offload_db
+    def get_cooldown(self, user_id: int, action_type: str) -> Optional[datetime]:
         try:
             with get_db_session() as session:
                 cooldown = (
@@ -29,7 +31,8 @@ class CooldownRepository(SQLAlchemyRawRepository):
             logger.error(e)
             return None
 
-    async def set_cooldown(self, user_id: int, action_type: str) -> None:
+    @offload_db
+    def set_cooldown(self, user_id: int, action_type: str) -> None:
         try:
             with get_db_session() as session:
                 cooldown = (
@@ -52,7 +55,8 @@ class CooldownRepository(SQLAlchemyRawRepository):
         except Exception as e:
             logger.error(e)
 
-    async def delete_cooldown(self, user_id: int, action_type: str) -> None:
+    @offload_db
+    def delete_cooldown(self, user_id: int, action_type: str) -> None:
         try:
             with get_db_session() as session:
                 cooldown = (
@@ -67,7 +71,8 @@ class CooldownRepository(SQLAlchemyRawRepository):
         except Exception as e:
             logger.error(e)
 
-    async def delete_all_cooldowns(self, user_id: int) -> None:
+    @offload_db
+    def delete_all_cooldowns(self, user_id: int) -> None:
         try:
             with get_db_session() as session:
                 cooldowns = session.query(self.model).filter_by(user_id=user_id).all()

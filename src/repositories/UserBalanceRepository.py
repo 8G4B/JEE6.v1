@@ -3,6 +3,7 @@ from typing import List, Tuple
 from src.domain.models.UserBalance import UserBalance
 from src.repositories.SQLAlchemyRawRepository import SQLAlchemyRawRepository
 from src.infrastructure.database.session import get_db_session
+from src.infrastructure.database.async_utils import offload_db
 
 logger = logging.getLogger(__name__)
 
@@ -11,7 +12,8 @@ class UserBalanceRepository(SQLAlchemyRawRepository):
     def __init__(self, model=UserBalance):
         super().__init__(model)
 
-    async def get_user_balance(self, user_id: int, server_id: int) -> int:
+    @offload_db
+    def get_user_balance(self, user_id: int, server_id: int) -> int:
         try:
             with get_db_session() as session:
                 user_balance = (
@@ -33,9 +35,8 @@ class UserBalanceRepository(SQLAlchemyRawRepository):
             logger.error(e)
             return 0
 
-    async def set_user_balance(
-        self, user_id: int, server_id: int, balance: int
-    ) -> None:
+    @offload_db
+    def set_user_balance(self, user_id: int, server_id: int, balance: int) -> None:
         try:
             with get_db_session() as session:
                 user_balance = (
@@ -56,7 +57,8 @@ class UserBalanceRepository(SQLAlchemyRawRepository):
         except Exception as e:
             logger.error(e)
 
-    async def add_user_balance(self, user_id: int, server_id: int, amount: int) -> None:
+    @offload_db
+    def add_user_balance(self, user_id: int, server_id: int, amount: int) -> None:
         try:
             with get_db_session() as session:
                 user_balance = (
@@ -77,9 +79,8 @@ class UserBalanceRepository(SQLAlchemyRawRepository):
         except Exception as e:
             logger.error(e)
 
-    async def subtract_user_balance(
-        self, user_id: int, server_id: int, amount: int
-    ) -> None:
+    @offload_db
+    def subtract_user_balance(self, user_id: int, server_id: int, amount: int) -> None:
         try:
             with get_db_session() as session:
                 user_balance = (
@@ -100,9 +101,8 @@ class UserBalanceRepository(SQLAlchemyRawRepository):
         except Exception as e:
             logger.error(e)
 
-    async def get_rankings(
-        self, server_id: int, limit: int = 10
-    ) -> List[Tuple[int, int]]:
+    @offload_db
+    def get_rankings(self, server_id: int, limit: int = 10) -> List[Tuple[int, int]]:
         try:
             with get_db_session() as session:
                 result = (
@@ -117,7 +117,8 @@ class UserBalanceRepository(SQLAlchemyRawRepository):
             logger.error(e)
             return []
 
-    async def get_sorted_balances(
+    @offload_db
+    def get_sorted_balances(
         self, server_id: int, limit: int = 100
     ) -> List[Tuple[int, int]]:
         try:
