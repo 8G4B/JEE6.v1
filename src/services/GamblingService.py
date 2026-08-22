@@ -176,16 +176,17 @@ class GamblingService:
             return self._rankings_cache[server_id][:limit]
 
         rankings = await self.get_rankings(server_id, limit)
-        result = []
 
-        for user_id, balance in rankings:
+        async def resolve_user(entry: Tuple[int, int]) -> Tuple[int, str, int]:
+            user_id, balance = entry
             try:
-                user = await bot.fetch_user(user_id)
+                user = bot.get_user(user_id) or await bot.fetch_user(user_id)
                 username = user.name
             except Exception:
                 username = f"누구세요({user_id})"
+            return user_id, username, balance
 
-            result.append((user_id, username, balance))
+        result = await asyncio.gather(*[resolve_user(entry) for entry in rankings])
 
         self._rankings_cache[server_id] = result
         self._rankings_cache_time[server_id] = current_time
