@@ -18,3 +18,4 @@ flake8
 black
 spotipy
 Pillow>=10.0.0
+prometheus-client==0.21.0

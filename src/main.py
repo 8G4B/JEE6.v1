@@ -5,6 +5,7 @@ from src.infrastructure.discord.bot import Bot
 from src.config.settings.Base import BaseConfig
 from src.infrastructure.database.connection import init_db, test_connection
 from src.infrastructure.database.session import create_tables
+from src.infrastructure.metrics import start_metrics_server
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
@@ -27,6 +28,7 @@ async def main():
         container = Container()
 
         logger.info("봇 인스턴스 생성 중...")
+        start_metrics_server(BaseConfig.METRICS_HOST, BaseConfig.METRICS_PORT)
         bot = Bot(container)
 
         logger.info("봇 시작...")
