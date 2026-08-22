@@ -23,7 +23,6 @@ logger = logging.getLogger(__name__)
 
 
 class GamblingCommands(BaseCommand):
-
     def __init__(self, bot, container):
         super().__init__(bot, container)
         self.gambling_service = GamblingService()
@@ -98,9 +97,9 @@ class GamblingCommands(BaseCommand):
             lock = await self.gambling_service._get_lock(user_id)
             async with lock:
                 amount = random.randint(*WORK_REWARD_RANGE)
-                await self.gambling_service.add_balance(user_id, server_id, amount)
-
-                balance = await self.gambling_service.get_balance(user_id, server_id)
+                balance = await self.gambling_service.add_balance(
+                    user_id, server_id, amount
+                )
                 embed = GamblingEmbed.create_work_embed(
                     ctx.author.name, amount, balance
                 )
@@ -123,7 +122,7 @@ class GamblingCommands(BaseCommand):
 
             description_lines = []
             for i, (_, username, balance) in enumerate(top_3):
-                description_lines.append(f"{i+1}. {username}: {balance:,}원")
+                description_lines.append(f"{i + 1}. {username}: {balance:,}원")
 
             embed = GamblingEmbed.create_ranking_embed(
                 "🏅 상위 3명 랭킹",
@@ -427,7 +426,6 @@ class GamblingCommands(BaseCommand):
             or user_id in self.coin_players
             or user_id in self.dice_players
         ):
-
             current_game = None
             if user_id in self.blackjack_players:
                 current_game = "블랙잭"

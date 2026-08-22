@@ -58,48 +58,38 @@ class UserBalanceRepository(SQLAlchemyRawRepository):
             logger.error(e)
 
     @offload_db
-    def add_user_balance(self, user_id: int, server_id: int, amount: int) -> None:
-        try:
-            with get_db_session() as session:
-                user_balance = (
-                    session.query(self.model)
-                    .filter_by(user_id=user_id, server_id=server_id)
-                    .first()
-                )
-
-                if not user_balance:
-                    user_balance = UserBalance(
-                        user_id=user_id, server_id=server_id, balance=amount
-                    )
-                    session.add(user_balance)
-                else:
-                    user_balance.balance += amount
-
-                session.commit()
-        except Exception as e:
-            logger.error(e)
+    def add_user_balance(self, user_id: int, server_id: int, amount: int) -> int:
+        return self._change_user_balance(user_id, server_id, amount)
 
     @offload_db
-    def subtract_user_balance(self, user_id: int, server_id: int, amount: int) -> None:
+    def subtract_user_balance(self, user_id: int, server_id: int, amount: int) -> int:
+        return self._change_user_balance(user_id, server_id, -amount)
+
+    def _change_user_balance(self, user_id: int, server_id: int, delta: int) -> int:
         try:
             with get_db_session() as session:
                 user_balance = (
                     session.query(self.model)
                     .filter_by(user_id=user_id, server_id=server_id)
+                    .with_for_update()
                     .first()
                 )
 
                 if not user_balance:
                     user_balance = UserBalance(
-                        user_id=user_id, server_id=server_id, balance=0
+                        user_id=user_id,
+                        server_id=server_id,
+                        balance=max(0, delta),
                     )
                     session.add(user_balance)
                 else:
-                    user_balance.balance = max(0, user_balance.balance - amount)
+                    user_balance.balance = max(0, user_balance.balance + delta)
 
-                session.commit()
+                session.flush()
+                return user_balance.balance
         except Exception as e:
             logger.error(e)
+            return 0
 
     @offload_db
     def get_rankings(self, server_id: int, limit: int = 10) -> List[Tuple[int, int]]:

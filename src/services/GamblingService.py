@@ -37,7 +37,6 @@ class GamblingManager:
 
 
 class GamblingService:
-
     _instance = None
     _locks: Dict[int, asyncio.Lock] = {}
     _rankings_cache: Dict[int, List[Tuple[int, str, int]]] = {}
@@ -71,11 +70,13 @@ class GamblingService:
     async def get_balance(self, user_id: int, server_id: int) -> int:
         return await self.user_balance_repo.get_user_balance(user_id, server_id)
 
-    async def add_balance(self, user_id: int, server_id: int, amount: int) -> None:
-        await self.user_balance_repo.add_user_balance(user_id, server_id, amount)
+    async def add_balance(self, user_id: int, server_id: int, amount: int) -> int:
+        return await self.user_balance_repo.add_user_balance(user_id, server_id, amount)
 
-    async def subtract_balance(self, user_id: int, server_id: int, amount: int) -> None:
-        await self.user_balance_repo.subtract_user_balance(user_id, server_id, amount)
+    async def subtract_balance(self, user_id: int, server_id: int, amount: int) -> int:
+        return await self.user_balance_repo.subtract_user_balance(
+            user_id, server_id, amount
+        )
 
     async def get_jackpot(self, server_id: int) -> int:
         return await self.jackpot_repo.get_jackpot(server_id)
