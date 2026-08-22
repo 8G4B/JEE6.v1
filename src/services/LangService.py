@@ -126,6 +126,7 @@ class LangService:
         self.router_llm = ChatOpenAI(**common_llm_options, max_tokens=64)
         self.answer_llm = ChatOpenAI(**common_llm_options, max_tokens=512)
         self._llm_semaphore = asyncio.Semaphore(8)
+        self._feedback_tasks: set[asyncio.Task] = set()
 
         self.api = ApiGatewayClient()
 
@@ -433,6 +434,14 @@ class LangService:
         except Exception as e:
             logger.warning(f"피드백 저장 실패: {e}")
 
+    def _queue_feedback(self, *args, **kwargs) -> None:
+        task = asyncio.create_task(
+            asyncio.to_thread(self._save_feedback, *args, **kwargs),
+            name="lang-feedback",
+        )
+        self._feedback_tasks.add(task)
+        task.add_done_callback(self._feedback_tasks.discard)
+
     async def process_message(self, user_message: str, context: dict = None) -> dict:
         llm_raw = None
         parsed = {}
@@ -443,7 +452,7 @@ class LangService:
                 result = await self._execute_tool(
                     parsed["tool"], parsed.get("args", {}), context
                 )
-                self._save_feedback(
+                self._queue_feedback(
                     context or {}, user_message, "[fast-route]", parsed, result
                 )
                 return result
@@ -459,12 +468,12 @@ class LangService:
             parsed = self._parse_llm_response(llm_raw)
 
             if parsed.get("ignore"):
-                self._save_feedback(context or {}, user_message, llm_raw, parsed)
+                self._queue_feedback(context or {}, user_message, llm_raw, parsed)
                 return None
 
             if "reply" in parsed:
                 result = {"type": "text", "content": parsed["reply"]}
-                self._save_feedback(
+                self._queue_feedback(
                     context or {}, user_message, llm_raw, parsed, result
                 )
                 return result
@@ -474,22 +483,22 @@ class LangService:
                 tool_args = parsed.get("args", {})
                 try:
                     result = await self._execute_tool(tool_name, tool_args, context)
-                    self._save_feedback(
+                    self._queue_feedback(
                         context or {}, user_message, llm_raw, parsed, result
                     )
                     return result
                 except Exception as e:
-                    self._save_feedback(
+                    self._queue_feedback(
                         context or {}, user_message, llm_raw, parsed, tool_error=str(e)
                     )
                     raise
 
-            self._save_feedback(context or {}, user_message, llm_raw, parsed)
+            self._queue_feedback(context or {}, user_message, llm_raw, parsed)
             return None
 
         except Exception as e:
             logger.error(f"LangService 처리 중 오류: {e}", exc_info=True)
-            self._save_feedback(
+            self._queue_feedback(
                 context or {}, user_message, llm_raw, parsed, tool_error=str(e)
             )
             return {"type": "error", "message": f"처리 중 오류가 발생했습니다: {e}"}
