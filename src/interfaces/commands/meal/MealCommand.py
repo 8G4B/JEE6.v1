@@ -3,6 +3,7 @@ import logging
 import re
 import io
 import asyncio
+import time
 import aiohttp
 import discord
 from datetime import datetime
@@ -12,6 +13,7 @@ from PIL import Image
 from src.interfaces.commands.Base import BaseCommand
 from src.utils.embeds.MealEmbed import MealEmbed
 from src.clients.ApiGatewayClient import ApiGatewayClient
+from src.clients.HttpClient import get_http_session
 
 logger = logging.getLogger(__name__)
 
@@ -26,12 +28,82 @@ _IMG_CACHE_MAX = 64
 _IMG_TIMEOUT = aiohttp.ClientTimeout(total=15)
 # 급식 사진 서버는 비브라우저 User-Agent(aiohttp 기본값 등)를 400으로 차단한다.
 _IMG_HEADERS = {"User-Agent": "Mozilla/5.0"}
+_PRIMARY_MEAL_KEY = ("auto", "today", None)
+_MEAL_CACHE_TTL = 30
+_MEAL_REFRESH_INTERVAL = 15
 
 
 class MealCommands(BaseCommand):
     def __init__(self, bot, container):
         super().__init__(bot, container)
         self.api = ApiGatewayClient()
+        self._meal_cache: dict[tuple[str, str, Optional[str]], tuple[float, dict]] = {}
+        self._meal_cache_lock = asyncio.Lock()
+        self._refresh_task: Optional[asyncio.Task] = None
+        self._image_tasks: set[asyncio.Task] = set()
+
+    async def cog_load(self) -> None:
+        try:
+            await self._refresh_meal(*_PRIMARY_MEAL_KEY)
+            logger.info("기본 급식 응답 캐시 사전 로딩 완료")
+        except Exception:
+            logger.warning("기본 급식 응답 캐시 사전 로딩 실패", exc_info=True)
+        self._refresh_task = asyncio.create_task(
+            self._maintain_primary_meal(),
+            name="bot-meal-cache-refresh",
+        )
+
+    async def cog_unload(self) -> None:
+        tasks = [task for task in [self._refresh_task, *self._image_tasks] if task]
+        for task in tasks:
+            task.cancel()
+        if tasks:
+            await asyncio.gather(*tasks, return_exceptions=True)
+
+    async def _refresh_meal(
+        self,
+        meal_type: str,
+        day: str,
+        date: Optional[str],
+    ) -> dict:
+        async with self._meal_cache_lock:
+            data = await self.api.get_meal(meal_type=meal_type, day=day, date=date)
+            if not data.get("error") and data.get("menu"):
+                key = (meal_type, day, date)
+                self._meal_cache[key] = (time.monotonic() + _MEAL_CACHE_TTL, data)
+            return data
+
+    async def _get_meal(
+        self,
+        meal_type: str,
+        day: str,
+        date: Optional[str],
+    ) -> dict:
+        key = (meal_type, day, date)
+        cached = self._meal_cache.get(key)
+        if cached is not None:
+            expires_at, data = cached
+            if time.monotonic() < expires_at or key == _PRIMARY_MEAL_KEY:
+                return data
+        return await self._refresh_meal(meal_type, day, date)
+
+    async def _maintain_primary_meal(self) -> None:
+        while True:
+            await asyncio.sleep(_MEAL_REFRESH_INTERVAL)
+            try:
+                await self._refresh_meal(*_PRIMARY_MEAL_KEY)
+            except asyncio.CancelledError:
+                raise
+            except Exception:
+                logger.warning("기본 급식 응답 캐시 갱신 실패", exc_info=True)
+
+    def _attach_meal_image_in_background(self, msg, embed, data: dict) -> None:
+        task = asyncio.create_task(
+            self._attach_meal_image(msg, embed, data),
+            name="attach-meal-image",
+        )
+        self._image_tasks.add(task)
+        task.add_done_callback(self._image_tasks.discard)
 
     def _parse_date_option(self, options: str) -> Optional[str]:
         """명령 옵션에서 날짜를 뽑아 YYYYMMDD로 반환. 날짜 미지정이면 None, 잘못되면 ValueError."""
@@ -81,14 +153,16 @@ class MealCommands(BaseCommand):
             return
 
         try:
-            data = await self.api.get_meal(meal_type=meal_type, day=day, date=date)
+            data = await self._get_meal(meal_type, day, date)
 
             if data.get("error"):
                 await ctx.reply(embed=MealEmbed.create_error_embed(data["error"]))
                 return
             if not data.get("menu"):
                 await ctx.reply(
-                    embed=MealEmbed.create_error_embed("급식 정보를 가져올 수 없습니다.")
+                    embed=MealEmbed.create_error_embed(
+                        "급식 정보를 가져올 수 없습니다."
+                    )
                 )
                 return
 
@@ -97,7 +171,7 @@ class MealCommands(BaseCommand):
             )
             # 급식을 먼저 보여주고, 사진은 기다리지 않는다.
             msg = await ctx.reply(embed=embed)
-            await self._attach_meal_image(msg, embed, data)
+            self._attach_meal_image_in_background(msg, embed, data)
         except Exception as e:
             logger.error(e)
             await ctx.send(embed=MealEmbed.create_error_embed(e))
@@ -128,19 +202,17 @@ class MealCommands(BaseCommand):
         if cached is not None:
             return cached
 
-        async with aiohttp.ClientSession(
-            timeout=_IMG_TIMEOUT, headers=_IMG_HEADERS
-        ) as session:
-            async with session.get(image_url) as resp:
-                if resp.status != 200:
-                    logger.warning(f"급식 사진 다운로드 실패: HTTP {resp.status}")
-                    return None
-                raw = await resp.read()
+        session = await get_http_session()
+        async with session.get(
+            image_url, timeout=_IMG_TIMEOUT, headers=_IMG_HEADERS
+        ) as resp:
+            if resp.status != 200:
+                logger.warning(f"급식 사진 다운로드 실패: HTTP {resp.status}")
+                return None
+            raw = await resp.read()
 
         # PIL 디코딩/리사이즈는 블로킹이므로 executor에서 처리한다.
-        jpeg = await asyncio.get_event_loop().run_in_executor(
-            None, self._resize_to_jpeg, raw
-        )
+        jpeg = await asyncio.to_thread(self._resize_to_jpeg, raw)
         if jpeg:
             if len(_IMG_CACHE) >= _IMG_CACHE_MAX:
                 _IMG_CACHE.pop(next(iter(_IMG_CACHE)))

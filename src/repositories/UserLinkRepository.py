@@ -6,6 +6,7 @@ from typing import Optional
 
 from src.domain.models.UserLink import UserLink
 from src.infrastructure.database.session import get_db_session
+from src.infrastructure.database.async_utils import offload_db
 from src.repositories.SQLAlchemyRawRepository import SQLAlchemyRawRepository
 
 logger = logging.getLogger(__name__)
@@ -15,7 +16,8 @@ class UserLinkRepository(SQLAlchemyRawRepository):
     def __init__(self, model=UserLink):
         super().__init__(model)
 
-    async def get_by_discord_id(self, discord_user_id: str) -> Optional[UserLink]:
+    @offload_db
+    def get_by_discord_id(self, discord_user_id: str) -> Optional[UserLink]:
         try:
             with get_db_session() as session:
                 link = (
@@ -30,7 +32,8 @@ class UserLinkRepository(SQLAlchemyRawRepository):
             logger.error("get_by_discord_id error: %s", e)
             return None
 
-    async def upsert(
+    @offload_db
+    def upsert(
         self,
         discord_user_id: str,
         external_user_id: str,
@@ -62,7 +65,8 @@ class UserLinkRepository(SQLAlchemyRawRepository):
             logger.error("upsert error: %s", e)
             return None
 
-    async def update_tokens(
+    @offload_db
+    def update_tokens(
         self,
         discord_user_id: str,
         access_token: str,
@@ -89,7 +93,8 @@ class UserLinkRepository(SQLAlchemyRawRepository):
             logger.error("update_tokens error: %s", e)
             return False
 
-    async def deactivate(self, discord_user_id: str) -> bool:
+    @offload_db
+    def deactivate(self, discord_user_id: str) -> bool:
         try:
             with get_db_session() as session:
                 link = (

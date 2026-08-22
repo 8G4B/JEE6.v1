@@ -24,6 +24,7 @@ from src.interfaces.commands.MentionCommand import MentionCommand
 from src.interfaces.commands.music.SpotifyCommand import SpotifyCommand
 from src.interfaces.commands.lang.LangCommand import LangCommand
 from src.interfaces.commands.filter.ProfanityListener import ProfanityListener
+from src.infrastructure.metrics import observe_command, start_command_timer
 
 logger = logging.getLogger(__name__)
 
@@ -43,6 +44,9 @@ class Bot(commands.Bot):
         self.remove_command("help")
 
     async def setup_hook(self) -> None:
+        self.before_invoke(self._before_command)
+        self.after_invoke(self._after_command)
+
         if BaseConfig.ENABLE_MANAGEMENT_COMMANDS:
             await self.add_cog(ChannelCommands(self, self.container))
             await self.add_cog(CleanCommand(self, self.container))
@@ -76,6 +80,12 @@ class Bot(commands.Bot):
         if BaseConfig.EXTERNAL_API_BASE_URL:
             await self.add_cog(self.container.flooding_auth_command())
             await self.add_cog(self.container.flooding_command())
+
+    async def _before_command(self, ctx):
+        start_command_timer(ctx)
+
+    async def _after_command(self, ctx):
+        observe_command(ctx)
 
     async def on_ready(self):
         print(f"Logged in as {self.user.name} (ID: {self.user.id})")

@@ -2,6 +2,7 @@ import logging
 from mysql.connector import MySQLConnection
 from src.domain.models.TimeoutHistory import TimeoutHistory
 from src.repositories.MySQLRawRepository import MySQLRawRepository
+from src.infrastructure.database.async_utils import offload_db
 
 logger = logging.getLogger(__name__)
 
@@ -10,7 +11,8 @@ class JusticeRepository(MySQLRawRepository):
     def __init__(self):
         super().__init__()
 
-    async def get_user_count(self, user_id: int, server_id: int) -> int:
+    @offload_db
+    def get_user_count(self, user_id: int, server_id: int) -> int:
         def _get_count(connection: MySQLConnection) -> int:
             with connection.cursor(dictionary=True) as cursor:
                 sql = "SELECT count FROM justice_records WHERE user_id = %s AND server_id = %s"
@@ -30,7 +32,8 @@ class JusticeRepository(MySQLRawRepository):
             logger.exception("Detailed error:")
             return 0
 
-    async def set_user_count(self, user_id: int, server_id: int, count: int) -> bool:
+    @offload_db
+    def set_user_count(self, user_id: int, server_id: int, count: int) -> bool:
         def _set_count(connection: MySQLConnection) -> bool:
             with connection.cursor() as cursor:
                 sql = """
@@ -54,7 +57,8 @@ class JusticeRepository(MySQLRawRepository):
             logger.exception("Detailed error:")
             return False
 
-    async def add_timeout_history(self, history: TimeoutHistory) -> bool:
+    @offload_db
+    def add_timeout_history(self, history: TimeoutHistory) -> bool:
         def _add_history(connection: MySQLConnection) -> bool:
             with connection.cursor() as cursor:
                 duration_seconds = int(history.duration.total_seconds())

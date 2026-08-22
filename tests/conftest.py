@@ -12,10 +12,10 @@ def mock_db_session():
     return session
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture
 def patch_session_local(mock_db_session):
     with patch(
-        "src.infrastructure.database.Session.SessionLocal",
+        "src.infrastructure.database.session.SessionLocal",
         return_value=mock_db_session,
     ):
         yield mock_db_session

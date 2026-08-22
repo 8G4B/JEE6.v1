@@ -41,6 +41,8 @@ class BaseConfig:
     FILTER_API_URL = os.getenv("FILTER_API_URL", "http://127.0.0.1:6975")
 
     LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
+    METRICS_HOST = os.getenv("METRICS_HOST", "127.0.0.1")
+    METRICS_PORT = int(os.getenv("METRICS_PORT", "6976"))
 
     ENABLE_MANAGEMENT_COMMANDS = os.getenv("M", "True").lower() in ("true", "1", "yes")
     ENABLE_GAMBLING_COMMANDS = os.getenv("G", "True").lower() in ("true", "1", "yes")

@@ -6,11 +6,12 @@ from src.config.settings.Base import BaseConfig
 from src.infrastructure.database.session import get_db_session
 from src.repositories.ChannelFilterRepository import ChannelFilterRepository
 from src.domain.models.ChannelFilter import ChannelFilter
+from src.clients.HttpClient import get_http_session
 
 logger = logging.getLogger(__name__)
 
-PROFANITY_EMOJI = "\U0001F92C"  # 🤬
-FALSE_POSITIVE_EMOJI = "\u274C"  # ❌
+PROFANITY_EMOJI = "\U0001f92c"  # 🤬
+FALSE_POSITIVE_EMOJI = "\u274c"  # ❌
 ADMIN_NAME = "nwoxsterziah"
 
 
@@ -52,9 +53,11 @@ class ProfanityListener(BaseCommand):
 
             if now_enabled:
                 self._enabled_channels.add(ctx.channel.id)
-                await ctx.reply("욕설 필터가 **활성화**되었습니다.\n"
-                                f"오탐: 봇의 {PROFANITY_EMOJI}에 {FALSE_POSITIVE_EMOJI} 리액션\n"
-                                f"미탐: 메시지에 {PROFANITY_EMOJI} 리액션")
+                await ctx.reply(
+                    "욕설 필터가 **활성화**되었습니다.\n"
+                    f"오탐: 봇의 {PROFANITY_EMOJI}에 {FALSE_POSITIVE_EMOJI} 리액션\n"
+                    f"미탐: 메시지에 {PROFANITY_EMOJI} 리액션"
+                )
             else:
                 self._enabled_channels.discard(ctx.channel.id)
                 await ctx.reply("욕설 필터가 **비활성화**되었습니다.")
@@ -71,24 +74,30 @@ class ProfanityListener(BaseCommand):
         if ctx.author.name != ADMIN_NAME:
             return
         try:
-            async with aiohttp.ClientSession(timeout=self._timeout) as session:
-                async with session.get(f"{self.filter_url}/status") as resp:
-                    status = await resp.json()
+            session = await get_http_session()
+            async with session.get(
+                f"{self.filter_url}/status", timeout=self._timeout
+            ) as resp:
+                status = await resp.json()
 
-                count = status.get("feedback_count", 0)
-                if count < 5:
-                    await ctx.reply(f"피드백 {count}개 — 최소 5개 필요합니다.")
-                    return
+            count = status.get("feedback_count", 0)
+            if count < 5:
+                await ctx.reply(f"피드백 {count}개 — 최소 5개 필요합니다.")
+                return
 
-                msg = await ctx.reply(f"학습 시작 (피드백 {count}개)...")
+            msg = await ctx.reply(f"학습 시작 (피드백 {count}개)...")
 
-                async with session.post(f"{self.filter_url}/train") as resp:
-                    result = await resp.json()
+            async with session.post(
+                f"{self.filter_url}/train", timeout=self._timeout
+            ) as resp:
+                result = await resp.json()
 
-                if result.get("status") == "training":
-                    await msg.edit(content=f"학습 중... (피드백 {count}개, 백그라운드 처리)")
-                else:
-                    await msg.edit(content=f"학습 결과: {result}")
+            if result.get("status") == "training":
+                await msg.edit(
+                    content=f"학습 중... (피드백 {count}개, 백그라운드 처리)"
+                )
+            else:
+                await msg.edit(content=f"학습 결과: {result}")
         except Exception as e:
             logger.error(f"Train error: {e}")
             await ctx.reply("학습 요청 중 오류가 발생했습니다.")
@@ -102,12 +111,16 @@ class ProfanityListener(BaseCommand):
         if ctx.author.name != ADMIN_NAME:
             return
         try:
-            async with aiohttp.ClientSession(timeout=self._timeout) as session:
-                async with session.get(f"{self.filter_url}/status") as resp:
-                    status = await resp.json()
+            session = await get_http_session()
+            async with session.get(
+                f"{self.filter_url}/status", timeout=self._timeout
+            ) as resp:
+                status = await resp.json()
             fine_tuned = "사용 중" if status.get("fine_tuned") else "미적용"
             count = status.get("feedback_count", 0)
-            await ctx.reply(f"Fine-tuned 모델: **{fine_tuned}**\n축적 피드백: **{count}개**")
+            await ctx.reply(
+                f"Fine-tuned 모델: **{fine_tuned}**\n축적 피드백: **{count}개**"
+            )
         except Exception as e:
             logger.error(f"Status error: {e}")
             await ctx.reply("상태 조회 중 오류가 발생했습니다.")
@@ -166,20 +179,23 @@ class ProfanityListener(BaseCommand):
             logger.info(f"피드백(미탐): {message.content[:30]}...")
 
     async def _check_profanity(self, text: str) -> bool:
-        async with aiohttp.ClientSession(timeout=self._timeout) as session:
-            async with session.post(
-                f"{self.filter_url}/predict",
-                json={"text": text},
-            ) as resp:
-                data = await resp.json()
-                return data.get("is_profanity", False)
+        session = await get_http_session()
+        async with session.post(
+            f"{self.filter_url}/predict",
+            json={"text": text},
+            timeout=self._timeout,
+        ) as resp:
+            data = await resp.json()
+            return data.get("is_profanity", False)
 
     async def _send_feedback(self, text: str, label: int):
         try:
-            async with aiohttp.ClientSession(timeout=self._timeout) as session:
-                await session.post(
-                    f"{self.filter_url}/feedback",
-                    json={"text": text, "label": label},
-                )
+            session = await get_http_session()
+            async with session.post(
+                f"{self.filter_url}/feedback",
+                json={"text": text, "label": label},
+                timeout=self._timeout,
+            ):
+                pass
         except Exception as e:
             logger.error(f"Feedback send error: {e}")

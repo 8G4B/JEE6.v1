@@ -39,8 +39,9 @@ class GamblingCardGames(BaseCommand):
     async def _handle_timeout(self, user_id, server_id, bet_amount, game_message):
         lock = await self.gambling_service._get_lock(user_id)
         async with lock:
-            await self.gambling_service.subtract_balance(user_id, server_id, bet_amount)
-            balance = await self.gambling_service.get_balance(user_id, server_id)
+            balance = await self.gambling_service.subtract_balance(
+                user_id, server_id, bet_amount
+            )
 
         embed = discord.Embed(
             title="⏳️ 시간 초과",
@@ -224,10 +225,9 @@ class GamblingCardGames(BaseCommand):
         if player_value > 21:
             lock = await self.gambling_service._get_lock(user_id)
             async with lock:
-                await self.gambling_service.subtract_balance(
+                balance = await self.gambling_service.subtract_balance(
                     user_id, server_id, bet_amount
                 )
-                balance = await self.gambling_service.get_balance(user_id, server_id)
 
             embed = discord.Embed(
                 title=f"🃏 {ctx.author.name} 버스트!",
@@ -282,10 +282,9 @@ class GamblingCardGames(BaseCommand):
                 tax = self.gambling_service.calculate_tax(winnings, "blackjack")
                 winnings_after_tax = winnings - tax
 
-                await self.gambling_service.add_balance(
+                balance = await self.gambling_service.add_balance(
                     user_id, server_id, winnings_after_tax
                 )
-                balance = await self.gambling_service.get_balance(user_id, server_id)
 
                 embed = discord.Embed(
                     title=f"🃏 {ctx.author.name} 승리",
@@ -298,10 +297,9 @@ class GamblingCardGames(BaseCommand):
                     color=discord.Color.green(),
                 )
             else:
-                await self.gambling_service.subtract_balance(
+                balance = await self.gambling_service.subtract_balance(
                     user_id, server_id, bet_amount
                 )
-                balance = await self.gambling_service.get_balance(user_id, server_id)
 
                 result = "패배" if player_value < dealer_value else "무승부"
                 embed = discord.Embed(
@@ -350,9 +348,14 @@ class GamblingCardGames(BaseCommand):
                     str(reaction.emoji)
                 ]
 
-                is_win, result, player_hand, banker_hand, player_value, banker_value = (
-                    await self._get_baccarat_result(guess)
-                )
+                (
+                    is_win,
+                    result,
+                    player_hand,
+                    banker_hand,
+                    player_value,
+                    banker_value,
+                ) = await self._get_baccarat_result(guess)
 
                 await self._handle_baccarat_result(
                     is_win,
@@ -447,10 +450,9 @@ class GamblingCardGames(BaseCommand):
                 tax = self.gambling_service.calculate_tax(winnings, "baccarat")
                 winnings_after_tax = winnings - tax
 
-                await self.gambling_service.add_balance(
+                balance = await self.gambling_service.add_balance(
                     user_id, server_id, winnings_after_tax
                 )
-                balance = await self.gambling_service.get_balance(user_id, server_id)
 
                 embed = discord.Embed(
                     title=f"🃏 {ctx.author.name} 맞음 ㄹㅈㄷ",
@@ -463,10 +465,9 @@ class GamblingCardGames(BaseCommand):
                     color=discord.Color.green(),
                 )
             else:
-                await self.gambling_service.subtract_balance(
+                balance = await self.gambling_service.subtract_balance(
                     user_id, server_id, bet_amount
                 )
-                balance = await self.gambling_service.get_balance(user_id, server_id)
 
                 embed = discord.Embed(
                     title=f"🃏 {ctx.author.name} 틀림ㅋ",
@@ -482,7 +483,9 @@ class GamblingCardGames(BaseCommand):
         await game_message.edit(embed=embed)
 
     @commands.command(
-        name="도박.인디언", aliases=["도박.인디언포커"], description="도박.인디언포커 [베팅금]"
+        name="도박.인디언",
+        aliases=["도박.인디언포커"],
+        description="도박.인디언포커 [베팅금]",
     )
     async def indian_poker(self, ctx, bet: str = None):
         user_id = ctx.author.id
@@ -575,8 +578,9 @@ class GamblingCardGames(BaseCommand):
         lock = await self.gambling_service._get_lock(user_id)
         async with lock:
             loss = bet_amount // 2
-            await self.gambling_service.subtract_balance(user_id, server_id, loss)
-            balance = await self.gambling_service.get_balance(user_id, server_id)
+            balance = await self.gambling_service.subtract_balance(
+                user_id, server_id, loss
+            )
 
             embed = discord.Embed(
                 title=f"🃏 {ctx.author.name} Die",
@@ -608,10 +612,9 @@ class GamblingCardGames(BaseCommand):
                 tax = self.gambling_service.calculate_tax(winnings, "indian_poker")
                 winnings_after_tax = winnings - tax
 
-                await self.gambling_service.add_balance(
+                balance = await self.gambling_service.add_balance(
                     user_id, server_id, winnings_after_tax
                 )
-                balance = await self.gambling_service.get_balance(user_id, server_id)
 
                 embed = discord.Embed(
                     title=f"🃏 {ctx.author.name} 승리",
@@ -624,10 +627,9 @@ class GamblingCardGames(BaseCommand):
                     color=discord.Color.green(),
                 )
             else:
-                await self.gambling_service.subtract_balance(
+                balance = await self.gambling_service.subtract_balance(
                     user_id, server_id, bet_amount
                 )
-                balance = await self.gambling_service.get_balance(user_id, server_id)
 
                 embed = discord.Embed(
                     title=f"🃏 {ctx.author.name} 패배",

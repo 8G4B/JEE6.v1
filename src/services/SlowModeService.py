@@ -55,6 +55,9 @@ class SlowModeService:
             elif delay > 21600:
                 delay = 21600
 
+            if channel.slowmode_delay == delay:
+                return True, f"슬로우 모드 유지 중 ({delay}초)"
+
             await channel.edit(slowmode_delay=delay)
             logger.info(f"슬로우 모드 적용: {channel.name} ({delay}초)")
             return True, f"슬로우 모드 적용됨 ({delay}초)"
@@ -67,6 +70,9 @@ class SlowModeService:
 
     async def remove_slow_mode(self, channel: discord.TextChannel) -> Tuple[bool, str]:
         try:
+            if channel.slowmode_delay == 0:
+                return True, "슬로우 모드가 이미 해제됨"
+
             await channel.edit(slowmode_delay=0)
             return True, "슬로우 모드 제거됨"
 

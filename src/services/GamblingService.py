@@ -7,6 +7,9 @@ from datetime import datetime, timedelta
 from src.repositories.UserBalanceRepository import UserBalanceRepository
 from src.repositories.JackpotRepository import JackpotRepository
 from src.repositories.CooldownRepository import CooldownRepository
+from src.repositories.GamblingTransactionRepository import (
+    GamblingTransactionRepository,
+)
 from src.config.settings.gamblingSettings import (
     INCOME_TAX_BRACKETS,
     SECURITIES_TRANSACTION_TAX_BRACKETS,
@@ -37,7 +40,6 @@ class GamblingManager:
 
 
 class GamblingService:
-
     _instance = None
     _locks: Dict[int, asyncio.Lock] = {}
     _rankings_cache: Dict[int, List[Tuple[int, str, int]]] = {}
@@ -50,6 +52,7 @@ class GamblingService:
             cls._instance.user_balance_repo = UserBalanceRepository()
             cls._instance.jackpot_repo = JackpotRepository()
             cls._instance.cooldown_repo = CooldownRepository()
+            cls._instance.transaction_repo = GamblingTransactionRepository()
         return cls._instance
 
     async def _get_lock(self, user_id: int) -> asyncio.Lock:
@@ -71,11 +74,29 @@ class GamblingService:
     async def get_balance(self, user_id: int, server_id: int) -> int:
         return await self.user_balance_repo.get_user_balance(user_id, server_id)
 
-    async def add_balance(self, user_id: int, server_id: int, amount: int) -> None:
-        await self.user_balance_repo.add_user_balance(user_id, server_id, amount)
+    async def add_balance(self, user_id: int, server_id: int, amount: int) -> int:
+        return await self.user_balance_repo.add_user_balance(user_id, server_id, amount)
 
-    async def subtract_balance(self, user_id: int, server_id: int, amount: int) -> None:
-        await self.user_balance_repo.subtract_user_balance(user_id, server_id, amount)
+    async def subtract_balance(self, user_id: int, server_id: int, amount: int) -> int:
+        return await self.user_balance_repo.subtract_user_balance(
+            user_id, server_id, amount
+        )
+
+    async def transfer(
+        self,
+        sender_id: int,
+        recipient_id: int,
+        server_id: int,
+        amount: int,
+        tax: int,
+    ) -> int | None:
+        return await self.transaction_repo.transfer(
+            sender_id,
+            recipient_id,
+            server_id,
+            amount,
+            tax,
+        )
 
     async def get_jackpot(self, server_id: int) -> int:
         return await self.jackpot_repo.get_jackpot(server_id)
@@ -155,16 +176,17 @@ class GamblingService:
             return self._rankings_cache[server_id][:limit]
 
         rankings = await self.get_rankings(server_id, limit)
-        result = []
 
-        for user_id, balance in rankings:
+        async def resolve_user(entry: Tuple[int, int]) -> Tuple[int, str, int]:
+            user_id, balance = entry
             try:
-                user = await bot.fetch_user(user_id)
+                user = bot.get_user(user_id) or await bot.fetch_user(user_id)
                 username = user.name
             except Exception:
                 username = f"누구세요({user_id})"
+            return user_id, username, balance
 
-            result.append((user_id, username, balance))
+        result = await asyncio.gather(*[resolve_user(entry) for entry in rankings])
 
         self._rankings_cache[server_id] = result
         self._rankings_cache_time[server_id] = current_time

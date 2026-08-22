@@ -3,6 +3,7 @@ from src.domain.models.jackpot import Jackpot
 from src.repositories.SQLAlchemyRawRepository import SQLAlchemyRawRepository
 from src.infrastructure.database.session import get_db_session
 from src.config.settings.gamblingSettings import INITIAL_JACKPOT
+from src.infrastructure.database.async_utils import offload_db
 
 logger = logging.getLogger(__name__)
 
@@ -11,7 +12,8 @@ class JackpotRepository(SQLAlchemyRawRepository):
     def __init__(self, model=Jackpot):
         super().__init__(model)
 
-    async def get_jackpot(self, server_id: int) -> int:
+    @offload_db
+    def get_jackpot(self, server_id: int) -> int:
         try:
             with get_db_session() as session:
                 jackpot = (
@@ -31,7 +33,8 @@ class JackpotRepository(SQLAlchemyRawRepository):
             logger.error(f"잭팟 조회 중 오류: {e}")
             return INITIAL_JACKPOT
 
-    async def set_jackpot(self, server_id: int, amount: int) -> None:
+    @offload_db
+    def set_jackpot(self, server_id: int, amount: int) -> None:
         try:
             with get_db_session() as session:
                 jackpot = (
@@ -48,7 +51,8 @@ class JackpotRepository(SQLAlchemyRawRepository):
         except Exception as e:
             logger.error(f"잭팟 설정 중 오류: {e}")
 
-    async def add_jackpot(self, server_id: int, amount: int) -> None:
+    @offload_db
+    def add_jackpot(self, server_id: int, amount: int) -> None:
         try:
             with get_db_session() as session:
                 jackpot = (
@@ -67,7 +71,8 @@ class JackpotRepository(SQLAlchemyRawRepository):
         except Exception as e:
             logger.error(f"잭팟 증가 중 오류: {e}")
 
-    async def subtract_jackpot(self, server_id: int, amount: int) -> None:
+    @offload_db
+    def subtract_jackpot(self, server_id: int, amount: int) -> None:
         try:
             with get_db_session() as session:
                 jackpot = (
@@ -84,7 +89,8 @@ class JackpotRepository(SQLAlchemyRawRepository):
         except Exception as e:
             logger.error(f"잭팟 감소 중 오류: {e}")
 
-    async def reset_jackpot(self, server_id: int) -> None:
+    @offload_db
+    def reset_jackpot(self, server_id: int) -> None:
         try:
             with get_db_session() as session:
                 jackpot = (

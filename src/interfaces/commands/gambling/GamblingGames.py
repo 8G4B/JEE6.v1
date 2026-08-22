@@ -58,11 +58,8 @@ class GamblingGames(BaseCommand):
                     winnings = int(bet * multiplier)
                     tax = self.gambling_service.calculate_tax(winnings, game_type)
                     winnings_after_tax = winnings - tax
-                    await self.gambling_service.add_balance(
+                    balance = await self.gambling_service.add_balance(
                         user_id, server_id, winnings_after_tax
-                    )
-                    balance = await self.gambling_service.get_balance(
-                        user_id, server_id
                     )
                     return GamblingEmbed.create_game_embed(
                         author_name=ctx.author.name,
@@ -76,11 +73,8 @@ class GamblingGames(BaseCommand):
                         tax=tax,
                     )
                 else:
-                    await self.gambling_service.subtract_balance(
+                    balance = await self.gambling_service.subtract_balance(
                         user_id, server_id, bet
-                    )
-                    balance = await self.gambling_service.get_balance(
-                        user_id, server_id
                     )
                     return GamblingEmbed.create_game_embed(
                         author_name=ctx.author.name,

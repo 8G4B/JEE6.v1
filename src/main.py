@@ -1,10 +1,13 @@
 import asyncio
 import logging
+from concurrent.futures import ThreadPoolExecutor
 from src.infrastructure.di.Container import Container
 from src.infrastructure.discord.bot import Bot
 from src.config.settings.Base import BaseConfig
 from src.infrastructure.database.connection import init_db, test_connection
 from src.infrastructure.database.session import create_tables
+from src.infrastructure.metrics import start_metrics_server
+from src.clients.HttpClient import close_http_session
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
@@ -14,6 +17,9 @@ logger = logging.getLogger(__name__)
 
 async def main():
     try:
+        asyncio.get_running_loop().set_default_executor(
+            ThreadPoolExecutor(max_workers=8, thread_name_prefix="jee6-worker")
+        )
         logger.info("데이터베이스 연결 테스트 중...")
         if not test_connection():
             logger.error("데이터베이스 연결 실패")
@@ -27,6 +33,7 @@ async def main():
         container = Container()
 
         logger.info("봇 인스턴스 생성 중...")
+        start_metrics_server(BaseConfig.METRICS_HOST, BaseConfig.METRICS_PORT)
         bot = Bot(container)
 
         logger.info("봇 시작...")
@@ -35,6 +42,8 @@ async def main():
     except Exception as e:
         logger.error(f"Error during startup: {e}", exc_info=True)
         raise
+    finally:
+        await close_http_session()
 
 
 if __name__ == "__main__":

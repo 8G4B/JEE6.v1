@@ -1,3 +1,4 @@
+import asyncio
 import json
 import logging
 import re
@@ -6,6 +7,7 @@ from langchain_openai import ChatOpenAI
 from langchain_core.messages import SystemMessage, HumanMessage
 from src.config.settings.Base import BaseConfig
 from src.clients.ApiGatewayClient import ApiGatewayClient
+from src.services.NaturalLanguageRouter import route_fast
 
 logger = logging.getLogger(__name__)
 
@@ -113,13 +115,18 @@ SYSTEM_PROMPT = f"""너는 디스코드 봇 JEE6이야.
 
 class LangService:
     def __init__(self):
-        self.llm = ChatOpenAI(
-            model=BaseConfig.VLLM_MODEL,
-            api_key="not-needed",
-            base_url=BaseConfig.VLLM_BASE_URL,
-            temperature=0,
-            max_tokens=512,
-        )
+        common_llm_options = {
+            "model": BaseConfig.VLLM_MODEL,
+            "api_key": "not-needed",
+            "base_url": BaseConfig.VLLM_BASE_URL,
+            "temperature": 0,
+            "timeout": 30,
+            "max_retries": 1,
+        }
+        self.router_llm = ChatOpenAI(**common_llm_options, max_tokens=64)
+        self.answer_llm = ChatOpenAI(**common_llm_options, max_tokens=512)
+        self._llm_semaphore = asyncio.Semaphore(8)
+        self._feedback_tasks: set[asyncio.Task] = set()
 
         self.api = ApiGatewayClient()
 
@@ -139,7 +146,7 @@ class LangService:
     def _parse_llm_response(self, text: str) -> dict:
         text = text.strip()
 
-        json_match = re.search(r'\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}', text)
+        json_match = re.search(r"\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}", text)
         if not json_match:
             logger.warning(f"JSON 파싱 실패, 원문: {text[:200]}")
             return {"ignore": True}
@@ -150,7 +157,9 @@ class LangService:
             logger.warning(f"JSON 디코딩 실패: {json_match.group()[:200]}")
             return {"ignore": True}
 
-    async def _execute_tool(self, tool_name: str, tool_args: dict, context: dict = None) -> dict:
+    async def _execute_tool(
+        self, tool_name: str, tool_args: dict, context: dict = None
+    ) -> dict:
         try:
             executors = {
                 "get_meal": lambda: self._exec_meal(tool_args),
@@ -183,18 +192,33 @@ class LangService:
         if data.get("error"):
             return {"type": "error", "message": data["error"]}
         if data.get("menu"):
-            return {"type": "meal", "title": data["title"], "menu": data["menu"], "cal_info": data.get("cal_info", "")}
+            return {
+                "type": "meal",
+                "title": data["title"],
+                "menu": data["menu"],
+                "cal_info": data.get("cal_info", ""),
+            }
         return {"type": "error", "message": "급식 정보를 가져올 수 없습니다."}
 
     async def _exec_water(self) -> dict:
         data = await self.api.get_water_temp()
         if data.get("error"):
             return {"type": "error", "message": data["error"]}
-        return {"type": "water", "hour": data["hour"], "minute": data["minute"], "temp": data["temp"]}
+        return {
+            "type": "water",
+            "hour": data["hour"],
+            "minute": data["minute"],
+            "temp": data["temp"],
+        }
 
     async def _exec_time(self) -> dict:
         data = await self.api.get_time()
-        return {"type": "time", "datetime": data.get("korean", datetime.now().strftime("%Y년 %m월 %d일 %H시 %M분 %S초"))}
+        return {
+            "type": "time",
+            "datetime": data.get(
+                "korean", datetime.now().strftime("%Y년 %m월 %d일 %H시 %M분 %S초")
+            ),
+        }
 
     def _exec_info(self, context: dict) -> dict:
         bot = context.get("bot") if context else None
@@ -223,7 +247,11 @@ class LangService:
         data = await self.api.get_lol_history(riot_id)
         if data.get("error"):
             return {"type": "error", "message": data["error"]}
-        return {"type": "lol_history", "riot_id": riot_id, "matches": data.get("matches", [])}
+        return {
+            "type": "lol_history",
+            "riot_id": riot_id,
+            "matches": data.get("matches", []),
+        }
 
     async def _exec_lol_rotation(self) -> dict:
         data = await self.api.get_lol_rotation()
@@ -236,14 +264,22 @@ class LangService:
         data = await self.api.get_valo_tier(riot_id)
         if data.get("error"):
             return {"type": "error", "message": data["error"]}
-        return {"type": "valo_tier", "riot_id": riot_id, "tier": data.get("tier", "UNRANKED")}
+        return {
+            "type": "valo_tier",
+            "riot_id": riot_id,
+            "tier": data.get("tier", "UNRANKED"),
+        }
 
     async def _exec_valo_history(self, args: dict) -> dict:
         riot_id = args.get("riot_id", "")
         data = await self.api.get_valo_history(riot_id)
         if data.get("error"):
             return {"type": "error", "message": data["error"]}
-        return {"type": "valo_history", "riot_id": riot_id, "matches": data.get("matches", [])}
+        return {
+            "type": "valo_history",
+            "riot_id": riot_id,
+            "matches": data.get("matches", []),
+        }
 
     async def _exec_music(self) -> dict:
         data = await self.api.get_random_track()
@@ -289,9 +325,15 @@ class LangService:
 
         from src.config.settings.gamblingSettings import GamblingSettings
         import secrets
-        reward = secrets.randbelow(
-            GamblingSettings.WORK_REWARD_RANGE[1] - GamblingSettings.WORK_REWARD_RANGE[0] + 1
-        ) + GamblingSettings.WORK_REWARD_RANGE[0]
+
+        reward = (
+            secrets.randbelow(
+                GamblingSettings.WORK_REWARD_RANGE[1]
+                - GamblingSettings.WORK_REWARD_RANGE[0]
+                + 1
+            )
+            + GamblingSettings.WORK_REWARD_RANGE[0]
+        )
 
         gs.add_balance(user_id, server_id, reward)
         gs.set_cooldown(user_id, "work")
@@ -315,9 +357,7 @@ class LangService:
         if not self._flooding_api_service or not context:
             return {"type": "error", "message": "플러딩 서비스를 사용할 수 없습니다."}
         try:
-            result = await self._flooding_api_service.get_music_list(
-                context["user_id"]
-            )
+            result = await self._flooding_api_service.get_music_list(context["user_id"])
             return {"type": "flooding_music", "data": result}
         except Exception as e:
             return {"type": "error", "message": f"플러딩 음악 조회 실패: {e}"}
@@ -333,10 +373,17 @@ class LangService:
         except Exception as e:
             return {"type": "error", "message": f"플러딩 프로필 조회 실패: {e}"}
 
-    def _save_feedback(self, context: dict, user_message: str,
-                       llm_raw: str, parsed: dict, result: dict = None,
-                       tool_error: str = None, signal: str = None,
-                       signal_detail: str = None):
+    def _save_feedback(
+        self,
+        context: dict,
+        user_message: str,
+        llm_raw: str,
+        parsed: dict,
+        result: dict = None,
+        tool_error: str = None,
+        signal: str = None,
+        signal_detail: str = None,
+    ):
         try:
             from src.infrastructure.database.session import get_db_session
             from src.domain.models.LangFeedback import LangFeedback
@@ -351,7 +398,11 @@ class LangService:
                 action = "parse_error"
 
             tool_name = parsed.get("tool")
-            tool_args_str = json.dumps(parsed.get("args", {}), ensure_ascii=False) if tool_name else None
+            tool_args_str = (
+                json.dumps(parsed.get("args", {}), ensure_ascii=False)
+                if tool_name
+                else None
+            )
 
             tool_success = None
             result_type = None
@@ -383,27 +434,48 @@ class LangService:
         except Exception as e:
             logger.warning(f"피드백 저장 실패: {e}")
 
+    def _queue_feedback(self, *args, **kwargs) -> None:
+        task = asyncio.create_task(
+            asyncio.to_thread(self._save_feedback, *args, **kwargs),
+            name="lang-feedback",
+        )
+        self._feedback_tasks.add(task)
+        task.add_done_callback(self._feedback_tasks.discard)
+
     async def process_message(self, user_message: str, context: dict = None) -> dict:
         llm_raw = None
         parsed = {}
 
         try:
+            parsed = route_fast(user_message) or {}
+            if parsed:
+                result = await self._execute_tool(
+                    parsed["tool"], parsed.get("args", {}), context
+                )
+                self._queue_feedback(
+                    context or {}, user_message, "[fast-route]", parsed, result
+                )
+                return result
+
             messages = [
                 SystemMessage(content=SYSTEM_PROMPT),
                 HumanMessage(content=user_message),
             ]
 
-            response = await self.llm.ainvoke(messages)
+            async with self._llm_semaphore:
+                response = await self.router_llm.ainvoke(messages)
             llm_raw = response.content
             parsed = self._parse_llm_response(llm_raw)
 
             if parsed.get("ignore"):
-                self._save_feedback(context or {}, user_message, llm_raw, parsed)
+                self._queue_feedback(context or {}, user_message, llm_raw, parsed)
                 return None
 
             if "reply" in parsed:
                 result = {"type": "text", "content": parsed["reply"]}
-                self._save_feedback(context or {}, user_message, llm_raw, parsed, result)
+                self._queue_feedback(
+                    context or {}, user_message, llm_raw, parsed, result
+                )
                 return result
 
             if "tool" in parsed:
@@ -411,27 +483,36 @@ class LangService:
                 tool_args = parsed.get("args", {})
                 try:
                     result = await self._execute_tool(tool_name, tool_args, context)
-                    self._save_feedback(context or {}, user_message, llm_raw, parsed, result)
+                    self._queue_feedback(
+                        context or {}, user_message, llm_raw, parsed, result
+                    )
                     return result
                 except Exception as e:
-                    self._save_feedback(context or {}, user_message, llm_raw, parsed, tool_error=str(e))
+                    self._queue_feedback(
+                        context or {}, user_message, llm_raw, parsed, tool_error=str(e)
+                    )
                     raise
 
-            self._save_feedback(context or {}, user_message, llm_raw, parsed)
+            self._queue_feedback(context or {}, user_message, llm_raw, parsed)
             return None
 
         except Exception as e:
             logger.error(f"LangService 처리 중 오류: {e}", exc_info=True)
-            self._save_feedback(context or {}, user_message, llm_raw, parsed, tool_error=str(e))
+            self._queue_feedback(
+                context or {}, user_message, llm_raw, parsed, tool_error=str(e)
+            )
             return {"type": "error", "message": f"처리 중 오류가 발생했습니다: {e}"}
 
     async def ask_question(self, question: str) -> str:
         try:
             messages = [
-                SystemMessage(content="너는 친절한 한국어 AI 어시스턴트야. 간결하고 정확하게 답변해."),
+                SystemMessage(
+                    content="너는 친절한 한국어 AI 어시스턴트야. 간결하고 정확하게 답변해."
+                ),
                 HumanMessage(content=question),
             ]
-            response = await self.llm.ainvoke(messages)
+            async with self._llm_semaphore:
+                response = await self.answer_llm.ainvoke(messages)
             return response.content
         except Exception as e:
             logger.error(f"질문 처리 중 오류: {e}", exc_info=True)
