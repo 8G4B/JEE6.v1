@@ -1,5 +1,6 @@
 import asyncio
 import logging
+from concurrent.futures import ThreadPoolExecutor
 from src.infrastructure.di.Container import Container
 from src.infrastructure.discord.bot import Bot
 from src.config.settings.Base import BaseConfig
@@ -16,6 +17,9 @@ logger = logging.getLogger(__name__)
 
 async def main():
     try:
+        asyncio.get_running_loop().set_default_executor(
+            ThreadPoolExecutor(max_workers=8, thread_name_prefix="jee6-worker")
+        )
         logger.info("데이터베이스 연결 테스트 중...")
         if not test_connection():
             logger.error("데이터베이스 연결 실패")
