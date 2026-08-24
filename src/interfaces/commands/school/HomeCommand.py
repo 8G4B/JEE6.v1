@@ -3,7 +3,8 @@ import logging
 from discord.ext import commands
 
 from src.interfaces.commands.Base import BaseCommand
-from src.services.HomeService import HomeService, format_home_status
+from src.services.HomeService import HomeService
+from src.utils.embeds.HomeEmbed import HomeEmbed
 
 logger = logging.getLogger(__name__)
 
@@ -21,9 +22,7 @@ class HomeCommand(BaseCommand):
     async def home(self, ctx):
         try:
             status = await self.home_service.get_status()
-            await ctx.reply(format_home_status(status))
+            await ctx.reply(embed=HomeEmbed.create_home_embed(status))
         except Exception:
             logger.exception("하교 시간 계산 중 오류가 발생했습니다.")
-            await ctx.reply(
-                "하교 시간을 계산하는 중 오류가 발생했어요. 잠시 후 다시 시도해주세요."
-            )
+            await ctx.reply(embed=HomeEmbed.create_error_embed())

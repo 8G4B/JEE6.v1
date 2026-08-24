@@ -1,15 +1,12 @@
 from datetime import date, datetime
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, MagicMock
 from zoneinfo import ZoneInfo
 
 import pytest
 
-from src.services.HomeService import (
-    HomeService,
-    HomeStatus,
-    SchoolScheduleService,
-    format_home_status,
-)
+from src.interfaces.commands.school.HomeCommand import HomeCommand
+from src.services.HomeService import HomeService, HomeStatus, SchoolScheduleService
+from src.utils.embeds.HomeEmbed import HomeEmbed
 
 KST = ZoneInfo("Asia/Seoul")
 
@@ -33,7 +30,9 @@ async def test_normal_week_counts_down_to_friday_at_1620():
     assert status.state == "countdown"
     assert status.target == datetime(2026, 8, 28, 16, 20, tzinfo=KST)
     assert status.reason == "금요일"
-    assert "4일 7시간 20분" in format_home_status(status)
+    embed = HomeEmbed.create_home_embed(status)
+    assert "103시간 20분" in embed.description
+    assert "4일" not in embed.description
 
 
 @pytest.mark.asyncio
@@ -80,11 +79,11 @@ async def test_schedule_failure_falls_back_to_friday_and_discloses_it():
     now = datetime(2026, 8, 24, 9, 0, tzinfo=KST)
 
     status = await service.get_status(now)
-    message = format_home_status(status)
+    embed = HomeEmbed.create_home_embed(status)
 
     assert status.target == datetime(2026, 8, 28, 16, 20, tzinfo=KST)
     assert status.schedule_available is False
-    assert "금요일 기준" in message
+    assert any("금요일 기준" in field.value for field in embed.fields)
 
 
 def test_only_whole_school_holidays_are_parsed():
@@ -120,7 +119,7 @@ def test_only_whole_school_holidays_are_parsed():
     assert holidays == {date(2026, 9, 24): "추석연휴 · 추석"}
 
 
-def test_countdown_message_uses_ceiling_for_partial_seconds():
+def test_countdown_embed_uses_ceiling_for_partial_seconds():
     status = HomeStatus(
         state="countdown",
         now=datetime(2026, 8, 28, 16, 19, 59, 500_000, tzinfo=KST),
@@ -128,4 +127,25 @@ def test_countdown_message_uses_ceiling_for_partial_seconds():
         reason="금요일",
     )
 
-    assert "1초" in format_home_status(status)
+    assert "1초" in HomeEmbed.create_home_embed(status).description
+
+
+@pytest.mark.asyncio
+async def test_home_command_replies_with_an_embed():
+    status = HomeStatus(
+        state="countdown",
+        now=datetime(2026, 8, 24, 9, 0, tzinfo=KST),
+        target=datetime(2026, 8, 28, 16, 20, tzinfo=KST),
+        reason="금요일",
+    )
+    command = HomeCommand(MagicMock(), MagicMock())
+    command.home_service.get_status = AsyncMock(return_value=status)
+    ctx = MagicMock()
+    ctx.reply = AsyncMock()
+
+    await HomeCommand.home.callback(command, ctx)
+
+    ctx.reply.assert_awaited_once()
+    embed = ctx.reply.await_args.kwargs["embed"]
+    assert embed.title == "🏠 하교 카운트다운"
+    assert "103시간 20분" in embed.description

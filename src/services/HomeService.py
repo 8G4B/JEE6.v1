@@ -1,6 +1,5 @@
 import asyncio
 import logging
-import math
 import os
 import time
 from dataclasses import dataclass
@@ -16,7 +15,6 @@ logger = logging.getLogger(__name__)
 
 KST = ZoneInfo("Asia/Seoul")
 DISMISSAL_TIME = datetime_time(hour=16, minute=20)
-_WEEKDAY_NAMES = ("월", "화", "수", "목", "금", "토", "일")
 _HOLIDAY_TYPES = {"공휴일", "휴업일"}
 _GRADE_FLAGS = (
     "ONE_GRADE_EVENT_YN",
@@ -230,47 +228,3 @@ class HomeService:
     def _date_range(start: date, end: date):
         for offset in range((end - start).days + 1):
             yield start + timedelta(days=offset)
-
-
-def format_home_status(status: HomeStatus) -> str:
-    if status.state == "day_off":
-        return f"🏠 오늘은 {status.day_off_name}이라 쉬는 날이에요!"
-    if status.state == "dismissal_time":
-        return "🏠 지금 하교 시간이에요!"
-    if status.state == "dismissed":
-        return "🏠 오늘 하교 시간(16:20)이 이미 지났어요!"
-
-    if status.target is None:
-        raise ValueError("카운트다운 상태에는 하교 시각이 필요합니다.")
-
-    remaining_seconds = max(
-        0,
-        math.ceil((status.target - status.now).total_seconds()),
-    )
-    duration = _format_duration(remaining_seconds)
-    target = status.target
-    message = (
-        f"🏠 하교까지 **{duration}** 남았어요!\n"
-        f"하교 예정: **{target.month}월 {target.day}일"
-        f"({_WEEKDAY_NAMES[target.weekday()]}) 16:20** ({status.reason})"
-    )
-    if not status.schedule_available:
-        message += "\n※ 학사일정을 확인하지 못해 금요일 기준으로 계산했어요."
-    return message
-
-
-def _format_duration(total_seconds: int) -> str:
-    days, remainder = divmod(total_seconds, 24 * 60 * 60)
-    hours, remainder = divmod(remainder, 60 * 60)
-    minutes, seconds = divmod(remainder, 60)
-
-    parts = []
-    if days:
-        parts.append(f"{days}일")
-    if hours:
-        parts.append(f"{hours}시간")
-    if minutes:
-        parts.append(f"{minutes}분")
-    if seconds or not parts:
-        parts.append(f"{seconds}초")
-    return " ".join(parts)
