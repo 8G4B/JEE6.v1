@@ -29,7 +29,7 @@ class HomeEmbed:
                 color=discord.Color.blue(),
             )
         else:
-            embed = HomeEmbed._create_countdown_embed(status)
+            return HomeEmbed._create_countdown_embed(status)
 
         embed.set_footer(text="한국 시간(KST) 기준")
         return embed
@@ -48,21 +48,13 @@ class HomeEmbed:
 
         embed = discord.Embed(
             title="🏠 하교 카운트다운",
-            description=f"### ⏳ {duration} 남았어요!",
+            description=f"## ⏳ {duration} 남았어요!",
             color=discord.Color.green(),
-        )
-        embed.add_field(
-            name="📅 하교 예정",
-            value=(
-                f"**{target.month}월 {target.day}일"
-                f"({_WEEKDAY_NAMES[target.weekday()]})**\n오후 4시 20분"
-            ),
-            inline=True,
         )
         embed.add_field(
             name="✨ 하교 기준",
             value=status.reason,
-            inline=True,
+            inline=False,
         )
         if not status.schedule_available:
             embed.add_field(
@@ -70,6 +62,12 @@ class HomeEmbed:
                 value="학사일정을 확인하지 못해 금요일 기준으로 계산했어요.",
                 inline=False,
             )
+        embed.set_footer(
+            text=(
+                f"하교 예정 · {target.month}월 {target.day}일"
+                f"({_WEEKDAY_NAMES[target.weekday()]}) 오후 4시 20분 · KST"
+            )
+        )
         return embed
 
     @staticmethod

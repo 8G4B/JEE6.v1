@@ -33,6 +33,8 @@ async def test_normal_week_counts_down_to_friday_at_1620():
     embed = HomeEmbed.create_home_embed(status)
     assert "103시간 20분" in embed.description
     assert "4일" not in embed.description
+    assert embed.footer.text == "하교 예정 · 8월 28일(금) 오후 4시 20분 · KST"
+    assert all(field.name != "📅 하교 예정" for field in embed.fields)
 
 
 @pytest.mark.asyncio
@@ -149,3 +151,4 @@ async def test_home_command_replies_with_an_embed():
     embed = ctx.reply.await_args.kwargs["embed"]
     assert embed.title == "🏠 하교 카운트다운"
     assert "103시간 20분" in embed.description
+    assert embed.footer.text.startswith("하교 예정 ·")
