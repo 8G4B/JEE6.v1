@@ -149,6 +149,6 @@ async def test_home_command_replies_with_an_embed():
 
     ctx.reply.assert_awaited_once()
     embed = ctx.reply.await_args.kwargs["embed"]
-    assert embed.title == "🏠 하교 카운트다운"
+    assert embed.title == "🏠 하교까지"
     assert "103시간 20분" in embed.description
     assert embed.footer.text.startswith("하교 예정 ·")
