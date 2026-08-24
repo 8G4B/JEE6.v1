@@ -47,14 +47,9 @@ class HomeEmbed:
         target = status.target
 
         embed = discord.Embed(
-            title="🏠 하교 카운트다운",
+            title="🏠 하교까지",
             description=f"## ⏳ {duration} 남았어요!",
             color=discord.Color.green(),
-        )
-        embed.add_field(
-            name="✨ 하교 기준",
-            value=status.reason,
-            inline=False,
         )
         if not status.schedule_available:
             embed.add_field(
