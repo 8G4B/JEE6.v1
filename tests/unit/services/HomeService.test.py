@@ -1,5 +1,5 @@
-from datetime import date, datetime
-from unittest.mock import AsyncMock, MagicMock
+from datetime import date, datetime, timedelta
+from unittest.mock import AsyncMock, MagicMock, patch
 from zoneinfo import ZoneInfo
 
 import pytest
@@ -31,7 +31,7 @@ async def test_normal_week_counts_down_to_friday_at_1620():
     assert status.target == datetime(2026, 8, 28, 16, 20, tzinfo=KST)
     assert status.reason == "금요일"
     embed = HomeEmbed.create_home_embed(status)
-    assert "<t:1787901600:R>" in embed.description
+    assert embed.description == "## 103시간 20분 0초"
     assert "4일" not in embed.description
     assert embed.footer.text == "하교 예정 · 8월 28일(금) 오후 4시 20분 · KST"
     assert all(field.name != "📅 하교 예정" for field in embed.fields)
@@ -121,6 +121,18 @@ def test_only_whole_school_holidays_are_parsed():
     assert holidays == {date(2026, 9, 24): "추석연휴 · 추석"}
 
 
+def test_countdown_embed_always_shows_hours_minutes_and_seconds():
+    target = datetime(2026, 8, 28, 16, 20, tzinfo=KST)
+    status = HomeStatus(
+        state="countdown",
+        now=target - timedelta(hours=20, minutes=24, seconds=21, microseconds=500_000),
+        target=target,
+        reason="금요일",
+    )
+
+    assert HomeEmbed.create_home_embed(status).description == "## 20시간 24분 22초"
+
+
 @pytest.mark.asyncio
 async def test_home_command_replies_with_an_embed():
     status = HomeStatus(
@@ -131,13 +143,54 @@ async def test_home_command_replies_with_an_embed():
     )
     command = HomeCommand(MagicMock(), MagicMock())
     command.home_service.get_status = AsyncMock(return_value=status)
+    command._start_countdown = MagicMock()
     ctx = MagicMock()
-    ctx.reply = AsyncMock()
+    ctx.channel.id = 123
+    message = MagicMock()
+    ctx.reply = AsyncMock(return_value=message)
 
     await HomeCommand.home.callback(command, ctx)
 
     ctx.reply.assert_awaited_once()
     embed = ctx.reply.await_args.kwargs["embed"]
     assert embed.title == "🏠 하교까지"
-    assert "<t:1787901600:R>" in embed.description
+    assert embed.description == "## 103시간 20분 0초"
     assert embed.footer.text.startswith("하교 예정 ·")
+    command._start_countdown.assert_called_once_with(123, message, status)
+
+
+@pytest.mark.asyncio
+async def test_home_countdown_edits_the_message_at_the_configured_interval():
+    target = datetime(2026, 8, 28, 16, 20, tzinfo=KST)
+    initial = HomeStatus(
+        state="countdown",
+        now=target - timedelta(hours=20, minutes=24, seconds=22),
+        target=target,
+        reason="금요일",
+    )
+    dismissal = HomeStatus(
+        state="dismissal_time",
+        now=target,
+        target=target,
+        reason="금요일",
+    )
+    command = HomeCommand(MagicMock(), MagicMock())
+    command._now = MagicMock(side_effect=[initial.now + timedelta(seconds=1), target])
+    command.home_service.get_status = AsyncMock(return_value=dismissal)
+    message = MagicMock()
+    message.edit = AsyncMock()
+
+    with patch(
+        "src.interfaces.commands.school.HomeCommand.asyncio.sleep",
+        new=AsyncMock(),
+    ) as sleep:
+        await command._update_countdown(message, initial)
+
+    assert sleep.await_count == 2
+    assert all(call.args == (1,) for call in sleep.await_args_list)
+    assert message.edit.await_count == 2
+    first_embed = message.edit.await_args_list[0].kwargs["embed"]
+    final_embed = message.edit.await_args_list[1].kwargs["embed"]
+    assert first_embed.description == "## 20시간 24분 21초"
+    assert final_embed.title == "🏠 지금 하교 시간이에요!"
+    command.home_service.get_status.assert_awaited_once_with(target)

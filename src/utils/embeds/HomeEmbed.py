@@ -1,3 +1,5 @@
+import math
+
 import discord
 
 from src.services.HomeService import HomeStatus
@@ -37,12 +39,16 @@ class HomeEmbed:
         if status.target is None:
             raise ValueError("카운트다운 상태에는 하교 시각이 필요합니다.")
 
+        remaining_seconds = max(
+            0,
+            math.ceil((status.target - status.now).total_seconds()),
+        )
+        duration = HomeEmbed._format_duration(remaining_seconds)
         target = status.target
-        live_countdown = discord.utils.format_dt(target, style="R")
 
         embed = discord.Embed(
             title="🏠 하교까지",
-            description=f"## ⏳ 하교까지 {live_countdown} 남았어요!",
+            description=f"## {duration}",
             color=discord.Color.green(),
         )
         if not status.schedule_available:
@@ -58,6 +64,12 @@ class HomeEmbed:
             )
         )
         return embed
+
+    @staticmethod
+    def _format_duration(total_seconds: int) -> str:
+        hours, remainder = divmod(total_seconds, 60 * 60)
+        minutes, seconds = divmod(remainder, 60)
+        return f"{hours}시간 {minutes}분 {seconds}초"
 
     @staticmethod
     def create_error_embed() -> discord.Embed:
