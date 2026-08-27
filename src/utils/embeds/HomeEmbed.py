@@ -48,7 +48,7 @@ class HomeEmbed:
 
         embed = discord.Embed(
             title="🏠 하교까지",
-            description=f"## {duration}",
+            description=f"## {duration} 남았습니다",
             color=discord.Color.green(),
         )
         if not status.schedule_available:

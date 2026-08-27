@@ -31,7 +31,7 @@ async def test_normal_week_counts_down_to_friday_at_1620():
     assert status.target == datetime(2026, 8, 28, 16, 20, tzinfo=KST)
     assert status.reason == "금요일"
     embed = HomeEmbed.create_home_embed(status)
-    assert embed.description == "## 103시간 20분 0초"
+    assert embed.description == "## 103시간 20분 0초 남았습니다"
     assert "4일" not in embed.description
     assert embed.footer.text == "하교 예정 · 8월 28일(금) 오후 4시 20분 · KST"
     assert all(field.name != "📅 하교 예정" for field in embed.fields)
@@ -130,7 +130,8 @@ def test_countdown_embed_always_shows_hours_minutes_and_seconds():
         reason="금요일",
     )
 
-    assert HomeEmbed.create_home_embed(status).description == "## 20시간 24분 22초"
+    description = HomeEmbed.create_home_embed(status).description
+    assert description == "## 20시간 24분 22초 남았습니다"
 
 
 @pytest.mark.asyncio
@@ -154,7 +155,7 @@ async def test_home_command_replies_with_an_embed():
     ctx.reply.assert_awaited_once()
     embed = ctx.reply.await_args.kwargs["embed"]
     assert embed.title == "🏠 하교까지"
-    assert embed.description == "## 103시간 20분 0초"
+    assert embed.description == "## 103시간 20분 0초 남았습니다"
     assert embed.footer.text.startswith("하교 예정 ·")
     command._start_countdown.assert_called_once_with(123, message, status)
 
@@ -191,6 +192,6 @@ async def test_home_countdown_edits_the_message_at_the_configured_interval():
     assert message.edit.await_count == 2
     first_embed = message.edit.await_args_list[0].kwargs["embed"]
     final_embed = message.edit.await_args_list[1].kwargs["embed"]
-    assert first_embed.description == "## 20시간 24분 21초"
+    assert first_embed.description == "## 20시간 24분 21초 남았습니다"
     assert final_embed.title == "🏠 지금 하교 시간이에요!"
     command.home_service.get_status.assert_awaited_once_with(target)
