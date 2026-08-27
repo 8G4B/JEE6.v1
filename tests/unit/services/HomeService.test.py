@@ -31,7 +31,7 @@ async def test_normal_week_counts_down_to_friday_at_1620():
     assert status.target == datetime(2026, 8, 28, 16, 20, tzinfo=KST)
     assert status.reason == "금요일"
     embed = HomeEmbed.create_home_embed(status)
-    assert "103시간 20분" in embed.description
+    assert "<t:1787901600:R>" in embed.description
     assert "4일" not in embed.description
     assert embed.footer.text == "하교 예정 · 8월 28일(금) 오후 4시 20분 · KST"
     assert all(field.name != "📅 하교 예정" for field in embed.fields)
@@ -121,17 +121,6 @@ def test_only_whole_school_holidays_are_parsed():
     assert holidays == {date(2026, 9, 24): "추석연휴 · 추석"}
 
 
-def test_countdown_embed_uses_ceiling_for_partial_seconds():
-    status = HomeStatus(
-        state="countdown",
-        now=datetime(2026, 8, 28, 16, 19, 59, 500_000, tzinfo=KST),
-        target=datetime(2026, 8, 28, 16, 20, tzinfo=KST),
-        reason="금요일",
-    )
-
-    assert "1초" in HomeEmbed.create_home_embed(status).description
-
-
 @pytest.mark.asyncio
 async def test_home_command_replies_with_an_embed():
     status = HomeStatus(
@@ -150,5 +139,5 @@ async def test_home_command_replies_with_an_embed():
     ctx.reply.assert_awaited_once()
     embed = ctx.reply.await_args.kwargs["embed"]
     assert embed.title == "🏠 하교까지"
-    assert "103시간 20분" in embed.description
+    assert "<t:1787901600:R>" in embed.description
     assert embed.footer.text.startswith("하교 예정 ·")
