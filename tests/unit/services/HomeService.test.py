@@ -161,7 +161,7 @@ async def test_home_command_replies_with_an_embed():
 
 
 @pytest.mark.asyncio
-async def test_home_countdown_edits_the_message_at_the_configured_interval():
+async def test_home_countdown_compensates_for_message_edit_latency():
     target = datetime(2026, 8, 28, 16, 20, tzinfo=KST)
     initial = HomeStatus(
         state="countdown",
@@ -178,17 +178,31 @@ async def test_home_countdown_edits_the_message_at_the_configured_interval():
     command = HomeCommand(MagicMock(), MagicMock())
     command._now = MagicMock(side_effect=[initial.now + timedelta(seconds=1), target])
     command.home_service.get_status = AsyncMock(return_value=dismissal)
+    clock = {"now": 0.0}
+    loop = MagicMock()
+    loop.time.side_effect = lambda: clock["now"]
+
+    async def advance_clock(delay):
+        clock["now"] += delay
+
+    async def edit_message(**kwargs):
+        clock["now"] += 0.2
+
     message = MagicMock()
-    message.edit = AsyncMock()
+    message.edit = AsyncMock(side_effect=edit_message)
 
     with patch(
         "src.interfaces.commands.school.HomeCommand.asyncio.sleep",
-        new=AsyncMock(),
-    ) as sleep:
+        new=AsyncMock(side_effect=advance_clock),
+    ) as sleep, patch(
+        "src.interfaces.commands.school.HomeCommand.asyncio.get_running_loop",
+        return_value=loop,
+    ):
         await command._update_countdown(message, initial)
 
     assert sleep.await_count == 2
-    assert all(call.args == (1,) for call in sleep.await_args_list)
+    delays = [call.args[0] for call in sleep.await_args_list]
+    assert delays == pytest.approx([1, 0.8])
     assert message.edit.await_count == 2
     first_embed = message.edit.await_args_list[0].kwargs["embed"]
     final_embed = message.edit.await_args_list[1].kwargs["embed"]

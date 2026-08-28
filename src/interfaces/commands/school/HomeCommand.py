@@ -57,15 +57,21 @@ class HomeCommand(BaseCommand):
             self._countdown_tasks.pop(channel_id, None)
 
     async def _update_countdown(self, message, status) -> None:
+        loop = asyncio.get_running_loop()
+        next_update = loop.time() + _COUNTDOWN_UPDATE_INTERVAL
         try:
             while status.state == "countdown" and status.target is not None:
-                await asyncio.sleep(_COUNTDOWN_UPDATE_INTERVAL)
+                await asyncio.sleep(max(0, next_update - loop.time()))
                 now = self._now(status)
                 if now >= status.target:
                     status = await self.home_service.get_status(now)
                 else:
                     status = replace(status, now=now)
                 await message.edit(embed=HomeEmbed.create_home_embed(status))
+
+                next_update += _COUNTDOWN_UPDATE_INTERVAL
+                if next_update <= loop.time():
+                    next_update = loop.time() + _COUNTDOWN_UPDATE_INTERVAL
         except asyncio.CancelledError:
             raise
         except (discord.NotFound, discord.Forbidden):
