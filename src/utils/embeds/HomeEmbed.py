@@ -54,12 +54,6 @@ class HomeEmbed:
             description=f"## {duration} 남았습니다",
             color=discord.Color.green(),
         )
-        if status.early_dismissal:
-            embed.add_field(
-                name="⏰ 조기 종례",
-                value="7교시가 공강이라 한 시간 일찍 종례해요.",
-                inline=False,
-            )
         if not status.schedule_available:
             embed.add_field(
                 name="⚠️ 일정 안내",

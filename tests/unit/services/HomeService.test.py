@@ -238,7 +238,7 @@ async def test_free_last_period_moves_dismissal_one_hour_earlier():
     assert status.early_dismissal is True
     embed = HomeEmbed.create_home_embed(status)
     assert embed.footer.text == "하교 예정 · 8월 28일(금) 오후 3시 20분 · KST"
-    assert any("7교시가 공강" in field.value for field in embed.fields)
+    assert embed.fields == []
 
 
 @pytest.mark.asyncio
