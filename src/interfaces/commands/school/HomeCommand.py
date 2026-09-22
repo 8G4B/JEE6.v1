@@ -12,6 +12,9 @@ from src.utils.embeds.HomeEmbed import HomeEmbed
 
 logger = logging.getLogger(__name__)
 _COUNTDOWN_UPDATE_INTERVAL = 1
+# 카운트다운 중에도 보강 등으로 바뀐 하교 시각을 반영하도록 가끔 다시 계산한다.
+_COUNTDOWN_RESYNC_TICKS = 60
+_WARM_UP_INTERVAL = 10 * 60
 
 
 class HomeCommand(BaseCommand):
@@ -19,10 +22,29 @@ class HomeCommand(BaseCommand):
         super().__init__(bot, container)
         self.home_service = HomeService()
         self._countdown_tasks: dict[int, asyncio.Task] = {}
+        self._warm_up_task: asyncio.Task | None = None
+
+    async def cog_load(self) -> None:
+        self._warm_up_task = asyncio.create_task(
+            self._keep_cache_warm(), name="home-cache-warm-up"
+        )
+
+    async def _keep_cache_warm(self) -> None:
+        while True:
+            try:
+                await self.home_service.warm_up()
+            except asyncio.CancelledError:
+                raise
+            except Exception:
+                logger.warning("하교 정보 캐시 예열에 실패했습니다.", exc_info=True)
+            await asyncio.sleep(_WARM_UP_INTERVAL)
 
     async def cog_unload(self) -> None:
         tasks = list(self._countdown_tasks.values())
         self._countdown_tasks.clear()
+        if self._warm_up_task is not None:
+            tasks.append(self._warm_up_task)
+            self._warm_up_task = None
         for task in tasks:
             task.cancel()
         if tasks:
@@ -59,11 +81,13 @@ class HomeCommand(BaseCommand):
     async def _update_countdown(self, message, status) -> None:
         loop = asyncio.get_running_loop()
         next_update = loop.time() + _COUNTDOWN_UPDATE_INTERVAL
+        ticks = 0
         try:
             while status.state == "countdown" and status.target is not None:
                 await asyncio.sleep(max(0, next_update - loop.time()))
+                ticks += 1
                 now = self._now(status)
-                if now >= status.target:
+                if now >= status.target or ticks % _COUNTDOWN_RESYNC_TICKS == 0:
                     status = await self.home_service.get_status(now)
                 else:
                     status = replace(status, now=now)

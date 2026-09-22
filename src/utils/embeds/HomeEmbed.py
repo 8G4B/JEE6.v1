@@ -25,7 +25,10 @@ class HomeEmbed:
         elif status.state == "dismissed":
             embed = discord.Embed(
                 title="🏠 하교 완료!",
-                description="오늘 하교 시간인 **오후 4시 20분**이 지났어요.",
+                description=(
+                    f"오늘 하교 시간인 **{HomeEmbed._format_clock(status.target)}**이"
+                    " 지났어요."
+                ),
                 color=discord.Color.blue(),
             )
         else:
@@ -51,6 +54,12 @@ class HomeEmbed:
             description=f"## {duration} 남았습니다",
             color=discord.Color.green(),
         )
+        if status.early_dismissal:
+            embed.add_field(
+                name="⏰ 조기 종례",
+                value="7교시가 공강이라 한 시간 일찍 종례해요.",
+                inline=False,
+            )
         if not status.schedule_available:
             embed.add_field(
                 name="⚠️ 일정 안내",
@@ -60,10 +69,19 @@ class HomeEmbed:
         embed.set_footer(
             text=(
                 f"하교 예정 · {target.month}월 {target.day}일"
-                f"({_WEEKDAY_NAMES[target.weekday()]}) 오후 4시 20분 · KST"
+                f"({_WEEKDAY_NAMES[target.weekday()]})"
+                f" {HomeEmbed._format_clock(target)} · KST"
             )
         )
         return embed
+
+    @staticmethod
+    def _format_clock(value) -> str:
+        if value is None:
+            return "오후 4시 20분"
+        meridiem = "오전" if value.hour < 12 else "오후"
+        hour = value.hour % 12 or 12
+        return f"{meridiem} {hour}시 {value.minute}분"
 
     @staticmethod
     def _format_duration(total_seconds: int) -> str:

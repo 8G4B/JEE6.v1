@@ -1,3 +1,4 @@
+import asyncio
 from datetime import date, datetime, timedelta
 from unittest.mock import AsyncMock, MagicMock, patch
 from zoneinfo import ZoneInfo
@@ -5,19 +6,34 @@ from zoneinfo import ZoneInfo
 import pytest
 
 from src.interfaces.commands.school.HomeCommand import HomeCommand
-from src.services.HomeService import HomeService, HomeStatus, SchoolScheduleService
+from src.services.HomeService import (
+    HomeService,
+    HomeStatus,
+    SchoolScheduleService,
+    StaleWhileRevalidateCache,
+    TimetableService,
+)
 from src.utils.embeds.HomeEmbed import HomeEmbed
 
 KST = ZoneInfo("Asia/Seoul")
 
 
-def _service(holidays=None, error=None):
+def _service(holidays=None, error=None, periods=None, timetable_error=None):
     schedule = AsyncMock()
     if error:
         schedule.get_holidays.side_effect = error
     else:
         schedule.get_holidays.return_value = holidays or {}
-    return HomeService(schedule)
+    timetable = AsyncMock()
+    if timetable_error:
+        timetable.get_periods.side_effect = timetable_error
+    else:
+        timetable.get_periods.return_value = periods or {}
+    return HomeService(schedule, timetable)
+
+
+_FULL_DAY = frozenset(range(1, 8))
+_NO_LAST_PERIOD = frozenset(range(1, 7))
 
 
 @pytest.mark.asyncio
@@ -209,3 +225,115 @@ async def test_home_countdown_compensates_for_message_edit_latency():
     assert first_embed.description == "## 20시간 24분 21초 남았습니다"
     assert final_embed.title == "🏠 지금 하교 시간이에요!"
     command.home_service.get_status.assert_awaited_once_with(target)
+
+
+@pytest.mark.asyncio
+async def test_free_last_period_moves_dismissal_one_hour_earlier():
+    friday = date(2026, 8, 28)
+    service = _service(periods={friday: _NO_LAST_PERIOD})
+
+    status = await service.get_status(datetime(2026, 8, 24, 9, 0, tzinfo=KST))
+
+    assert status.target == datetime(2026, 8, 28, 15, 20, tzinfo=KST)
+    assert status.early_dismissal is True
+    embed = HomeEmbed.create_home_embed(status)
+    assert embed.footer.text == "하교 예정 · 8월 28일(금) 오후 3시 20분 · KST"
+    assert any("7교시가 공강" in field.value for field in embed.fields)
+
+
+@pytest.mark.asyncio
+async def test_early_dismissal_state_changes_at_1520():
+    friday = date(2026, 8, 28)
+    service = _service(periods={friday: _NO_LAST_PERIOD})
+
+    status = await service.get_status(datetime(2026, 8, 28, 15, 25, tzinfo=KST))
+
+    assert status.state == "dismissed"
+    embed = HomeEmbed.create_home_embed(status)
+    assert "오후 3시 20분" in embed.description
+
+
+@pytest.mark.asyncio
+async def test_last_period_class_or_missing_timetable_keeps_1620():
+    friday = date(2026, 8, 28)
+    now = datetime(2026, 8, 24, 9, 0, tzinfo=KST)
+
+    with_class = await _service(periods={friday: _FULL_DAY}).get_status(now)
+    no_data = await _service(periods={}).get_status(now)
+    failed = await _service(timetable_error=RuntimeError("down")).get_status(now)
+
+    for status in (with_class, no_data, failed):
+        assert status.target == datetime(2026, 8, 28, 16, 20, tzinfo=KST)
+        assert status.early_dismissal is False
+
+
+def test_timetable_rows_are_grouped_by_date_and_blank_subjects_ignored():
+    rows = [
+        {"ALL_TI_YMD": "20260918", "PERIO": "6", "ITRT_CNTNT": "자바 프로그래밍"},
+        {"ALL_TI_YMD": "20260918", "PERIO": "7", "ITRT_CNTNT": " "},
+        {"ALL_TI_YMD": "20260917", "PERIO": "7", "ITRT_CNTNT": "영어Ⅱ"},
+        {"ALL_TI_YMD": "bad", "PERIO": "7", "ITRT_CNTNT": "영어Ⅱ"},
+    ]
+
+    periods = TimetableService._parse_periods(rows)
+
+    assert periods == {
+        date(2026, 9, 18): frozenset({6}),
+        date(2026, 9, 17): frozenset({7}),
+    }
+
+
+@pytest.mark.asyncio
+async def test_cache_serves_stale_value_immediately_and_refreshes_once():
+    cache = StaleWhileRevalidateCache("test", ttl=0)
+    release = asyncio.Event()
+    calls = []
+
+    async def loader():
+        calls.append(1)
+        if len(calls) > 1:
+            await release.wait()
+        return len(calls)
+
+    assert await cache.get("k", loader) == 1
+    # 만료된 값은 갱신을 기다리지 않고 바로 돌려준다.
+    assert await cache.get("k", loader) == 1
+    assert await cache.get("k", loader) == 1
+    await asyncio.sleep(0)
+    assert len(calls) == 2
+
+    release.set()
+    await asyncio.sleep(0)
+    await asyncio.sleep(0)
+    assert await cache.get("k", loader) == 2
+
+
+@pytest.mark.asyncio
+async def test_cache_cold_miss_gives_up_after_timeout_but_keeps_loading():
+    cache = StaleWhileRevalidateCache("test", ttl=60, wait_timeout=0.01)
+    release = asyncio.Event()
+
+    async def loader():
+        await release.wait()
+        return "value"
+
+    with pytest.raises(asyncio.TimeoutError):
+        await cache.get("k", loader)
+
+    release.set()
+    await asyncio.sleep(0)
+    await asyncio.sleep(0)
+    assert await cache.get("k", AsyncMock(side_effect=AssertionError)) == "value"
+
+
+@pytest.mark.asyncio
+async def test_cache_failure_is_backed_off():
+    cache = StaleWhileRevalidateCache("test", ttl=60, failure_ttl=60)
+    loader = AsyncMock(side_effect=RuntimeError("down"))
+
+    with pytest.raises(RuntimeError):
+        await cache.get("k", loader)
+    with pytest.raises(RuntimeError):
+        await cache.get("k", loader)
+
+    assert loader.await_count == 1
