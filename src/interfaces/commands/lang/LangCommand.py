@@ -290,6 +290,13 @@ class LangCommand(BaseCommand):
         if not message.guild:
             return
 
+        # Explicit meal commands must not wait for channel/feedback database work.
+        if message.content.startswith(BaseConfig.PREFIX):
+            name = message.content[len(BaseConfig.PREFIX):].split(maxsplit=1)
+            command = self.bot.get_command(name[0]) if name else None
+            if command is not None and command.cog_name == "MealCommands":
+                return
+
         self._load_enabled_channels()
 
         if message.content.startswith(BaseConfig.PREFIX):

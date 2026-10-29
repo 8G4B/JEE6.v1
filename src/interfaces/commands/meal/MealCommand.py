@@ -14,6 +14,7 @@ from src.interfaces.commands.Base import BaseCommand
 from src.utils.embeds.MealEmbed import MealEmbed
 from src.clients.ApiGatewayClient import ApiGatewayClient
 from src.clients.HttpClient import get_http_session
+from src.services.MealScheduleService import MealScheduleService
 
 logger = logging.getLogger(__name__)
 
@@ -28,50 +29,44 @@ _IMG_CACHE_MAX = 64
 _IMG_TIMEOUT = aiohttp.ClientTimeout(total=15)
 # 급식 사진 서버는 비브라우저 User-Agent(aiohttp 기본값 등)를 400으로 차단한다.
 _IMG_HEADERS = {"User-Agent": "Mozilla/5.0"}
-_PRIMARY_MEAL_KEY = ("auto", "today", None)
-_MEAL_CACHE_TTL = 30
-_MEAL_REFRESH_INTERVAL = 15
+_MEAL_REFRESH_INTERVAL = 60
 
 
 class MealCommands(BaseCommand):
     def __init__(self, bot, container):
         super().__init__(bot, container)
         self.api = ApiGatewayClient()
-        self._meal_cache: dict[tuple[str, str, Optional[str]], tuple[float, dict]] = {}
-        self._meal_cache_lock = asyncio.Lock()
+        self.meal_service = MealScheduleService(self.api)
         self._refresh_task: Optional[asyncio.Task] = None
         self._image_tasks: set[asyncio.Task] = set()
+        self._image_downloads: dict[str, asyncio.Task] = {}
+        self._image_lookups: dict[tuple[str, str], asyncio.Task] = {}
+        self._image_urls: dict[tuple[str, str], tuple[float, Optional[str]]] = {}
+        self._image_slots = asyncio.Semaphore(2)
 
     async def cog_load(self) -> None:
-        try:
-            await self._refresh_meal(*_PRIMARY_MEAL_KEY)
-            logger.info("기본 급식 응답 캐시 사전 로딩 완료")
-        except Exception:
-            logger.warning("기본 급식 응답 캐시 사전 로딩 실패", exc_info=True)
+        await self.meal_service.warm()
         self._refresh_task = asyncio.create_task(
             self._maintain_primary_meal(),
             name="bot-meal-cache-refresh",
         )
 
     async def cog_unload(self) -> None:
-        tasks = [task for task in [self._refresh_task, *self._image_tasks] if task]
+        tasks = [
+            task
+            for task in [
+                self._refresh_task,
+                *self._image_tasks,
+                *self._image_downloads.values(),
+                *self._image_lookups.values(),
+            ]
+            if task
+        ]
         for task in tasks:
             task.cancel()
         if tasks:
             await asyncio.gather(*tasks, return_exceptions=True)
-
-    async def _refresh_meal(
-        self,
-        meal_type: str,
-        day: str,
-        date: Optional[str],
-    ) -> dict:
-        async with self._meal_cache_lock:
-            data = await self.api.get_meal(meal_type=meal_type, day=day, date=date)
-            if not data.get("error") and data.get("menu"):
-                key = (meal_type, day, date)
-                self._meal_cache[key] = (time.monotonic() + _MEAL_CACHE_TTL, data)
-            return data
+        await self.meal_service.close()
 
     async def _get_meal(
         self,
@@ -79,19 +74,13 @@ class MealCommands(BaseCommand):
         day: str,
         date: Optional[str],
     ) -> dict:
-        key = (meal_type, day, date)
-        cached = self._meal_cache.get(key)
-        if cached is not None:
-            expires_at, data = cached
-            if time.monotonic() < expires_at or key == _PRIMARY_MEAL_KEY:
-                return data
-        return await self._refresh_meal(meal_type, day, date)
+        return await self.meal_service.get_meal(meal_type, day, date)
 
     async def _maintain_primary_meal(self) -> None:
         while True:
             await asyncio.sleep(_MEAL_REFRESH_INTERVAL)
             try:
-                await self._refresh_meal(*_PRIMARY_MEAL_KEY)
+                await self.meal_service.warm()
             except asyncio.CancelledError:
                 raise
             except Exception:
@@ -182,8 +171,7 @@ class MealCommands(BaseCommand):
         if not (date and meal_code):
             return
         try:
-            result = await self.api.get_meal_image(date, meal_code)
-            image_url = result.get("image_url")
+            image_url = await self._get_image_url(date, meal_code)
             if not image_url:
                 return
 
@@ -197,37 +185,77 @@ class MealCommands(BaseCommand):
         except Exception as e:
             logger.warning(f"급식 사진 첨부 실패: {e}")
 
+    async def _get_image_url(self, date: str, meal_code: str) -> Optional[str]:
+        key = (date, meal_code)
+        cached = self._image_urls.get(key)
+        if cached is not None and time.monotonic() < cached[0]:
+            return cached[1]
+        task = self._image_lookups.get(key)
+        if task is None:
+            task = asyncio.create_task(self._load_image_url(key))
+            self._image_lookups[key] = task
+            task.add_done_callback(lambda done: done.cancelled() or done.exception())
+        return await asyncio.shield(task)
+
+    async def _load_image_url(self, key: tuple[str, str]) -> Optional[str]:
+        try:
+            result = await self.api.get_meal_image(*key)
+            image_url = result.get("image_url")
+            if key not in self._image_urls and len(self._image_urls) >= _IMG_CACHE_MAX:
+                self._image_urls.pop(next(iter(self._image_urls)))
+            # Newly posted photos should become visible without waiting hours.
+            self._image_urls[key] = (
+                time.monotonic() + (300 if image_url else 30),
+                image_url,
+            )
+            return image_url
+        finally:
+            self._image_lookups.pop(key, None)
+
     async def _get_resized_image(self, image_url: str) -> Optional[bytes]:
         cached = _IMG_CACHE.get(image_url)
         if cached is not None:
             return cached
 
-        session = await get_http_session()
-        async with session.get(
-            image_url, timeout=_IMG_TIMEOUT, headers=_IMG_HEADERS
-        ) as resp:
-            if resp.status != 200:
-                logger.warning(f"급식 사진 다운로드 실패: HTTP {resp.status}")
-                return None
-            raw = await resp.read()
+        task = self._image_downloads.get(image_url)
+        if task is None:
+            task = asyncio.create_task(self._download_resized_image(image_url))
+            self._image_downloads[image_url] = task
+            task.add_done_callback(lambda done: done.cancelled() or done.exception())
+        return await asyncio.shield(task)
 
-        # PIL 디코딩/리사이즈는 블로킹이므로 executor에서 처리한다.
-        jpeg = await asyncio.to_thread(self._resize_to_jpeg, raw)
-        if jpeg:
-            if len(_IMG_CACHE) >= _IMG_CACHE_MAX:
-                _IMG_CACHE.pop(next(iter(_IMG_CACHE)))
-            _IMG_CACHE[image_url] = jpeg
-        return jpeg
+    async def _download_resized_image(self, image_url: str) -> Optional[bytes]:
+        try:
+            async with self._image_slots:
+                session = await get_http_session()
+                async with session.get(
+                    image_url, timeout=_IMG_TIMEOUT, headers=_IMG_HEADERS
+                ) as resp:
+                    if resp.status != 200:
+                        logger.warning(f"급식 사진 다운로드 실패: HTTP {resp.status}")
+                        return None
+                    raw = await resp.read()
+
+                jpeg = await asyncio.to_thread(self._resize_to_jpeg, raw)
+                if jpeg:
+                    if len(_IMG_CACHE) >= _IMG_CACHE_MAX:
+                        _IMG_CACHE.pop(next(iter(_IMG_CACHE)))
+                    _IMG_CACHE[image_url] = jpeg
+                return jpeg
+        finally:
+            self._image_downloads.pop(image_url, None)
 
     @staticmethod
     def _resize_to_jpeg(raw: bytes) -> Optional[bytes]:
         try:
-            img = Image.open(io.BytesIO(raw))
-            img = img.convert("RGB")
-            img.thumbnail((_IMG_MAX_SIDE, _IMG_MAX_SIDE))
-            buf = io.BytesIO()
-            img.save(buf, format="JPEG", quality=85)
-            return buf.getvalue()
+            with Image.open(io.BytesIO(raw)) as img:
+                # Ask JPEG decoders to shrink before materializing full RGB pixels.
+                img.draft("RGB", (_IMG_MAX_SIDE, _IMG_MAX_SIDE))
+                img.thumbnail((_IMG_MAX_SIDE, _IMG_MAX_SIDE))
+                rgb = img.convert("RGB")
+                buf = io.BytesIO()
+                rgb.save(buf, format="JPEG", quality=85)
+                return buf.getvalue()
         except Exception as e:
             logger.warning(f"급식 사진 리사이즈 실패: {e}")
             return None

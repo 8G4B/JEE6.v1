@@ -28,6 +28,9 @@ class ApiGatewayClient:
     async def get_meal_image(self, date: str, meal_code: str) -> dict:
         return await self._get("/meal/image", {"date": date, "meal_code": meal_code})
 
+    async def get_meal_week(self, date: str) -> dict:
+        return await self._get("/meal/week", {"date": date})
+
     async def get_water_temp(self) -> dict:
         return await self._get("/water/")
 
