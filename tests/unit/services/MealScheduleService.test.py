@@ -1,4 +1,6 @@
 import asyncio
+import json
+import time
 from datetime import datetime, timedelta
 from unittest.mock import AsyncMock
 from zoneinfo import ZoneInfo
@@ -260,3 +262,124 @@ async def test_failed_refresh_can_recover_without_restarting_the_bot(schedule):
     api.get_meal_week.side_effect = week_data
     assert (await service.get_meal())["date"] == "20261029"
     assert api.get_meal_week.await_count == 2
+
+
+async def test_repeated_primary_lookup_skips_date_formatting_and_isolation(
+    schedule, monkeypatch
+):
+    service, api, _ = schedule
+    await service.warm()
+    first = await service.get_meal()
+    monkeypatch.setattr(
+        service, "_week_start", lambda _: pytest.fail("reformatted date")
+    )
+    first["menu"] = "changed by a caller"
+    assert (await service.get_meal())["menu"] == "- 3/1"
+    assert api.get_meal_week.await_count == 2
+
+
+async def test_primary_snapshot_changes_at_every_boundary_and_after_refresh(schedule):
+    service, api, clock = schedule
+    await service.warm()
+    assert (await service.get_meal())["meal_code"] == "1"
+    for hour, minute, code, date in (
+        (7, 30, "2", "20261029"),
+        (12, 30, "3", "20261029"),
+        (18, 30, "1", "20261030"),
+    ):
+        clock[0] = clock[0].replace(hour=hour, minute=minute)
+        result = await service.get_meal()
+        assert (result["meal_code"], result["date"]) == (code, date)
+    clock[0] = datetime(2026, 10, 30, 0, tzinfo=SEOUL)
+    assert (await service.get_meal())["title"] == "🍳 아침"
+
+    updated = week_data("20261026")
+    updated["meals"][12]["menu"] = "- corrected menu"
+    api.get_meal_week.return_value = updated
+    api.get_meal_week.side_effect = None
+    await service._wait_for_week("20261026")
+    assert (await service.get_meal())["menu"] == "- corrected menu"
+
+
+async def test_warming_refreshes_before_expiry_including_negative_results(schedule):
+    service, api, _ = schedule
+    api.get_meal_week.side_effect = lambda monday: {"week_start": monday, "meals": []}
+    await service.warm()
+    api.get_meal_week.reset_mock()
+    for entry in service._weeks.values():
+        entry.expires_at = time.monotonic() + 20
+    await service.warm()
+    assert api.get_meal_week.await_count == 2
+
+
+async def test_restart_restores_menus_without_network_and_preserves_age(
+    schedule, tmp_path
+):
+    service, api, clock = schedule
+    api.base_url = "http://meal-api.test"
+    service._cache_path = tmp_path / "meals.json"
+    await service.warm()
+    await service._persist_task
+    stored = json.loads(service._cache_path.read_text())
+    saved_at = stored["weeks"]["20261026"]["saved_at"]
+
+    restarted = MealScheduleService(
+        api, now=lambda: clock[0], cache_path=str(service._cache_path)
+    )
+    try:
+        api.get_meal_week.reset_mock()
+        await restarted.restore()
+        assert (await restarted.get_meal())["menu"] == "- 3/1"
+        api.get_meal_week.assert_not_awaited()
+        restarted._schedule_persist()
+        await restarted._persist_task
+        resaved = json.loads(service._cache_path.read_text())
+        assert abs(resaved["weeks"]["20261026"]["saved_at"] - saved_at) < 0.1
+    finally:
+        await restarted.close()
+
+
+@pytest.mark.parametrize(
+    "age,rows,source,restored",
+    [
+        (600, True, "http://meal-api.test", True),
+        (86401, True, "http://meal-api.test", False),
+        (-60, True, "http://meal-api.test", False),
+        (61, False, "http://meal-api.test", False),
+        (10, False, "http://meal-api.test", True),
+        (10, True, "http://other-school.test", False),
+    ],
+)
+async def test_persisted_cache_respects_age_empty_results_and_source(
+    schedule, tmp_path, age, rows, source, restored
+):
+    service, api, _ = schedule
+    api.base_url = "http://meal-api.test"
+    service._cache_path = tmp_path / "meals.json"
+    service._cache_path.write_text(
+        json.dumps(
+            {
+                "version": 1,
+                "source": source,
+                "weeks": {
+                    "20261026": {
+                        "saved_at": time.time() - age,
+                        "meals": week_data("20261026")["meals"] if rows else [],
+                    }
+                },
+            }
+        )
+    )
+    await service.restore()
+    assert bool(service._weeks) is restored
+
+
+async def test_corrupt_or_unwritable_disk_cache_does_not_break_menu(schedule, tmp_path):
+    service, api, _ = schedule
+    api.base_url = "http://meal-api.test"
+    service._cache_path = tmp_path / "meals.json"
+    service._cache_path.write_text("{truncated")
+    await service.restore()
+    service._cache_path = tmp_path  # a directory cannot be replaced by a cache file
+    assert (await service.get_meal())["menu"] == "- 3/1"
+    await service._persist_task

@@ -17,6 +17,11 @@ COMMAND_DURATION = Histogram(
     ("command",),
     buckets=(0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10, 30),
 )
+MEAL_REPLY_DURATION = Histogram(
+    "jee6_bot_meal_reply_duration_seconds",
+    "Time from meal handler entry to the initial Discord menu reply, excluding photos.",
+    buckets=(0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10, 30),
+)
 
 
 def start_metrics_server(host: str, port: int) -> None:

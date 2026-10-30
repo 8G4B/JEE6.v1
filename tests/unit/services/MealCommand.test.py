@@ -1,6 +1,7 @@
 import asyncio
 import importlib
 import io
+import time
 from datetime import datetime
 from unittest.mock import AsyncMock, MagicMock
 from zoneinfo import ZoneInfo
@@ -143,6 +144,58 @@ async def test_photo_failure_keeps_the_menu_reply(command):
 
     ctx.reply.assert_awaited_once()
     ctx.send.assert_not_awaited()
+
+
+async def test_photo_burst_is_bounded_while_every_menu_is_replied(command):
+    release = asyncio.Event()
+
+    async def slow_image(*_args):
+        await release.wait()
+
+    command._get_meal = AsyncMock(return_value=_meal_data())
+    command._attach_meal_image = slow_image
+    ctx = MagicMock()
+    ctx.reply = AsyncMock(return_value=MagicMock())
+    await asyncio.gather(
+        *(command._send_meal(ctx, "auto", "today") for _ in range(100))
+    )
+    assert ctx.reply.await_count == 100
+    assert len(command._image_tasks) == 8
+    release.set()
+    await asyncio.gather(*command._image_tasks)
+
+
+async def test_uploaded_photo_is_included_in_the_first_reply_without_another_upload(
+    command,
+):
+    command._get_meal = AsyncMock(return_value=_meal_data())
+    command._get_image_url = AsyncMock(return_value="https://photo.test/1")
+    command._get_resized_image = AsyncMock(return_value=b"jpeg")
+    attachment = MagicMock(url="https://cdn.discordapp.com/attachments/meal.jpg")
+    edited = MagicMock(attachments=[attachment])
+    message = MagicMock()
+    message.edit = AsyncMock(return_value=edited)
+    ctx = MagicMock()
+    ctx.reply = AsyncMock(return_value=message)
+
+    await command._send_meal(ctx, "auto", "today")
+    await asyncio.gather(*command._image_tasks)
+    assert message.edit.await_count == 1
+    command._image_tasks.clear()
+    await command._send_meal(ctx, "auto", "today")
+    assert ctx.reply.call_args.kwargs["embed"].image.url == attachment.url
+    assert not command._image_tasks
+    assert message.edit.await_count == 1
+    command._get_resized_image.assert_awaited_once()
+
+
+async def test_expired_uploaded_photo_is_not_reused(command):
+    command._uploaded_images[("20260822", "2")] = (
+        time.monotonic() - 1,
+        "https://expired.test",
+    )
+    assert command._cached_uploaded_image(_meal_data()) is None
+    assert not command._uploaded_images
 
 
 def test_resize_preserves_aspect_ratio_and_produces_a_small_jpeg():

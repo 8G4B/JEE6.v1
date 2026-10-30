@@ -2,6 +2,7 @@ from discord.ext import commands
 import logging
 import re
 import io
+import os
 import asyncio
 import time
 import aiohttp
@@ -15,6 +16,7 @@ from src.utils.embeds.MealEmbed import MealEmbed
 from src.clients.ApiGatewayClient import ApiGatewayClient
 from src.clients.HttpClient import get_http_session
 from src.services.MealScheduleService import MealScheduleService
+from src.infrastructure.metrics import MEAL_REPLY_DURATION
 
 logger = logging.getLogger(__name__)
 
@@ -29,22 +31,27 @@ _IMG_CACHE_MAX = 64
 _IMG_TIMEOUT = aiohttp.ClientTimeout(total=15)
 # 급식 사진 서버는 비브라우저 User-Agent(aiohttp 기본값 등)를 400으로 차단한다.
 _IMG_HEADERS = {"User-Agent": "Mozilla/5.0"}
-_MEAL_REFRESH_INTERVAL = 60
+_MEAL_REFRESH_INTERVAL = 15
+_MAX_IMAGE_TASKS = 8
 
 
 class MealCommands(BaseCommand):
     def __init__(self, bot, container):
         super().__init__(bot, container)
         self.api = ApiGatewayClient()
-        self.meal_service = MealScheduleService(self.api)
+        self.meal_service = MealScheduleService(
+            self.api, cache_path=os.getenv("MEAL_CACHE_PATH")
+        )
         self._refresh_task: Optional[asyncio.Task] = None
         self._image_tasks: set[asyncio.Task] = set()
         self._image_downloads: dict[str, asyncio.Task] = {}
         self._image_lookups: dict[tuple[str, str], asyncio.Task] = {}
         self._image_urls: dict[tuple[str, str], tuple[float, Optional[str]]] = {}
+        self._uploaded_images: dict[tuple[str, str], tuple[float, str]] = {}
         self._image_slots = asyncio.Semaphore(2)
 
     async def cog_load(self) -> None:
+        await self.meal_service.restore()
         await self.meal_service.warm()
         self._refresh_task = asyncio.create_task(
             self._maintain_primary_meal(),
@@ -87,12 +94,24 @@ class MealCommands(BaseCommand):
                 logger.warning("기본 급식 응답 캐시 갱신 실패", exc_info=True)
 
     def _attach_meal_image_in_background(self, msg, embed, data: dict) -> None:
+        # Keep a burst of photo edits from exhausting Discord's global rate limit.
+        if not data.get("date") or len(self._image_tasks) >= _MAX_IMAGE_TASKS:
+            return
         task = asyncio.create_task(
             self._attach_meal_image(msg, embed, data),
             name="attach-meal-image",
         )
         self._image_tasks.add(task)
         task.add_done_callback(self._image_tasks.discard)
+
+    def _cached_uploaded_image(self, data: dict) -> Optional[str]:
+        key = (data.get("date"), data.get("meal_code"))
+        cached = self._uploaded_images.get(key)
+        if cached is not None:
+            if time.monotonic() < cached[0]:
+                return cached[1]
+            self._uploaded_images.pop(key, None)
+        return None
 
     def _parse_date_option(self, options: str) -> Optional[str]:
         """명령 옵션에서 날짜를 뽑아 YYYYMMDD로 반환. 날짜 미지정이면 None, 잘못되면 ValueError."""
@@ -135,6 +154,7 @@ class MealCommands(BaseCommand):
         return dt.strftime("%Y%m%d")
 
     async def _send_meal(self, ctx, meal_type: str, day: str, options: str = ""):
+        started_at = time.perf_counter()
         try:
             date = self._parse_date_option(options)
         except ValueError as e:
@@ -158,9 +178,14 @@ class MealCommands(BaseCommand):
             embed = MealEmbed.create_meal_embed(
                 data["title"], data["menu"], data.get("cal_info", "")
             )
+            uploaded_image = self._cached_uploaded_image(data)
+            if uploaded_image:
+                embed.set_image(url=uploaded_image)
             # 급식을 먼저 보여주고, 사진은 기다리지 않는다.
             msg = await ctx.reply(embed=embed)
-            self._attach_meal_image_in_background(msg, embed, data)
+            MEAL_REPLY_DURATION.observe(time.perf_counter() - started_at)
+            if not uploaded_image:
+                self._attach_meal_image_in_background(msg, embed, data)
         except Exception as e:
             logger.error(e)
             await ctx.send(embed=MealEmbed.create_error_embed(e))
@@ -181,7 +206,20 @@ class MealCommands(BaseCommand):
 
             file = discord.File(io.BytesIO(jpeg), filename="meal.jpg")
             embed.set_image(url="attachment://meal.jpg")
-            await msg.edit(embed=embed, attachments=[file])
+            edited = await msg.edit(embed=embed, attachments=[file])
+            if edited.attachments:
+                key = (date, meal_code)
+                if (
+                    key not in self._uploaded_images
+                    and len(self._uploaded_images) >= _IMG_CACHE_MAX
+                ):
+                    self._uploaded_images.pop(next(iter(self._uploaded_images)))
+                # Reuse Discord's uploaded URL for subsequent replies. Keep its
+                # lifetime short so signed URLs and newly posted photos refresh.
+                self._uploaded_images[key] = (
+                    time.monotonic() + 300,
+                    edited.attachments[0].url,
+                )
         except Exception as e:
             logger.warning(f"급식 사진 첨부 실패: {e}")
 
@@ -266,7 +304,6 @@ class MealCommands(BaseCommand):
         description="현재 시간에 맞는 급식 조회",
     )
     async def meal(self, ctx, *, options: str = ""):
-        logger.info(f"meal({ctx.guild.name}, {ctx.author.name})")
         await self._send_meal(ctx, "auto", "today", options)
 
     @commands.command(
